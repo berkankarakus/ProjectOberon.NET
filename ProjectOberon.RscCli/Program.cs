@@ -5,6 +5,9 @@ var moduleName = "Oberon.rsc";
 var graph = false;
 var sourceMap = false;
 var sourceRoot = ".";
+var disassemble = false;
+string? commandName = null;
+var disassemblyCount = 32;
 for (var index = 0; index < args.Length; index++)
 {
     switch (args[index])
@@ -24,8 +27,18 @@ for (var index = 0; index < args.Length; index++)
         case "--root" when index + 1 < args.Length:
             sourceRoot = args[++index];
             break;
+        case "--disassemble":
+            disassemble = true;
+            break;
+        case "--command" when index + 1 < args.Length:
+            commandName = args[++index];
+            break;
+        case "--count" when index + 1 < args.Length:
+            if (!int.TryParse(args[++index], out disassemblyCount) || disassemblyCount < 1)
+                throw new ArgumentException("--count must be a positive integer");
+            break;
         case "--help":
-            Console.WriteLine("usage: project-oberon-rsc --disk FILE [--module NAME] [--graph] [--source-map] [--root PATH]");
+            Console.WriteLine("usage: project-oberon-rsc --disk FILE [--module NAME] [--graph] [--source-map] [--root PATH] [--disassemble] [--command NAME] [--count N]");
             return;
         default:
             throw new ArgumentException($"unknown or incomplete option: {args[index]}");
@@ -36,6 +49,31 @@ if (diskPath is null) throw new ArgumentException("--disk FILE is required");
 using var disk = new DiskImage();
 disk.Open(diskPath, writable: false);
 var fileSystem = new OberonFileSystem(disk);
+if (disassemble)
+{
+    var disassemblyEntry = fileSystem.Enumerate(moduleName).SingleOrDefault(candidate => candidate.Name.Equals(moduleName, StringComparison.Ordinal));
+    if (disassemblyEntry is null) throw new FileNotFoundException($"module not found in disk image: {moduleName}");
+    var disassemblyModule = RscModuleReader.Parse(fileSystem.ReadFile(disassemblyEntry));
+    var sourcePath = OberonSourceLocator.FindModules(sourceRoot).TryGetValue(disassemblyModule.Name, out var located) ? located : null;
+    var startOffset = 0;
+    if (commandName is not null)
+    {
+        var command = disassemblyModule.Commands.SingleOrDefault(candidate => candidate.Name.Equals(commandName, StringComparison.Ordinal));
+        if (command is null) throw new InvalidOperationException($"command not found in {disassemblyModule.Name}: {commandName}");
+        startOffset = command.CodeOffset;
+        var sourceProcedure = sourcePath is null ? null : OberonSourceAnalysis.FindProcedures(System.IO.Path.Combine(sourceRoot, sourcePath)).FirstOrDefault(procedure => procedure.Name == commandName);
+        Console.WriteLine($"command: {commandName}  code offset={startOffset}  source={(sourceProcedure is null ? "unknown" : $"{sourcePath}:{sourceProcedure.Line}")}");
+    }
+    else Console.WriteLine($"module: {disassemblyModule.Name}  code words={disassemblyModule.Code.Count}  start offset={startOffset}");
+    var startWord = Math.Max(0, startOffset / 4);
+    var endWord = Math.Min(disassemblyModule.Code.Count, startWord + disassemblyCount);
+    for (var word = startWord; word < endWord; word++)
+    {
+        var raw = disassemblyModule.Code[word];
+        Console.WriteLine($"  {word * 4,6}: {raw:x8}  {Risc5Disassembler.Format(raw)}");
+    }
+    return;
+}
 if (sourceMap)
 {
     var sources = OberonSourceLocator.FindModules(sourceRoot);

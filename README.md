@@ -76,6 +76,18 @@ The source map also reports source procedure line numbers and compares
 exported `PROCEDURE name*` declarations with the commands stored in the RSC
 module.
 
+Disassemble the code for a compiled command and connect it to the source line:
+
+```sh
+dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
+  --disk RISC-work.img \
+  --module System.rsc \
+  --disassemble \
+  --command Directory \
+  --count 40 \
+  --root .
+```
+
 Trace the compiled modules whose header sectors are touched during boot:
 
 ```sh

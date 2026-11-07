@@ -13,6 +13,7 @@ public sealed record RscModule(
     int VariableBytes,
     int StringBytes,
     int CodeWords,
+    IReadOnlyList<uint> Code,
     IReadOnlyList<RscCommand> Commands,
     IReadOnlyList<int> Entries,
     IReadOnlyList<int> PointerReferences,
@@ -51,7 +52,9 @@ public static class RscModuleReader
         var stringBytes = reader.ReadInt32();
         reader.Skip(stringBytes);
         var codeWords = reader.ReadInt32();
-        reader.Skip(checked(codeWords * 4));
+        if (codeWords < 0) throw new InvalidDataException($"invalid code word count: {codeWords}");
+        var code = new uint[codeWords];
+        for (var index = 0; index < code.Length; index++) code[index] = unchecked((uint)reader.ReadInt32());
 
         var commands = new List<RscCommand>();
         while (true)
@@ -80,7 +83,7 @@ public static class RscModuleReader
         if (trailer != 'O') throw new InvalidDataException($"invalid RSC trailer: 0x{trailer:x2}");
 
         return new RscModule(name, key, version, size, imports, typeDescriptorBytes, variableBytes, stringBytes,
-            codeWords, commands, entries, pointerReferences, fixupProgram, fixupData, fixupTypes, bodyOffset, trailer);
+            codeWords, code, commands, entries, pointerReferences, fixupProgram, fixupData, fixupTypes, bodyOffset, trailer);
     }
 
     private static IReadOnlyList<int> ReadIntArray(RscReader reader, int count, string name)
