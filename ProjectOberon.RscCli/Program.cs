@@ -47,7 +47,23 @@ if (sourceMap)
         var sourceModule = RscModuleReader.Parse(fileSystem.ReadFile(sourceEntry));
         var source = sources.TryGetValue(sourceModule.Name, out var path) ? path : "(source not found)";
         Console.WriteLine($"{sourceModule.Name,-16} {sourceEntry.Name,-20} {source}");
-        if (sourceModule.Commands.Count > 0) Console.WriteLine($"  commands: {string.Join(", ", sourceModule.Commands.Select(command => command.Name))}");
+        if (sourceModule.Commands.Count > 0)
+        {
+            Console.WriteLine($"  commands: {string.Join(", ", sourceModule.Commands.Select(command => command.Name))}");
+            if (path is not null)
+            {
+                var procedures = OberonSourceAnalysis.FindProcedures(System.IO.Path.Combine(sourceRoot, path));
+                foreach (var command in sourceModule.Commands)
+                {
+                    var sourceProcedure = procedures.FirstOrDefault(procedure => procedure.Name == command.Name);
+                    var location = sourceProcedure is null ? "source procedure not found" : $"line {sourceProcedure.Line}";
+                    Console.WriteLine($"    {command.Name,-24} code offset={command.CodeOffset,-5} {location}");
+                }
+                var exported = procedures.Where(procedure => procedure.Exported).Select(procedure => procedure.Name).ToHashSet(StringComparer.Ordinal);
+                var uncompiled = exported.Except(sourceModule.Commands.Select(command => command.Name), StringComparer.Ordinal).ToArray();
+                if (uncompiled.Length > 0) Console.WriteLine($"  exported procedures not in RSC command table: {string.Join(", ", uncompiled)}");
+            }
+        }
     }
     return;
 }

@@ -72,6 +72,10 @@ dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- 
   --disk RISC-work.img --source-map --root .
 ```
 
+The source map also reports source procedure line numbers and compares
+exported `PROCEDURE name*` declarations with the commands stored in the RSC
+module.
+
 Trace the compiled modules whose header sectors are touched during boot:
 
 ```sh
