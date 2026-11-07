@@ -57,6 +57,14 @@ dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- 
   --module Oberon.rsc
 ```
 
+Generate a Graphviz dependency graph for all compiled modules:
+
+```sh
+dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
+  --disk RISC-work.img --graph > oberon-modules.dot
+dot -Tsvg oberon-modules.dot > oberon-modules.svg
+```
+
 Trace the compiled modules whose header sectors are touched during boot:
 
 ```sh
