@@ -11,7 +11,8 @@ var tests = new (string Name, Action Test)[]
     ("disk image read/write", DiskImageReadWrite),
     ("SPI disk read/write", SpiDiskReadWrite),
     ("machine timer", MachineTimer),
-    ("disassembler and breakpoint", DisassemblerAndBreakpoint)
+    ("disassembler and breakpoint", DisassemblerAndBreakpoint),
+    ("display and input mapping", DisplayAndInputMapping)
 };
 
 foreach (var (name, test) in tests)
@@ -186,6 +187,18 @@ static void DisassemblerAndBreakpoint()
     True(debugger.RemoveBreakpoint(resetPc));
     Equal(1ul, debugger.Run(1));
     Equal(42u, machine.Cpu.Register(1));
+}
+
+static void DisplayAndInputMapping()
+{
+    Equal(0x000e_7f00u, Display.Base);
+    Equal(1024, Display.Width);
+    Equal(768, Display.Height);
+    Equal(0x29, InputMapping.KeyboardKey(' ')!.Value.Code);
+    Equal(0x75, InputMapping.KeyboardKey(0x40000052)!.Value.Code);
+    True(InputMapping.KeyboardKey(0x40000052)!.Value.Extended);
+    Equal(0x05, InputMapping.MouseButtonsFromState(1 | 4));
+    Equal(1023, InputMapping.ScaleCoordinate(999, 1000, Display.Width));
 }
 
 static uint Transfer(Memory memory, uint dataAddress, byte value)

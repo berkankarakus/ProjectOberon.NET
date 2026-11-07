@@ -38,6 +38,19 @@ compatibility regressions.
 selected registers, which is useful when learning the boot ROM and debugging
 differences between the two implementations.
 
+Build and run the C# SDL2 frontend:
+
+```sh
+dotnet run --project dotnet/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
+  --rom RISC5Verilog/prom.mem \
+  --disk RISC-work.img
+```
+
+The C# UI preserves the C++ controls: `F9` pause/resume, `F10` single-step,
+`Escape` quit, keyboard forwarding, mouse input, framebuffer scaling and
+vertical flip control. It uses the system SDL2 library through a small P/Invoke
+layer, so no NuGet SDL wrapper is required.
+
 List the files in an Oberon disk image without booting the emulator:
 
 ```sh
