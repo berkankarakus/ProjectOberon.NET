@@ -15,7 +15,8 @@ var tests = new (string Name, Action Test)[]
     ("display and input mapping", DisplayAndInputMapping),
     ("Oberon input decoder", OberonInputDecoder),
     ("Oberon kernel sectors", OberonKernelSectors),
-    ("Oberon files and riders", OberonFilesAndRiders)
+    ("Oberon files and riders", OberonFilesAndRiders),
+    ("Oberon file directory", OberonFileDirectoryBTree)
 };
 
 foreach (var (name, test) in tests)
@@ -299,6 +300,39 @@ static void OberonFilesAndRiders()
     False(reader.ReadByte(out _));
     True(reader.Eof);
     Equal(16, reader.Position);
+}
+
+static void OberonFileDirectoryBTree()
+{
+    var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"project-oberon-directory-{Guid.NewGuid():N}.img");
+    try
+    {
+        using (var file = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite))
+            file.SetLength(((long)OberonKernel.FileSystemOffset + 512) * DiskImage.SectorSize);
+        using var disk = new DiskImage();
+        disk.Open(path);
+        var kernel = new OberonKernel(new Memory(), disk);
+        var directory = new OberonFileDirectory(kernel);
+        directory.Initialize();
+
+        for (var index = 0; index < 25; index++) directory.Insert($"File{index:00}", (100 + index) * OberonKernel.LogicalSectorUnit);
+        Equal(25, directory.Enumerate().Count());
+        Equal(112 * OberonKernel.LogicalSectorUnit, directory.Search("File12"));
+
+        True(directory.Rename("File12", "Renamed"));
+        Equal(112 * OberonKernel.LogicalSectorUnit, directory.Search("Renamed"));
+        Equal(0, directory.Search("File12"));
+        True(directory.Delete("Renamed", out var removed));
+        Equal(112 * OberonKernel.LogicalSectorUnit, removed);
+        Equal(24, directory.Enumerate().Count());
+
+        for (var index = 0; index < 12; index++) True(directory.Delete($"File{index:00}", out _));
+        Equal(12, directory.Enumerate().Count());
+    }
+    finally
+    {
+        File.Delete(path);
+    }
 }
 
 static uint Transfer(Memory memory, uint dataAddress, byte value)
