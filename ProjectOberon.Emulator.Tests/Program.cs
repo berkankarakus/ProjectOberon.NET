@@ -8,7 +8,9 @@ var tests = new (string Name, Action Test)[]
     ("memory word and byte access", MemoryWordAndByteAccess),
     ("interrupt vector and RTI", InterruptVectorAndRti),
     ("MMIO devices", MmioDevices),
-    ("disk image read/write", DiskImageReadWrite)
+    ("disk image read/write", DiskImageReadWrite),
+    ("SPI disk read/write", SpiDiskReadWrite),
+    ("machine timer", MachineTimer)
 };
 
 foreach (var (name, test) in tests)
@@ -118,6 +120,69 @@ static void DiskImageReadWrite()
         }
     }
     finally { File.Delete(path); }
+}
+
+static void SpiDiskReadWrite()
+{
+    var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"project-oberon-csharp-spi-{Guid.NewGuid():N}.img");
+    try
+    {
+        File.WriteAllBytes(path, new byte[DiskImage.SectorSize * 4]);
+        using var disk = new DiskImage();
+        disk.Open(path);
+        var source = new byte[DiskImage.SectorSize];
+        source[0] = 0x12;
+        source[DiskImage.SectorSize - 1] = 0x34;
+        disk.Write(1, source);
+
+        var memory = new Memory();
+        memory.AttachDisk(disk);
+        var control = DeviceBus.IoBase + (uint)MmioRegister.SpiControl;
+        var data = DeviceBus.IoBase + (uint)MmioRegister.SpiData;
+        memory.Write32(control, SpiDevice.Card0);
+        SendCommand(memory, data, 17, 1);
+        Equal(0x00u, Transfer(memory, data, 0xff));
+        Equal(0xfeu, Transfer(memory, data, 0xff));
+        Equal(0x12u, Transfer(memory, data, 0xff));
+        for (var index = 1; index < DiskImage.SectorSize - 1; index++) _ = Transfer(memory, data, 0xff);
+        Equal(0x34u, Transfer(memory, data, 0xff));
+        Transfer(memory, data, 0xff);
+        Transfer(memory, data, 0xff);
+
+        SendCommand(memory, data, 24, 2);
+        Equal(0x00u, Transfer(memory, data, 0xff));
+        Transfer(memory, data, 0xfe);
+        var replacement = new byte[DiskImage.SectorSize];
+        replacement[0] = 0xa5;
+        foreach (var value in replacement) Transfer(memory, data, value);
+        Transfer(memory, data, 0xff);
+        Equal(0x05u, Transfer(memory, data, 0xff));
+        Equal(0xa5, disk.Read(2)[0]);
+    }
+    finally { File.Delete(path); }
+}
+
+static void MachineTimer()
+{
+    var machine = new Machine();
+    machine.Run(Machine.TimerInterruptPeriod);
+    Equal(1000u, machine.Memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.Timer));
+}
+
+static uint Transfer(Memory memory, uint dataAddress, byte value)
+{
+    memory.Write32(dataAddress, value);
+    return memory.Read32(dataAddress);
+}
+
+static void SendCommand(Memory memory, uint dataAddress, byte command, uint argument)
+{
+    Transfer(memory, dataAddress, (byte)(0x40 | command));
+    Transfer(memory, dataAddress, (byte)(argument >> 24));
+    Transfer(memory, dataAddress, (byte)(argument >> 16));
+    Transfer(memory, dataAddress, (byte)(argument >> 8));
+    Transfer(memory, dataAddress, (byte)argument);
+    Transfer(memory, dataAddress, 0xff);
 }
 
 static uint MovImmediate(int a, ushort value, bool negative = false) => InstructionBits.Q | ((uint)a << 24) | (negative ? InstructionBits.V : 0) | value;
