@@ -90,6 +90,12 @@ public sealed class OberonFileSystem
         return result;
     }
 
+    public static uint PhysicalSector(int address)
+    {
+        if (address < 0 || address % LogicalSectorUnit != 0) throw new ArgumentOutOfRangeException(nameof(address));
+        return checked((uint)(FileSystemOffset + (address / LogicalSectorUnit) * 2));
+    }
+
     private void EnumeratePage(int address, string prefix, List<OberonDirectoryEntry> entries, HashSet<int> visited)
     {
         if (!visited.Add(address)) throw new InvalidDataException($"directory cycle at sector {address}");

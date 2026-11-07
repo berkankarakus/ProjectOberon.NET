@@ -56,3 +56,14 @@ dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- 
   --disk RISC-work.img \
   --module Oberon.rsc
 ```
+
+Trace the compiled modules whose header sectors are touched during boot:
+
+```sh
+dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+  --rom RISC5Verilog/prom.mem \
+  --disk RISC-work.img \
+  --read-only \
+  --steps 100000 \
+  --boot-trace
+```

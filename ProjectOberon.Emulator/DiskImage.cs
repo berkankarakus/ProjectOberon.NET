@@ -10,6 +10,7 @@ public sealed class DiskImage : IDisposable
     public uint SectorCount => _sectorCount;
     public string? Path { get; private set; }
     public bool Writable => _writable;
+    public event Action<uint>? SectorRead;
 
     public void Open(string path, bool writable = true)
     {
@@ -29,6 +30,7 @@ public sealed class DiskImage : IDisposable
     public byte[] Read(uint sector)
     {
         CheckSector(sector);
+        SectorRead?.Invoke(sector);
         var data = new byte[SectorSize];
         _file!.Seek((long)sector * SectorSize, SeekOrigin.Begin);
         _file.ReadExactly(data);

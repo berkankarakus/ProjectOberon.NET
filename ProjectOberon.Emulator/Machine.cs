@@ -10,6 +10,7 @@ public sealed class Machine : IDisposable
 
     public Memory Memory { get; }
     public Risc5Cpu Cpu { get; }
+    public DiskImage? Disk => _disk;
     public const ulong TimerInterruptPeriod = 1000;
     private DiskImage? _disk;
     private ulong _timerPhase;
