@@ -37,3 +37,14 @@ compatibility regressions.
 `--trace N` prints the first `N` instructions with the program counter and
 selected registers, which is useful when learning the boot ROM and debugging
 differences between the two implementations.
+
+List the files in an Oberon disk image without booting the emulator:
+
+```sh
+dotnet run --project dotnet/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
+  --disk RISC-work.img
+```
+
+The filesystem reader follows `FileDir.Mod` and `Kernel.Mod`: it understands
+the 256 MB filesystem offset, 1024-byte logical sectors, and the directory
+B-tree.
