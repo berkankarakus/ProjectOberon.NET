@@ -12,7 +12,8 @@ var tests = new (string Name, Action Test)[]
     ("SPI disk read/write", SpiDiskReadWrite),
     ("machine timer", MachineTimer),
     ("disassembler and breakpoint", DisassemblerAndBreakpoint),
-    ("display and input mapping", DisplayAndInputMapping)
+    ("display and input mapping", DisplayAndInputMapping),
+    ("Oberon input decoder", OberonInputDecoder)
 };
 
 foreach (var (name, test) in tests)
@@ -206,6 +207,51 @@ static void DisplayAndInputMapping()
     memory.EnqueueUartRx((byte)'O');
     Equal(3u, memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.UartControl));
     Equal((uint)'O', memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.UartData));
+
+    var display = new OberonDisplay(memory);
+    display.Dot(Display.White, 0, 0, Display.Replace);
+    Equal(1u, memory.Read32(Display.Base));
+    display.Dot(Display.White, 0, 0, Display.Invert);
+    Equal(0u, memory.Read32(Display.Base));
+    display.ReplConst(Display.White, 30, 1, 4, 1, Display.Replace);
+    Equal(0xc000_0000u, memory.Read32(Display.Base + (uint)Display.RowBytes));
+    Equal(0x0000_0003u, memory.Read32(Display.Base + (uint)Display.RowBytes + 4));
+
+    memory.Write8(0x100, 3);
+    memory.Write8(0x101, 2);
+    memory.Write8(0x102, 0b101);
+    memory.Write8(0x103, 0b010);
+    display.CopyPattern(Display.White, 0x100, 10, 2, Display.Paint);
+    True((memory.Read32(Display.Base + (uint)(2 * Display.RowBytes)) & (1u << 10)) != 0);
+    True((memory.Read32(Display.Base + (uint)(3 * Display.RowBytes)) & (1u << 11)) != 0);
+
+    display.CopyBlock(10, 2, 3, 2, 20, 4, Display.Replace);
+    True((memory.Read32(Display.Base + (uint)(4 * Display.RowBytes)) & (1u << 20)) != 0);
+    True((memory.Read32(Display.Base + (uint)(5 * Display.RowBytes)) & (1u << 21)) != 0);
+}
+
+static void OberonInputDecoder()
+{
+    var keyboard = new OberonKeyboard();
+    keyboard.Enqueue(0x1c);
+    Equal(1, keyboard.Available());
+    True(keyboard.TryRead(out var character));
+    Equal('a', character);
+
+    keyboard.Enqueue(0x12);
+    keyboard.Enqueue(0x1c);
+    keyboard.Enqueue(0xf0);
+    keyboard.Enqueue(0x1c);
+    keyboard.Enqueue(0xf0);
+    keyboard.Enqueue(0x12);
+    True(keyboard.TryRead(out character));
+    Equal('A', character);
+    Equal(0, keyboard.Available());
+
+    keyboard.Enqueue(0x14);
+    keyboard.Enqueue(0x21);
+    True(keyboard.TryRead(out character));
+    Equal('\x03', character);
 }
 
 static uint Transfer(Memory memory, uint dataAddress, byte value)

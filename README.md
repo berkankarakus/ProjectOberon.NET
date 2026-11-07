@@ -34,6 +34,12 @@ The C# and C++ runners use the same ROM and disk image. Their final CPU state
 is compared during development to catch instruction, MMIO, timer and SPI
 compatibility regressions.
 
+The first source-level Oberon port slice is available in the emulator library:
+`OberonDisplay` implements the `Display.Mod` raster operations against the
+emulated framebuffer, and `OberonKeyboard` implements the `Input.Mod` Set 2
+state machine for break, extended, Shift and Ctrl sequences. The original
+`.Mod` modules remain the executable reference while these C# slices grow.
+
 `--trace N` prints the first `N` instructions with the program counter and
 selected registers, which is useful when learning the boot ROM and debugging
 differences between the two implementations.
