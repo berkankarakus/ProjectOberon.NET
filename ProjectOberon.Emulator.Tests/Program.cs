@@ -14,7 +14,8 @@ var tests = new (string Name, Action Test)[]
     ("disassembler and breakpoint", DisassemblerAndBreakpoint),
     ("display and input mapping", DisplayAndInputMapping),
     ("Oberon input decoder", OberonInputDecoder),
-    ("Oberon kernel sectors", OberonKernelSectors)
+    ("Oberon kernel sectors", OberonKernelSectors),
+    ("Oberon files and riders", OberonFilesAndRiders)
 };
 
 foreach (var (name, test) in tests)
@@ -272,6 +273,32 @@ static void OberonKernelSectors()
     Equal(1234, kernel.Clock);
     memory.AdvanceTime();
     Equal(1, kernel.Time);
+}
+
+static void OberonFilesAndRiders()
+{
+    var file = new OberonFile("Test.Mod", new byte[2]);
+    var writer = file.Set();
+    writer.WriteInt(unchecked((int)0x1234_5678));
+    writer.WriteString("Oberon");
+    writer.WriteNum(42);
+    writer.WriteNum(300);
+    writer.WriteNum(-100);
+    Equal(16, file.Length);
+
+    var reader = file.Set();
+    True(reader.ReadInt(out var integer));
+    Equal(unchecked((int)0x1234_5678), integer);
+    Equal("Oberon", reader.ReadString());
+    True(reader.ReadNum(out integer));
+    Equal(42, integer);
+    True(reader.ReadNum(out integer));
+    Equal(300, integer);
+    True(reader.ReadNum(out integer));
+    Equal(-100, integer);
+    False(reader.ReadByte(out _));
+    True(reader.Eof);
+    Equal(16, reader.Position);
 }
 
 static uint Transfer(Memory memory, uint dataAddress, byte value)

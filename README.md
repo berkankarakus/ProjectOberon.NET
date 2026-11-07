@@ -41,6 +41,10 @@ state machine for break, extended, Shift and Ctrl sequences. The original
 `.Mod` modules remain the executable reference while these C# slices grow.
 `OberonKernel` now owns the shared 1024-byte logical-sector mapping and sector
 allocation map used by both the kernel port and the filesystem reader.
+`OberonFiles`/`OberonRider` provide the `Files.Mod` read path and rider
+serialization helpers (`ReadInt`, `ReadString`, `ReadNum` and their write-side
+memory representation). Disk-persistent `Register`, `Delete` and `Rename`
+will follow with the `FileDir.Mod` B-tree mutation port.
 
 `--trace N` prints the first `N` instructions with the program counter and
 selected registers, which is useful when learning the boot ROM and debugging
