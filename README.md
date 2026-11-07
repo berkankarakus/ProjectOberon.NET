@@ -65,6 +65,13 @@ dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- 
 dot -Tsvg oberon-modules.dot > oberon-modules.svg
 ```
 
+Map compiled modules to their extracted Oberon sources and commands:
+
+```sh
+dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
+  --disk RISC-work.img --source-map --root .
+```
+
 Trace the compiled modules whose header sectors are touched during boot:
 
 ```sh

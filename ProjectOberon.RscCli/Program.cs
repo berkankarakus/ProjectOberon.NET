@@ -3,6 +3,8 @@ using ProjectOberon.Emulator;
 string? diskPath = null;
 var moduleName = "Oberon.rsc";
 var graph = false;
+var sourceMap = false;
+var sourceRoot = ".";
 for (var index = 0; index < args.Length; index++)
 {
     switch (args[index])
@@ -16,8 +18,14 @@ for (var index = 0; index < args.Length; index++)
         case "--graph":
             graph = true;
             break;
+        case "--source-map":
+            sourceMap = true;
+            break;
+        case "--root" when index + 1 < args.Length:
+            sourceRoot = args[++index];
+            break;
         case "--help":
-            Console.WriteLine("usage: project-oberon-rsc --disk FILE [--module NAME] [--graph]");
+            Console.WriteLine("usage: project-oberon-rsc --disk FILE [--module NAME] [--graph] [--source-map] [--root PATH]");
             return;
         default:
             throw new ArgumentException($"unknown or incomplete option: {args[index]}");
@@ -28,6 +36,21 @@ if (diskPath is null) throw new ArgumentException("--disk FILE is required");
 using var disk = new DiskImage();
 disk.Open(diskPath, writable: false);
 var fileSystem = new OberonFileSystem(disk);
+if (sourceMap)
+{
+    var sources = OberonSourceLocator.FindModules(sourceRoot);
+    var entries = fileSystem.Enumerate()
+        .Where(entry => entry.Name.EndsWith(".rsc", StringComparison.OrdinalIgnoreCase))
+        .ToDictionary(entry => entry.Name, StringComparer.Ordinal);
+    foreach (var sourceEntry in entries.Values.OrderBy(entry => entry.Name, StringComparer.Ordinal))
+    {
+        var sourceModule = RscModuleReader.Parse(fileSystem.ReadFile(sourceEntry));
+        var source = sources.TryGetValue(sourceModule.Name, out var path) ? path : "(source not found)";
+        Console.WriteLine($"{sourceModule.Name,-16} {sourceEntry.Name,-20} {source}");
+        if (sourceModule.Commands.Count > 0) Console.WriteLine($"  commands: {string.Join(", ", sourceModule.Commands.Select(command => command.Name))}");
+    }
+    return;
+}
 if (graph)
 {
     var entries = fileSystem.Enumerate()
