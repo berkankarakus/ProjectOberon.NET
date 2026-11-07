@@ -13,7 +13,8 @@ var tests = new (string Name, Action Test)[]
     ("machine timer", MachineTimer),
     ("disassembler and breakpoint", DisassemblerAndBreakpoint),
     ("display and input mapping", DisplayAndInputMapping),
-    ("Oberon input decoder", OberonInputDecoder)
+    ("Oberon input decoder", OberonInputDecoder),
+    ("Oberon kernel sectors", OberonKernelSectors)
 };
 
 foreach (var (name, test) in tests)
@@ -252,6 +253,25 @@ static void OberonInputDecoder()
     keyboard.Enqueue(0x21);
     True(keyboard.TryRead(out character));
     Equal('\x03', character);
+}
+
+static void OberonKernelSectors()
+{
+    var memory = new Memory();
+    var kernel = new OberonKernel(memory);
+    Equal(0, kernel.AllocatedSectors);
+    Equal(0x80000u, OberonKernel.PhysicalSector(0));
+    Equal(0x80002u, OberonKernel.PhysicalSector(29));
+    Equal(64 * 29, kernel.AllocSector(0));
+    Equal(1, kernel.AllocatedSectors);
+    kernel.MarkSector(100 * 29);
+    Equal(2, kernel.AllocatedSectors);
+    kernel.FreeSector(100 * 29);
+    Equal(1, kernel.AllocatedSectors);
+    kernel.SetClock(1234);
+    Equal(1234, kernel.Clock);
+    memory.AdvanceTime();
+    Equal(1, kernel.Time);
 }
 
 static uint Transfer(Memory memory, uint dataAddress, byte value)

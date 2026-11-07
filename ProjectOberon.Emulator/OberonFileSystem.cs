@@ -20,9 +20,9 @@ public sealed record OberonFileHeader(
 
 public sealed class OberonFileSystem
 {
-    public const int SectorLength = 1024;
-    public const int FileSystemOffset = 0x80000;
-    public const int LogicalSectorUnit = 29;
+    public const int SectorLength = OberonKernel.SectorLength;
+    public const int FileSystemOffset = OberonKernel.FileSystemOffset;
+    public const int LogicalSectorUnit = OberonKernel.LogicalSectorUnit;
     public const int DirectoryRootAddress = 29;
     public const int DirectoryMark = unchecked((int)0x9b1e_a38d);
     public const int HeaderMark = unchecked((int)0x9ba7_1d86);
@@ -80,8 +80,7 @@ public sealed class OberonFileSystem
     {
         if (address < 0 || address % LogicalSectorUnit != 0)
             throw new ArgumentOutOfRangeException(nameof(address), "Oberon disk addresses must be non-negative multiples of 29");
-        var block = address / LogicalSectorUnit;
-        var physicalSector = checked((uint)(FileSystemOffset + block * 2));
+        var physicalSector = OberonKernel.PhysicalSector(address);
         var first = _disk.Read(physicalSector);
         var second = _disk.Read(physicalSector + 1);
         var result = new byte[SectorLength];
@@ -90,11 +89,7 @@ public sealed class OberonFileSystem
         return result;
     }
 
-    public static uint PhysicalSector(int address)
-    {
-        if (address < 0 || address % LogicalSectorUnit != 0) throw new ArgumentOutOfRangeException(nameof(address));
-        return checked((uint)(FileSystemOffset + (address / LogicalSectorUnit) * 2));
-    }
+    public static uint PhysicalSector(int address) => OberonKernel.PhysicalSector(address);
 
     private void EnumeratePage(int address, string prefix, List<OberonDirectoryEntry> entries, HashSet<int> visited)
     {

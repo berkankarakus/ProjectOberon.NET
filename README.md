@@ -39,6 +39,8 @@ The first source-level Oberon port slice is available in the emulator library:
 emulated framebuffer, and `OberonKeyboard` implements the `Input.Mod` Set 2
 state machine for break, extended, Shift and Ctrl sequences. The original
 `.Mod` modules remain the executable reference while these C# slices grow.
+`OberonKernel` now owns the shared 1024-byte logical-sector mapping and sector
+allocation map used by both the kernel port and the filesystem reader.
 
 `--trace N` prints the first `N` instructions with the program counter and
 selected registers, which is useful when learning the boot ROM and debugging
