@@ -33,9 +33,14 @@ try
     if (loadedModules is not null)
     {
         machine.Disk!.SectorRead -= loadedModules.Handler;
-        foreach (var module in loadedModules.Names)
+        var fileSystem = new OberonFileSystem(machine.Disk);
+        foreach (var loaded in loadedModules.Modules)
         {
-            Console.WriteLine($"[boot] {module}");
+            Console.WriteLine($"[boot step={loaded.Step}] {loaded.Name}");
+            var entry = loadedModules.Entries[loaded.Name];
+            var module = RscModuleReader.Parse(fileSystem.ReadFile(entry));
+            var imports = module.Imports.Count == 0 ? "(none)" : string.Join(", ", module.Imports.Select(import => import.Name));
+            Console.WriteLine($"         imports: {imports}");
         }
     }
 
@@ -53,17 +58,18 @@ static BootTraceState AttachBootTrace(Machine machine)
 {
     var disk = machine.Disk ?? throw new InvalidOperationException("boot trace requires an open disk");
     var fileSystem = new OberonFileSystem(disk);
-    var headers = fileSystem.Enumerate()
+    var entries = fileSystem.Enumerate()
         .Where(entry => entry.Name.EndsWith(".rsc", StringComparison.OrdinalIgnoreCase))
-        .ToDictionary(entry => OberonFileSystem.PhysicalSector(entry.HeaderAddress), entry => entry.Name);
-    var names = new List<string>();
+        .ToDictionary(entry => entry.Name, StringComparer.Ordinal);
+    var headers = entries.Values.ToDictionary(entry => OberonFileSystem.PhysicalSector(entry.HeaderAddress), entry => entry.Name);
+    var modules = new List<BootModuleEvent>();
     var seen = new HashSet<string>(StringComparer.Ordinal);
     void Handler(uint sector)
     {
-        if (headers.TryGetValue(sector, out var name) && seen.Add(name)) names.Add(name);
+        if (headers.TryGetValue(sector, out var name) && seen.Add(name)) modules.Add(new BootModuleEvent(name, machine.Cpu.Steps));
     }
     disk.SectorRead += Handler;
-    return new BootTraceState(names, Handler);
+    return new BootTraceState(modules, entries, Handler);
 }
 
 internal sealed record Options(string? Rom, string? Disk, bool DiskWritable, ulong Steps, bool Help, int? Trace, uint? Breakpoint, bool BootTrace)
@@ -131,4 +137,5 @@ internal sealed record Options(string? Rom, string? Disk, bool DiskWritable, ulo
     }
 }
 
-internal sealed record BootTraceState(List<string> Names, Action<uint> Handler);
+internal sealed record BootModuleEvent(string Name, ulong Step);
+internal sealed record BootTraceState(List<BootModuleEvent> Modules, Dictionary<string, OberonDirectoryEntry> Entries, Action<uint> Handler);
