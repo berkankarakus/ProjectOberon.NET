@@ -67,15 +67,7 @@ public sealed class OberonFiles
         }
 
         var header = new byte[OberonFileSystem.SectorLength];
-        BinaryPrimitives.WriteInt32LittleEndian(header, OberonFileSystem.HeaderMark);
-        Encoding.ASCII.GetBytes(file.Name).CopyTo(header, 4);
-        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(36), fullPages);
-        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(40), lastPageLength);
-        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(44), file.Date);
-        for (var index = 0; index < extensionAddresses.Length; index++)
-            BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(48 + index * 4), extensionAddresses[index]);
-        for (var index = 0; index < Math.Min(64, pageAddresses.Length); index++)
-            BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(96 + index * 4), pageAddresses[index]);
+        OberonFileHeaderCodec.Write(header, file.Name, fullPages, lastPageLength, file.Date, extensionAddresses, pageAddresses);
         var content = file.Content;
         var firstPageLength = Math.Min(content.Length, OberonFileSystem.SectorLength - OberonFileHeader.HeaderSize);
         content[..firstPageLength].CopyTo(header.AsSpan(OberonFileHeader.HeaderSize));
@@ -101,13 +93,12 @@ public sealed class OberonFiles
         var headerAddress = _directory.Search(name);
         if (headerAddress == 0) return false;
         var header = _kernel.GetSector(headerAddress);
-        var fullPages = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(36));
-        var pages = ReadPageAddresses(header, fullPages);
-        var extensionCount = (fullPages + (256 - 64)) / 256;
+        var parsedHeader = OberonFileHeaderCodec.Read(header, headerAddress);
+        var pages = OberonFileHeaderCodec.ReadPageAddresses(parsedHeader, _kernel.GetSector);
+        var extensionCount = (parsedHeader.AllocatedPages + (256 - 64)) / 256;
         if (!_directory.Delete(name, out _)) return false;
         foreach (var page in pages) _kernel.FreeSector(page);
-        for (var index = 0; index < extensionCount; index++)
-            _kernel.FreeSector(BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(48 + index * 4)));
+        for (var index = 0; index < extensionCount; index++) _kernel.FreeSector(parsedHeader.ExtensionAddresses[index]);
         _kernel.FreeSector(headerAddress);
         return true;
     }
@@ -137,15 +128,9 @@ public sealed class OberonFiles
     private OberonFile ReadPersisted(string name, int headerAddress)
     {
         var header = _kernel!.GetSector(headerAddress);
-        if (BinaryPrimitives.ReadInt32LittleEndian(header) != OberonFileSystem.HeaderMark)
-            throw new InvalidDataException($"invalid Oberon file header at sector {headerAddress:x}");
-        var fullPages = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(36));
-        var lastPageLength = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(40));
-        var date = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(44));
-        var totalLength = checked(fullPages * OberonFileSystem.SectorLength + lastPageLength);
-        var contentLength = totalLength - OberonFileHeader.HeaderSize;
-        if (fullPages < 0 || lastPageLength < 0 || contentLength < 0) throw new InvalidDataException("invalid Oberon file length");
-        var pages = ReadPageAddresses(header, fullPages);
+        var parsedHeader = OberonFileHeaderCodec.Read(header, headerAddress);
+        var contentLength = parsedHeader.ContentLength;
+        var pages = OberonFileHeaderCodec.ReadPageAddresses(parsedHeader, _kernel.GetSector);
         var content = new byte[contentLength];
         var copied = Math.Min(contentLength, OberonFileSystem.SectorLength - OberonFileHeader.HeaderSize);
         header.AsSpan(OberonFileHeader.HeaderSize, copied).CopyTo(content);
@@ -157,27 +142,9 @@ public sealed class OberonFiles
             data.AsSpan(0, count).CopyTo(content.AsSpan(offset));
             offset += count;
         }
-        var file = new OberonFile(name, content, writable: false, date);
+        var file = new OberonFile(name, content, writable: false, parsedHeader.Date);
         file.MarkRegistered(headerAddress);
         return file;
-    }
-
-    private int[] ReadPageAddresses(byte[] header, int fullPages)
-    {
-        var pages = new int[fullPages + 1];
-        for (var index = 0; index < pages.Length; index++)
-        {
-            if (index < 64) pages[index] = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(96 + index * 4));
-            else
-            {
-                var extensionIndex = (index - 64) / 256;
-                var entry = (index - 64) % 256;
-                var extension = _kernel!.GetSector(BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(48 + extensionIndex * 4)));
-                pages[index] = BinaryPrimitives.ReadInt32LittleEndian(extension.AsSpan(entry * 4));
-            }
-            if (pages[index] == 0) throw new InvalidDataException("Oberon file header contains a missing page address");
-        }
-        return pages;
     }
 
     public static void ValidateName(string name)

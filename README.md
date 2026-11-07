@@ -41,6 +41,9 @@ state machine for break, extended, Shift and Ctrl sequences. The original
 `.Mod` modules remain the executable reference while these C# slices grow.
 `OberonKernel` now owns the shared 1024-byte logical-sector mapping and sector
 allocation map used by both the kernel port and the filesystem reader.
+`OberonDiskLayout`, `OberonFileHeaderCodec` and `OberonDirectoryPageCodec`
+centralize the disk-sector, file-header and directory-page binary layouts used
+by the read-only and persistent paths.
 `OberonFiles`/`OberonRider` provide the `Files.Mod` read path and rider
 serialization helpers (`ReadInt`, `ReadString`, `ReadNum` and their write-side
 memory representation). `OberonFileDirectory` now ports the `FileDir.Mod`

@@ -2,9 +2,9 @@ namespace ProjectOberon.Emulator;
 
 public sealed class OberonKernel
 {
-    public const int SectorLength = 1024;
-    public const int FileSystemOffset = 0x80000;
-    public const int LogicalSectorUnit = 29;
+    public const int SectorLength = OberonDiskLayout.SectorLength;
+    public const int FileSystemOffset = OberonDiskLayout.FileSystemOffset;
+    public const int LogicalSectorUnit = OberonDiskLayout.LogicalSectorUnit;
     public const int MapSize = 0x10000;
 
     private readonly Memory _memory;
@@ -68,30 +68,17 @@ public sealed class OberonKernel
 
     public byte[] GetSector(int address)
     {
-        var physical = PhysicalSector(address);
-        var first = RequireDisk().Read(physical);
-        var second = RequireDisk().Read(physical + 1);
-        var result = new byte[SectorLength];
-        first.CopyTo(result, 0);
-        second.CopyTo(result, DiskImage.SectorSize);
-        return result;
+        return OberonDiskLayout.ReadSector(RequireDisk(), address);
     }
 
     public void PutSector(int address, ReadOnlySpan<byte> data)
     {
-        if (data.Length != SectorLength) throw new ArgumentException($"sector must contain {SectorLength} bytes", nameof(data));
-        var physical = PhysicalSector(address);
-        RequireDisk().Write(physical, data[..DiskImage.SectorSize]);
-        RequireDisk().Write(physical + 1, data[DiskImage.SectorSize..]);
+        OberonDiskLayout.WriteSector(RequireDisk(), address, data);
     }
 
     public void SetClock(int value) => _clock = value;
 
-    public static uint PhysicalSector(int address)
-    {
-        var index = SectorIndex(address);
-        return checked((uint)(FileSystemOffset + index * 2));
-    }
+    public static uint PhysicalSector(int address) => OberonDiskLayout.PhysicalSector(address);
 
     private DiskImage RequireDisk() => _disk ?? throw new InvalidOperationException("Kernel disk is not attached");
 

@@ -1,17 +1,15 @@
-using System.Buffers.Binary;
-using System.Text;
+using Page = ProjectOberon.Emulator.OberonDirectoryPage;
+using Entry = ProjectOberon.Emulator.OberonDirectoryRecord;
 
 namespace ProjectOberon.Emulator;
 
 public sealed class OberonFileDirectory
 {
     public const int RootAddress = 29;
-    public const int PageSize = 1024;
-    public const int MaxEntries = 24;
+    public const int PageSize = OberonDirectoryPageCodec.PageSize;
+    public const int MaxEntries = OberonDirectoryPageCodec.MaxEntries;
     private const int MinEntries = MaxEntries / 2;
-    private const int HeaderSize = 64;
-    private const int EntrySize = 40;
-    private const int DirectoryMark = unchecked((int)0x9b1e_a38d);
+    private const int DirectoryMark = OberonDirectoryPageCodec.DirectoryMark;
 
     private readonly OberonKernel _kernel;
 
@@ -267,57 +265,25 @@ public sealed class OberonFileDirectory
     {
         _kernel.ReserveSector(headerAddress);
         var header = _kernel.GetSector(headerAddress);
-        var fullPages = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(36));
-        if (fullPages < 0) throw new InvalidDataException("invalid Oberon file length");
-        for (var index = 0; index < Math.Min(64, fullPages + 1); index++)
-            _kernel.ReserveSector(BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(96 + index * 4)));
-        var extensionCount = (fullPages + (256 - 64)) / 256;
+        var parsedHeader = OberonFileHeaderCodec.Read(header, headerAddress);
+        foreach (var page in OberonFileHeaderCodec.ReadPageAddresses(parsedHeader, _kernel.GetSector))
+            _kernel.ReserveSector(page);
+        var extensionCount = (parsedHeader.AllocatedPages + (256 - 64)) / 256;
         for (var extensionIndex = 0; extensionIndex < extensionCount; extensionIndex++)
         {
-            var extensionAddress = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(48 + extensionIndex * 4));
+            var extensionAddress = parsedHeader.ExtensionAddresses[extensionIndex];
             _kernel.ReserveSector(extensionAddress);
-            var extension = _kernel.GetSector(extensionAddress);
-            var firstPage = 64 + extensionIndex * 256;
-            var count = Math.Min(256, fullPages + 1 - firstPage);
-            for (var entry = 0; entry < count; entry++)
-                _kernel.ReserveSector(BinaryPrimitives.ReadInt32LittleEndian(extension.AsSpan(entry * 4)));
         }
     }
 
     private Page ReadPage(int address)
     {
-        var data = _kernel.GetSector(address);
-        if (BinaryPrimitives.ReadInt32LittleEndian(data) != DirectoryMark)
-            throw new InvalidDataException($"invalid Oberon directory page at sector {address:x}");
-        var count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(4));
-        if (count < 0 || count > MaxEntries) throw new InvalidDataException($"invalid directory entry count: {count}");
-        var page = new Page { Children = [BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(8))] };
-        for (var index = 0; index < count; index++)
-        {
-            var offset = HeaderSize + index * EntrySize;
-            page.Entries.Add(new Entry(ReadName(data, offset), BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(offset + 32)), BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(offset + 36))));
-            page.Children.Add(page.Entries[^1].Child);
-        }
-        return page;
+        return OberonDirectoryPageCodec.Read(_kernel.GetSector(address), address);
     }
 
     private void WritePage(int address, Page page)
     {
-        if (page.Entries.Count > MaxEntries || page.Children.Count != page.Entries.Count + 1)
-            throw new InvalidDataException("invalid Oberon directory page shape");
-        var data = new byte[PageSize];
-        BinaryPrimitives.WriteInt32LittleEndian(data, DirectoryMark);
-        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(4), page.Entries.Count);
-        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(8), page.Children[0]);
-        for (var index = 0; index < page.Entries.Count; index++)
-        {
-            var offset = HeaderSize + index * EntrySize;
-            var entry = page.Entries[index];
-            Encoding.ASCII.GetBytes(entry.Name).CopyTo(data, offset);
-            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(offset + 32), entry.Address);
-            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(offset + 36), page.Children[index + 1]);
-        }
-        _kernel.PutSector(address, data);
+        _kernel.PutSector(address, OberonDirectoryPageCodec.Write(page));
     }
 
     private static int LowerBound(Page page, string name)
@@ -333,20 +299,6 @@ public sealed class OberonFileDirectory
         return low;
     }
 
-    private static string ReadName(byte[] data, int offset)
-    {
-        var length = 0;
-        while (length < 32 && data[offset + length] != 0) length++;
-        return Encoding.ASCII.GetString(data, offset, length);
-    }
-
-    private sealed class Page
-    {
-        public List<Entry> Entries { get; set; } = [];
-        public List<int> Children { get; init; } = [0];
-    }
-
-    private readonly record struct Entry(string Name, int Address, int Child);
     private readonly record struct Promotion(string Name, int Address, int RightChild);
     private readonly record struct EntryWithAddress(Entry Entry, int Address);
     private readonly record struct DeleteResult(bool Found, int Address, bool Underflow);
