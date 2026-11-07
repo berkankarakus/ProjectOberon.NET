@@ -10,7 +10,8 @@ var tests = new (string Name, Action Test)[]
     ("MMIO devices", MmioDevices),
     ("disk image read/write", DiskImageReadWrite),
     ("SPI disk read/write", SpiDiskReadWrite),
-    ("machine timer", MachineTimer)
+    ("machine timer", MachineTimer),
+    ("disassembler and breakpoint", DisassemblerAndBreakpoint)
 };
 
 foreach (var (name, test) in tests)
@@ -167,6 +168,24 @@ static void MachineTimer()
     var machine = new Machine();
     machine.Run(Machine.TimerInterruptPeriod);
     Equal(1000u, machine.Memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.Timer));
+}
+
+static void DisassemblerAndBreakpoint()
+{
+    Equal("BT 337", Risc5Disassembler.Format(0xe700_0151u));
+    Equal("MOV r1, 0x0007", Risc5Disassembler.Format(MovImmediate(1, 7)));
+    Equal("LDR.B r3, [r1, 32]", Risc5Disassembler.Format(MemoryOp(false, true, 3, 1, 0x20)));
+
+    var machine = new Machine();
+    machine.Memory.LoadRomWords(RomWith(MovImmediate(1, 42)));
+    var debugger = new MachineDebugger(machine);
+    var resetPc = (Risc5Cpu.ResetPc << 2) & Memory.AddressMask;
+    debugger.AddBreakpoint(resetPc);
+    Equal(0ul, debugger.Run(10));
+    Equal(resetPc, machine.Cpu.PcByte);
+    True(debugger.RemoveBreakpoint(resetPc));
+    Equal(1ul, debugger.Run(1));
+    Equal(42u, machine.Cpu.Register(1));
 }
 
 static uint Transfer(Memory memory, uint dataAddress, byte value)
