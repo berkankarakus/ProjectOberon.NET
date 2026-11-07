@@ -16,7 +16,8 @@ var tests = new (string Name, Action Test)[]
     ("Oberon input decoder", OberonInputDecoder),
     ("Oberon kernel sectors", OberonKernelSectors),
     ("Oberon files and riders", OberonFilesAndRiders),
-    ("Oberon file directory", OberonFileDirectoryBTree)
+    ("Oberon file directory", OberonFileDirectoryBTree),
+    ("Oberon persistent files", OberonPersistentFiles)
 };
 
 foreach (var (name, test) in tests)
@@ -328,6 +329,48 @@ static void OberonFileDirectoryBTree()
 
         for (var index = 0; index < 12; index++) True(directory.Delete($"File{index:00}", out _));
         Equal(12, directory.Enumerate().Count());
+    }
+    finally
+    {
+        File.Delete(path);
+    }
+}
+
+static void OberonPersistentFiles()
+{
+    var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"project-oberon-files-{Guid.NewGuid():N}.img");
+    try
+    {
+        using (var file = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite))
+            file.SetLength(((long)OberonKernel.FileSystemOffset + 512) * DiskImage.SectorSize);
+        using var disk = new DiskImage();
+        disk.Open(path);
+        var kernel = new OberonKernel(new Memory(), disk);
+        var files = new OberonFiles(kernel, initializeDirectory: true);
+        var created = files.New("Persist.Mod");
+        var writer = created.Set();
+        writer.WriteString("Project Oberon");
+        for (var index = 0; index < 1500; index++) writer.WriteByte((byte)(index % 251));
+        files.Register(created);
+
+        var loaded = files.Old("Persist.Mod");
+        True(loaded is not null);
+        Equal(created.Length, loaded!.Length);
+        var reader = loaded.Set();
+        Equal("Project Oberon", reader.ReadString());
+        for (var index = 0; index < 1500; index++)
+        {
+            True(reader.ReadByte(out var value));
+            Equal((byte)(index % 251), value);
+        }
+        False(loaded.Writable);
+
+        var reopenedKernel = new OberonKernel(new Memory(), disk);
+        var reopenedFiles = new OberonFiles(reopenedKernel);
+        True(reopenedFiles.Old("Persist.Mod") is not null);
+        True(reopenedFiles.Rename("Persist.Mod", "Renamed.Mod"));
+        True(reopenedFiles.Delete("Renamed.Mod"));
+        True(reopenedFiles.Old("Renamed.Mod") is null);
     }
     finally
     {

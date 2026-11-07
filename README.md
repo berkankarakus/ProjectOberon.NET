@@ -45,8 +45,9 @@ allocation map used by both the kernel port and the filesystem reader.
 serialization helpers (`ReadInt`, `ReadString`, `ReadNum` and their write-side
 memory representation). `OberonFileDirectory` now ports the `FileDir.Mod`
 directory B-tree search, insertion/split, deletion/rebalancing and rename
-operations. Connecting those mutations to `Files.Register` and file-header
-allocation is the next integration step.
+operations. The Kernel-backed `OberonFiles` path now persists headers, data
+pages and extension index pages, and rebuilds the sector allocation map when a
+disk is reopened.
 
 `--trace N` prints the first `N` instructions with the program counter and
 selected registers, which is useful when learning the boot ROM and debugging

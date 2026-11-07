@@ -37,6 +37,14 @@ public sealed class OberonKernel
         AllocatedSectors++;
     }
 
+    public void ReserveSector(int sector)
+    {
+        var index = SectorIndex(sector);
+        if (_sectorMap[index]) return;
+        _sectorMap[index] = true;
+        AllocatedSectors++;
+    }
+
     public void FreeSector(int sector)
     {
         var index = SectorIndex(sector);

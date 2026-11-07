@@ -19,8 +19,17 @@ public sealed class OberonFileDirectory
 
     public void Initialize()
     {
+        _kernel.InitSectorMap();
         var root = new Page();
         WritePage(RootAddress, root);
+    }
+
+    public void SyncSectorMap()
+    {
+        _kernel.InitSectorMap();
+        var files = new List<int>();
+        TraverseAndReserve(RootAddress, files, new HashSet<int>());
+        foreach (var headerAddress in files) ReserveFile(headerAddress);
     }
 
     public int Search(string name)
@@ -242,6 +251,37 @@ public sealed class OberonFileDirectory
                 result.Add(new OberonDirectoryEntry(page.Entries[index].Name, page.Entries[index].Address));
         }
         EnumeratePage(page.Children[^1], prefix, result, visited);
+    }
+
+    private void TraverseAndReserve(int address, List<int> files, HashSet<int> visited)
+    {
+        if (address == 0 || !visited.Add(address)) return;
+        var page = ReadPage(address);
+        _kernel.ReserveSector(address);
+        foreach (var entry in page.Entries) files.Add(entry.Address);
+        TraverseAndReserve(page.Children[0], files, visited);
+        foreach (var entry in page.Entries) TraverseAndReserve(entry.Child, files, visited);
+    }
+
+    private void ReserveFile(int headerAddress)
+    {
+        _kernel.ReserveSector(headerAddress);
+        var header = _kernel.GetSector(headerAddress);
+        var fullPages = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(36));
+        if (fullPages < 0) throw new InvalidDataException("invalid Oberon file length");
+        for (var index = 0; index < Math.Min(64, fullPages + 1); index++)
+            _kernel.ReserveSector(BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(96 + index * 4)));
+        var extensionCount = (fullPages + (256 - 64)) / 256;
+        for (var extensionIndex = 0; extensionIndex < extensionCount; extensionIndex++)
+        {
+            var extensionAddress = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(48 + extensionIndex * 4));
+            _kernel.ReserveSector(extensionAddress);
+            var extension = _kernel.GetSector(extensionAddress);
+            var firstPage = 64 + extensionIndex * 256;
+            var count = Math.Min(256, fullPages + 1 - firstPage);
+            for (var entry = 0; entry < count; entry++)
+                _kernel.ReserveSector(BinaryPrimitives.ReadInt32LittleEndian(extension.AsSpan(entry * 4)));
+        }
     }
 
     private Page ReadPage(int address)
