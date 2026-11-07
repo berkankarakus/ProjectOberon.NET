@@ -48,3 +48,11 @@ dotnet run --project dotnet/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
 The filesystem reader follows `FileDir.Mod` and `Kernel.Mod`: it understands
 the 256 MB filesystem offset, 1024-byte logical sectors, and the directory
 B-tree.
+
+Inspect a compiled Oberon module using the layout read by `Modules.Mod`:
+
+```sh
+dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
+  --disk RISC-work.img \
+  --module Oberon.rsc
+```
