@@ -14,7 +14,7 @@ try
     if (options.Disk is not null) machine.OpenDisk(options.Disk, options.DiskWritable);
     var debugger = new MachineDebugger(machine);
     if (options.Breakpoint is uint breakpoint) debugger.AddBreakpoint(breakpoint);
-    var loadedModules = options.BootTrace ? AttachBootTrace(machine) : null;
+    var loadedModules = options.BootTrace || options.BootGraph ? AttachBootTrace(machine) : null;
     if (options.Trace is int traceSteps)
     {
         for (ulong index = 0; index < options.Steps; index++)
@@ -33,6 +33,11 @@ try
     if (loadedModules is not null)
     {
         machine.Disk!.SectorRead -= loadedModules.Handler;
+        if (options.BootGraph)
+        {
+            PrintBootGraph(machine, loadedModules);
+            return;
+        }
         var fileSystem = new OberonFileSystem(machine.Disk);
         foreach (var loaded in loadedModules.Modules)
         {
@@ -72,7 +77,37 @@ static BootTraceState AttachBootTrace(Machine machine)
     return new BootTraceState(modules, entries, Handler);
 }
 
-internal sealed record Options(string? Rom, string? Disk, bool DiskWritable, ulong Steps, bool Help, int? Trace, uint? Breakpoint, bool BootTrace)
+static void PrintBootGraph(Machine machine, BootTraceState state)
+{
+    var fileSystem = new OberonFileSystem(machine.Disk!);
+    var loadedNames = state.Modules.Select(module => System.IO.Path.GetFileNameWithoutExtension(module.Name)).ToHashSet(StringComparer.Ordinal);
+    Console.WriteLine("digraph OberonBoot {");
+    Console.WriteLine("  rankdir=LR;");
+    foreach (var module in state.Modules)
+    {
+        var node = System.IO.Path.GetFileNameWithoutExtension(module.Name);
+        var label = $"{node}\\nstep={module.Step}";
+        Console.WriteLine($"  \"{node}\" [label=\"{label}\"];");
+    }
+    for (var index = 0; index + 1 < state.Modules.Count; index++)
+    {
+        var current = System.IO.Path.GetFileNameWithoutExtension(state.Modules[index].Name);
+        var next = System.IO.Path.GetFileNameWithoutExtension(state.Modules[index + 1].Name);
+        Console.WriteLine($"  \"{current}\" -> \"{next}\" [style=invis, weight=10];");
+    }
+    foreach (var moduleEvent in state.Modules)
+    {
+        var module = RscModuleReader.Parse(fileSystem.ReadFile(state.Entries[moduleEvent.Name]));
+        foreach (var import in module.Imports)
+        {
+            var style = loadedNames.Contains(import.Name) ? string.Empty : ", style=dashed";
+            Console.WriteLine($"  \"{module.Name}\" -> \"{import.Name}\" [{style.TrimStart(',', ' ')}];");
+        }
+    }
+    Console.WriteLine("}");
+}
+
+internal sealed record Options(string? Rom, string? Disk, bool DiskWritable, ulong Steps, bool Help, int? Trace, uint? Breakpoint, bool BootTrace, bool BootGraph)
 {
     public static Options Parse(string[] args)
     {
@@ -84,6 +119,7 @@ internal sealed record Options(string? Rom, string? Disk, bool DiskWritable, ulo
         int? trace = null;
         uint? breakpoint = null;
         var bootTrace = false;
+        var bootGraph = false;
         for (var index = 0; index < args.Length; index++)
         {
             switch (args[index])
@@ -119,16 +155,19 @@ internal sealed record Options(string? Rom, string? Disk, bool DiskWritable, ulo
                 case "--boot-trace":
                     bootTrace = true;
                     break;
+                case "--boot-graph":
+                    bootGraph = true;
+                    break;
                 default:
                     throw new ArgumentException($"unknown or incomplete command-line option: {args[index]}");
             }
         }
         if (!diskWritable && disk is null) throw new ArgumentException("--read-only requires --disk FILE");
-        if (bootTrace && disk is null) throw new ArgumentException("--boot-trace requires --disk FILE");
-        return new Options(rom, disk, diskWritable, steps, help, trace, breakpoint, bootTrace);
+        if ((bootTrace || bootGraph) && disk is null) throw new ArgumentException("--boot-trace/--boot-graph requires --disk FILE");
+        return new Options(rom, disk, diskWritable, steps, help, trace, breakpoint, bootTrace, bootGraph);
     }
 
-    public static void PrintUsage() => Console.Error.WriteLine("usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--breakpoint HEX-PC] [--boot-trace]");
+    public static void PrintUsage() => Console.Error.WriteLine("usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--breakpoint HEX-PC] [--boot-trace] [--boot-graph]");
 
     private static string Next(string[] args, ref int index, string option)
     {

@@ -75,3 +75,14 @@ dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
   --steps 100000 \
   --boot-trace
 ```
+
+Generate a graph combining boot order and module imports:
+
+```sh
+dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+  --rom RISC5Verilog/prom.mem \
+  --disk RISC-work.img \
+  --read-only \
+  --steps 1000000 \
+  --boot-graph > oberon-boot.dot
+```
