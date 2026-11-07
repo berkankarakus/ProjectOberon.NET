@@ -40,8 +40,10 @@ static void Run(Machine machine, UiOptions options)
         if (texture == IntPtr.Zero) throw new InvalidOperationException(SdlNative.Error());
 
         var pixels = new uint[Display.Width * Display.Height];
+        SdlNative.SDL_StartTextInput();
         var running = true;
         var paused = false;
+        var uartOutput = string.Empty;
         byte mouseButtons = 0;
         UpdateMouse(machine.Memory, width / 2, height / 2, width, height, options.FlipY, mouseButtons);
 
@@ -53,6 +55,9 @@ static void Run(Machine machine, UiOptions options)
                 {
                     case SdlNative.Quit:
                         running = false;
+                        break;
+                    case SdlNative.TextInput:
+                        EnqueueTextInput(machine.Memory, sdlEvent.Text);
                         break;
                     case SdlNative.WindowEvent when sdlEvent.Window.Event == SdlNative.WindowEventSizeChanged:
                         width = Math.Max(1, sdlEvent.Window.Data1);
@@ -83,8 +88,9 @@ static void Run(Machine machine, UiOptions options)
 
             if (!paused) machine.Run(options.StepsPerFrame);
             var uart = machine.Memory.TakeUartOutput();
+            if (uart.Length != 0) uartOutput += uart;
             var litPixels = UpdateFramebuffer(machine.Memory, pixels, options.FlipY);
-            SdlNative.SDL_SetWindowTitle(window, WindowTitle(machine, paused, uart, litPixels));
+            SdlNative.SDL_SetWindowTitle(window, WindowTitle(machine, paused, uartOutput, litPixels));
             if (SdlNative.SDL_UpdateTexture(texture, IntPtr.Zero, pixels, Display.Width * sizeof(uint)) != 0) throw new InvalidOperationException(SdlNative.Error());
             SdlNative.SDL_RenderClear(renderer);
             SdlNative.SDL_RenderCopy(renderer, texture, IntPtr.Zero, IntPtr.Zero);
@@ -95,6 +101,7 @@ static void Run(Machine machine, UiOptions options)
     finally
     {
         if (texture != IntPtr.Zero) SdlNative.SDL_DestroyTexture(texture);
+        SdlNative.SDL_StopTextInput();
         if (renderer != IntPtr.Zero) SdlNative.SDL_DestroyRenderer(renderer);
         if (window != IntPtr.Zero) SdlNative.SDL_DestroyWindow(window);
         SdlNative.SDL_Quit();
@@ -130,6 +137,11 @@ static void EnqueueKeyboard(Memory memory, int key, bool pressed)
     if (keyboard.Extended) memory.EnqueueKeyboard(0xe0);
     if (!pressed) memory.EnqueueKeyboard(0xf0);
     memory.EnqueueKeyboard(keyboard.Code);
+}
+
+static unsafe void EnqueueTextInput(Memory memory, SdlNative.TextInputEvent text)
+{
+    for (var index = 0; index < 32 && text.Text[index] != 0; index++) memory.EnqueueUartRx(text.Text[index]);
 }
 
 static void UpdateMouse(Memory memory, int x, int y, int width, int height, bool flipY, byte buttons)

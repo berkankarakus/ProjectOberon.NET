@@ -48,8 +48,20 @@ dotnet run --project dotnet/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
 
 The C# UI preserves the C++ controls: `F9` pause/resume, `F10` single-step,
 `Escape` quit, keyboard forwarding, mouse input, framebuffer scaling and
-vertical flip control. It uses the system SDL2 library through a small P/Invoke
-layer, so no NuGet SDL wrapper is required.
+vertical flip control. SDL text input is forwarded to the emulated UART receive
+queue, while physical key events are translated to the Oberon Set 2 keyboard
+codes. It uses the system SDL2 library through a small P/Invoke layer, so no
+NuGet SDL wrapper is required.
+
+Install SDL2 if it is not already available:
+
+```sh
+brew install sdl2                 # macOS
+sudo apt install libsdl2-2.0-0    # Debian/Ubuntu runtime
+```
+
+The SDL frontend also supports `--read-only`, `--steps-per-frame N`,
+`--scale N` and `--no-flip-y`.
 
 List the files in an Oberon disk image without booting the emulator:
 

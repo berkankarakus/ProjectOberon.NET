@@ -28,6 +28,7 @@ internal static class SdlNative
     public const uint WindowEvent = 0x200;
     public const uint KeyDown = 0x300;
     public const uint KeyUp = 0x301;
+    public const uint TextInput = 0x303;
     public const uint MouseMotion = 0x400;
     public const uint MouseButtonDown = 0x401;
     public const uint MouseButtonUp = 0x402;
@@ -49,18 +50,27 @@ internal static class SdlNative
     public struct MouseMotionEvent { public uint Type, Timestamp, WindowId, State; public int X, Y, Xrel, Yrel; }
     [StructLayout(LayoutKind.Sequential)]
     public struct MouseButtonEvent { public uint Type, Timestamp, WindowId; public byte Button, State, Clicks, Padding; public int X, Y; }
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct TextInputEvent
+    {
+        public uint Type, Timestamp, WindowId;
+        public fixed byte Text[32];
+    }
     [StructLayout(LayoutKind.Explicit, Size = 56)]
-    public struct Event
+    public unsafe struct Event
     {
         [FieldOffset(0)] public uint Type;
         [FieldOffset(0)] public KeyboardEvent Key;
         [FieldOffset(0)] public WindowEventData Window;
         [FieldOffset(0)] public MouseMotionEvent Motion;
         [FieldOffset(0)] public MouseButtonEvent Button;
+        [FieldOffset(0)] public TextInputEvent Text;
     }
 
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_Init(uint flags);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_Quit();
+    [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_StartTextInput();
+    [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_StopTextInput();
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern IntPtr SDL_GetError();
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)] public static extern IntPtr SDL_CreateWindow(string title, int x, int y, int w, int h, uint flags);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_DestroyWindow(IntPtr window);

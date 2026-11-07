@@ -18,9 +18,21 @@ public static class InputMapping
             '\\' => new(0x5d, false), ';' => new(0x4c, false), '\'' => new(0x52, false), '`' => new(0x0e, false),
             ',' => new(0x41, false), '.' => new(0x49, false), '/' => new(0x4a, false), ' ' => new(0x29, false),
             13 => new(0x5a, false), 9 => new(0x0d, false), 8 => new(0x66, false), 27 => new(0x76, false),
+            0x40000039 => new(0x58, false),
+            0x400000e1 => new(0x12, false), 0x400000e5 => new(0x59, false),
+            0x400000e0 => new(0x14, false), 0x400000e4 => new(0x14, true),
+            0x400000e2 => new(0x11, false), 0x400000e6 => new(0x11, true),
+            0x4000003a => new(0x05, false), 0x4000003b => new(0x06, false),
+            0x4000003c => new(0x04, false), 0x4000003d => new(0x0c, false),
+            0x4000003e => new(0x03, false), 0x4000003f => new(0x0b, false),
+            0x40000040 => new(0x83, false), 0x40000041 => new(0x0a, false),
             0x40000042 => new(0x01, false), 0x40000043 => new(0x09, false),
+            0x40000044 => new(0x78, false), 0x40000045 => new(0x07, false),
             0x40000052 => new(0x75, true), 0x40000051 => new(0x72, true),
             0x40000050 => new(0x6b, true), 0x4000004f => new(0x74, true),
+            0x40000049 => new(0x70, true), 0x4000004c => new(0x71, true),
+            0x4000004a => new(0x6c, true), 0x4000004d => new(0x69, true),
+            0x4000004b => new(0x7d, true), 0x4000004e => new(0x7a, true),
             _ => null
         };
     }

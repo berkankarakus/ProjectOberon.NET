@@ -197,8 +197,15 @@ static void DisplayAndInputMapping()
     Equal(0x29, InputMapping.KeyboardKey(' ')!.Value.Code);
     Equal(0x75, InputMapping.KeyboardKey(0x40000052)!.Value.Code);
     True(InputMapping.KeyboardKey(0x40000052)!.Value.Extended);
+    Equal(0x12, InputMapping.KeyboardKey(0x400000e1)!.Value.Code);
+    Equal(0x70, InputMapping.KeyboardKey(0x40000049)!.Value.Code);
     Equal(0x05, InputMapping.MouseButtonsFromState(1 | 4));
     Equal(1023, InputMapping.ScaleCoordinate(999, 1000, Display.Width));
+
+    var memory = new Memory();
+    memory.EnqueueUartRx((byte)'O');
+    Equal(3u, memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.UartControl));
+    Equal((uint)'O', memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.UartData));
 }
 
 static uint Transfer(Memory memory, uint dataAddress, byte value)
