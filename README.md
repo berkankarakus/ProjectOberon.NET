@@ -120,8 +120,12 @@ sudo apt install libsdl2-2.0-0    # Debian/Ubuntu runtime
 ```
 
 The SDL frontend also supports `--read-only`, `--steps-per-frame N`,
-`--scale N`, `--no-flip-y` and the shared module startup options
+`--scale N`, `--no-flip-y`, `--log FILE` and the shared module startup options
 `--start-module NAME`, `--initialize`, `--boot` and `--command NAME`.
+
+When diagnosing input or startup behavior, pass `--log FILE`. The log records
+boot/startup state, SDL keyboard, mouse-button and text-input events, and
+periodic CPU/frame progress without changing the emulated disk.
 
 For example, start the `Oberon` event loop after initializing its imported
 modules through the same host-backed boot session used by the CLI:
