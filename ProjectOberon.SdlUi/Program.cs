@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using ProjectOberon.Emulator;
 using ProjectOberon.SdlUi;
 
+Machine? machine = null;
 try
 {
     var options = UiOptions.Parse(args);
@@ -12,15 +13,19 @@ try
         return;
     }
 
-    using var machine = new Machine();
+    machine = new Machine();
     if (options.Rom is not null) machine.Memory.LoadRomFile(options.Rom);
     if (options.Disk is not null) machine.OpenDisk(options.Disk, options.DiskWritable);
     Run(machine, options);
 }
-catch (Exception error) when (error is ArgumentException or InvalidDataException or IOException or DllNotFoundException)
+catch (Exception error)
 {
-    Console.Error.WriteLine($"project-oberon-ui: {error.Message}");
+    Console.Error.WriteLine(OberonRuntimeDiagnostics.Format("project-oberon-ui", machine, error));
     Environment.ExitCode = 1;
+}
+finally
+{
+    machine?.Dispose();
 }
 static void Run(Machine machine, UiOptions options)
 {

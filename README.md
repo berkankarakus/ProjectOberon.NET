@@ -290,3 +290,23 @@ kernel-linked modules and stores only their `.smb` symbol files. A direct
 `--start-module Oberon` run therefore requires host-backed bindings for those
 core modules; the CLI reports the missing binding instead of treating it as a
 normal RSC file.
+
+Runtime failures from the CLI and SDL frontend are printed with the exception
+type, message, CPU steps, PC, selected registers, flags and stack trace. This
+makes a host-call or emulator fault actionable even when the SDL window closes.
+
+For performance or hang investigation, the repository targets .NET 10 and the
+cross-platform `dotnet-trace` tool can collect a managed trace:
+
+```sh
+dotnet-trace ps
+dotnet-trace collect -p PID --duration 00:00:00:30 \
+  -o artifacts/project-oberon.nettrace
+dotnet-trace report artifacts/project-oberon.nettrace topN -n 20
+```
+
+Use the actual emulator PID from `dotnet-trace ps`. For a short-lived failure,
+launch through `dotnet-trace collect -- ...` instead of attaching after start.
+The `.nettrace` artifact can be opened in PerfView or converted to Speedscope
+for visual inspection. Record the runtime version, OS, PID, UTC time window,
+exact command and artifact path with the trace.

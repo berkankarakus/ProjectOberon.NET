@@ -1,5 +1,6 @@
 using ProjectOberon.Emulator;
 
+Machine? machine = null;
 try
 {
     var options = Options.Parse(args);
@@ -9,7 +10,7 @@ try
         return;
     }
 
-    using var machine = new Machine();
+    machine = new Machine();
     if (options.Rom is not null) machine.Memory.LoadRomFile(options.Rom);
     if (options.Disk is not null) machine.OpenDisk(options.Disk, options.DiskWritable);
     if (options.StartModule is not null)
@@ -67,10 +68,14 @@ try
     Console.WriteLine($"steps={cpu.Steps} pc=0x{cpu.PcByte:x6} r14=0x{cpu.Register(14):x8} r15=0x{cpu.Register(15):x8}");
 }
 
-catch (Exception error) when (error is ArgumentException or InvalidDataException or IOException or OverflowException or OberonModuleLoadException)
+catch (Exception error)
 {
-    Console.Error.WriteLine($"project-oberon: {error.Message}");
+    Console.Error.WriteLine(OberonRuntimeDiagnostics.Format("project-oberon", machine, error));
     Environment.ExitCode = 1;
+}
+finally
+{
+    machine?.Dispose();
 }
 
 static BootTraceState AttachBootTrace(Machine machine)
