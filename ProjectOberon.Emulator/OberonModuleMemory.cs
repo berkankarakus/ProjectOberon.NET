@@ -84,6 +84,12 @@ public sealed class OberonModuleMemoryLoader
     public OberonModuleImage Load(string name)
     {
         var module = _modules.Load(name);
+        if (module.IsExternal)
+        {
+            throw new OberonModuleLoadException(5,
+                $"external Oberon module requires a host memory binding: {module.Name}");
+        }
+
         if (_images.TryGetValue(module.Name, out var existing))
         {
             return existing;

@@ -20,7 +20,8 @@ var tests = new (string Name, Action Test)[]
     ("Oberon persistent files", OberonPersistentFiles),
     ("Oberon module loader", OberonModuleLoaderGraph),
     ("Oberon module memory image", OberonModuleMemoryImage),
-    ("Oberon module fixups", OberonModuleFixups)
+    ("Oberon module fixups", OberonModuleFixups),
+    ("Oberon symbol module", OberonSymbolModule)
 };
 
 foreach (var (name, test) in tests)
@@ -497,6 +498,42 @@ static void OberonModuleFixups()
     Equal(image.DataAddress, memory.Read32(image.DataAddress + 4));
 }
 
+static void OberonSymbolModule()
+{
+    var raw = BuildSmb("Kernel", 0x1234_5678, "heapOrg", 3);
+    var symbol = OberonSymbolModuleReader.Parse(raw);
+    Equal("Kernel", symbol.Name);
+    Equal(0x1234_5678, symbol.Key);
+    Equal(1, symbol.Exports.Count);
+    Equal("heapOrg", symbol.Exports[0].Name);
+    Equal(2, symbol.Exports[0].Class);
+    Equal(3, symbol.Exports[0].Value);
+
+    var loader = new OberonModuleLoader(_ => null);
+    var external = loader.RegisterExternal(symbol);
+    True(external.IsExternal);
+    Equal(0x1234_5678, external.Definition.Key);
+    False(loader.Free("Kernel"));
+
+    var memoryLoader = new OberonModuleMemoryLoader(new Memory(), loader);
+    try
+    {
+        memoryLoader.Load("Kernel");
+        throw new InvalidOperationException("expected host binding requirement");
+    }
+    catch (OberonModuleLoadException error)
+    {
+        Equal(5, error.Code);
+    }
+
+    var graph = new OberonModuleLoader(name => name == "A"
+        ? BuildRsc("A", 100, [("Kernel", 0x1234_5678)], "Start")
+        : null);
+    graph.RegisterExternal(symbol);
+    var module = graph.Load("A");
+    True(module.Imports[0].IsExternal);
+}
+
 static byte[] BuildRsc(
     string name,
     int key,
@@ -551,6 +588,21 @@ static byte[] BuildRsc(
     AddInt(data, fixupTypes);
     AddInt(data, bodyOffset);
     data.Add((byte)'O');
+    return data.ToArray();
+}
+
+static byte[] BuildSmb(string name, int key, string exportName, int exportValue)
+{
+    var data = new List<byte>();
+    AddInt(data, 0);
+    AddInt(data, key);
+    AddString(data, name);
+    data.Add(1);
+    data.Add(2);
+    AddString(data, exportName);
+    data.Add(0xfc);
+    data.Add((byte)exportValue);
+    data.Add(0);
     return data.ToArray();
 }
 

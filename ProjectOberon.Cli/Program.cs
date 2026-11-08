@@ -16,7 +16,7 @@ try
     {
         var fileSystem = new OberonFileSystem(machine.Disk!);
         var files = new OberonFiles(fileSystem);
-        var moduleLoader = new OberonModuleLoader(files);
+        var moduleLoader = new OberonModuleLoader(files, ["Kernel", "Files", "Modules"]);
         var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, moduleLoader);
         var image = runtime.Start(options.StartModule);
         Console.WriteLine($"started module {image.Module.Name} at pc=0x{image.BodyAddress:x6}");

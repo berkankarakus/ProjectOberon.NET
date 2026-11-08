@@ -1,0 +1,225 @@
+using System.Buffers.Binary;
+using System.Numerics;
+using System.Text;
+
+namespace ProjectOberon.Emulator;
+
+public sealed record OberonSymbolExport(string Name, int Class, int Value);
+
+public sealed record OberonSymbolModule(
+    string Name,
+    int Key,
+    byte Version,
+    IReadOnlyList<OberonSymbolExport> Exports);
+
+public static class OberonSymbolModuleReader
+{
+    private const byte VersionKey = 1;
+
+    public static OberonSymbolModule Parse(ReadOnlySpan<byte> data)
+    {
+        var reader = new SymbolReader(data);
+        reader.ReadInt32();
+        var key = reader.ReadInt32();
+        var name = reader.ReadString();
+        var version = reader.ReadByte();
+        if (version != VersionKey)
+        {
+            throw new InvalidDataException($"unsupported SMB version: 0x{version:x2}");
+        }
+
+        var exports = new List<OberonSymbolExport>();
+        while (true)
+        {
+            var symbolClass = reader.ReadSignedByte();
+            if (symbolClass == 0)
+            {
+                break;
+            }
+
+            var exportName = reader.ReadString();
+            SkipType(ref reader);
+            var value = symbolClass is 1 or 2 ? reader.ReadNum() : 0;
+            exports.Add(new OberonSymbolExport(exportName, symbolClass, value));
+
+            if (symbolClass == 5)
+            {
+                SkipTypeFixups(ref reader);
+            }
+        }
+
+        return new OberonSymbolModule(name, key, version, exports);
+    }
+
+    private static void SkipType(ref SymbolReader reader)
+    {
+        var reference = reader.ReadSignedByte();
+        if (reference < 0)
+        {
+            return;
+        }
+
+        var form = reader.ReadSignedByte();
+        switch (form)
+        {
+            case 7:
+                SkipType(ref reader);
+                break;
+            case 12:
+                SkipType(ref reader);
+                reader.ReadNum();
+                reader.ReadNum();
+                break;
+            case 13:
+                SkipType(ref reader);
+                reader.ReadNum();
+                reader.ReadNum();
+                reader.ReadNum();
+                SkipRecordFields(ref reader);
+                break;
+            case 10:
+                SkipType(ref reader);
+                SkipProcedureParameters(ref reader);
+                break;
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 8:
+            case 9:
+            case 11:
+                break;
+            default:
+                throw new InvalidDataException($"invalid SMB type form: {form}");
+        }
+
+        var reexportedModule = reader.ReadString();
+        if (reexportedModule.Length > 0)
+        {
+            reader.ReadInt32();
+            reader.ReadString();
+        }
+    }
+
+    private static void SkipRecordFields(ref SymbolReader reader)
+    {
+        while (true)
+        {
+            var fieldClass = reader.ReadSignedByte();
+            if (fieldClass == 0)
+            {
+                return;
+            }
+
+            var fieldName = reader.ReadString();
+            if (fieldName.Length > 0)
+            {
+                SkipType(ref reader);
+            }
+
+            reader.ReadNum();
+        }
+    }
+
+    private static void SkipProcedureParameters(ref SymbolReader reader)
+    {
+        while (true)
+        {
+            var parameterClass = reader.ReadSignedByte();
+            if (parameterClass == 0)
+            {
+                return;
+            }
+
+            reader.ReadSignedByte();
+            SkipType(ref reader);
+        }
+    }
+
+    private static void SkipTypeFixups(ref SymbolReader reader)
+    {
+        while (reader.ReadSignedByte() != 0)
+        {
+        }
+    }
+
+    private ref struct SymbolReader
+    {
+        private readonly ReadOnlySpan<byte> _data;
+        private int _position;
+
+        public SymbolReader(ReadOnlySpan<byte> data)
+        {
+            _data = data;
+            _position = 0;
+        }
+
+        public byte ReadByte()
+        {
+            Ensure(1);
+            return _data[_position++];
+        }
+
+        public int ReadSignedByte()
+        {
+            var value = ReadByte();
+            return value < 0x80 ? value : value - 0x100;
+        }
+
+        public int ReadInt32()
+        {
+            Ensure(4);
+            var value = BinaryPrimitives.ReadInt32LittleEndian(_data[_position..]);
+            _position += 4;
+            return value;
+        }
+
+        public int ReadNum()
+        {
+            var bits = 32;
+            uint value = 0;
+            var next = ReadByte();
+            while (next >= 0x80)
+            {
+                value = BitOperations.RotateRight(value + next - 0x80u, 7);
+                bits -= 7;
+                next = ReadByte();
+            }
+
+            if (bits <= 4)
+            {
+                return unchecked((int)BitOperations.RotateRight(value + (uint)(next & 0x0f), 4));
+            }
+
+            var rotated = unchecked((int)BitOperations.RotateRight(value + next, 7));
+            return rotated >> (bits - 7);
+        }
+
+        public string ReadString()
+        {
+            var start = _position;
+            while (true)
+            {
+                if (_position >= _data.Length)
+                {
+                    throw new InvalidDataException("unterminated SMB string");
+                }
+
+                if (ReadByte() == 0)
+                {
+                    return Encoding.ASCII.GetString(_data[start..(_position - 1)]);
+                }
+            }
+        }
+
+        private void Ensure(int count)
+        {
+            if (count < 0 || count > _data.Length - _position)
+            {
+                throw new InvalidDataException("truncated SMB module");
+            }
+        }
+    }
+}

@@ -54,6 +54,8 @@ disk is reopened.
 `OberonModuleLoader` ports the first `Modules.Mod` runtime layer: recursive
 RSC import loading, module caching, key-conflict and cycle detection, command
 lookup, and reference-counted freeing.
+`OberonSymbolModuleReader` reads `.smb` headers and exported symbol metadata;
+the loader can register those symbols as external, host-owned modules.
 `OberonModuleMemoryLoader` materializes that module graph in emulator RAM,
 writes module descriptors and tables, and applies the `Modules.Mod` BL, data
 and type-descriptor fixup chains. The CPU boot path is not wired to invoke

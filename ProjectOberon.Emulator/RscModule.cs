@@ -89,7 +89,7 @@ public static class RscModuleReader
         }
 
         var entryCount = reader.ReadInt32();
-        var entries = ReadIntArray(reader, entryCount, "entry table");
+        var entries = ReadIntArray(ref reader, entryCount, "entry table");
 
         var pointerReferences = new List<int>();
         while (true)
@@ -120,7 +120,7 @@ public static class RscModuleReader
         };
     }
 
-    private static IReadOnlyList<int> ReadIntArray(RscReader reader, int count, string name)
+    private static IReadOnlyList<int> ReadIntArray(ref RscReader reader, int count, string name)
     {
         if (count < 0)
         {

@@ -12,12 +12,18 @@ public sealed class OberonModuleLoadException : Exception
 
 public sealed class LoadedOberonModule
 {
-    internal LoadedOberonModule(string name, int number, RscModule definition, IReadOnlyList<LoadedOberonModule> imports)
+    internal LoadedOberonModule(
+        string name,
+        int number,
+        RscModule definition,
+        IReadOnlyList<LoadedOberonModule> imports,
+        bool isExternal = false)
     {
         Name = name;
         Number = number;
         Definition = definition;
         Imports = imports;
+        IsExternal = isExternal;
     }
 
     public string Name { get; }
@@ -25,6 +31,7 @@ public sealed class LoadedOberonModule
     public RscModule Definition { get; }
     public IReadOnlyList<LoadedOberonModule> Imports { get; }
     public int ReferenceCount { get; internal set; }
+    public bool IsExternal { get; }
 
     public RscCommand? FindCommand(string name)
     {
@@ -49,12 +56,51 @@ public sealed class OberonModuleLoader
         };
     }
 
+    public OberonModuleLoader(OberonFiles files, IEnumerable<string> externalModuleNames)
+        : this(files)
+    {
+        ArgumentNullException.ThrowIfNull(externalModuleNames);
+        foreach (var externalModuleName in externalModuleNames)
+        {
+            var name = NormalizeName(externalModuleName);
+            var file = files.Old($"{name}.smb");
+            if (file is null)
+            {
+                continue;
+            }
+
+            RegisterExternal(OberonSymbolModuleReader.Parse(ReadAll(file)));
+        }
+    }
+
     public OberonModuleLoader(Func<string, byte[]?> readModule)
     {
         _readModule = readModule ?? throw new ArgumentNullException(nameof(readModule));
     }
 
     public IReadOnlyCollection<LoadedOberonModule> LoadedModules => _loaded.Values;
+
+    public LoadedOberonModule RegisterExternal(OberonSymbolModule symbol)
+    {
+        ArgumentNullException.ThrowIfNull(symbol);
+        var normalizedName = NormalizeName(symbol.Name);
+        if (_loaded.TryGetValue(normalizedName, out var existing))
+        {
+            if (existing.Definition.Key != symbol.Key)
+            {
+                throw new OberonModuleLoadException(3, $"Oberon module key conflict: {normalizedName}");
+            }
+
+            return existing;
+        }
+
+        var entries = symbol.Exports.Select(export => export.Value).ToArray();
+        var definition = new RscModule(normalizedName, symbol.Key, symbol.Version, 0, [], 0, 0, 0,
+            0, [], [], entries, [], 0, 0, 0, 0, (byte)'O');
+        var module = new LoadedOberonModule(normalizedName, _nextNumber++, definition, [], true);
+        _loaded.Add(normalizedName, module);
+        return module;
+    }
 
     public LoadedOberonModule Load(string name)
     {
@@ -127,6 +173,11 @@ public sealed class OberonModuleLoader
             return false;
         }
 
+        if (module.IsExternal)
+        {
+            return false;
+        }
+
         if (module.ReferenceCount != 0)
         {
             return false;
@@ -182,9 +233,12 @@ public sealed class OberonModuleLoader
     private static string NormalizeName(string name)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
-        var normalized = name.EndsWith(".rsc", StringComparison.OrdinalIgnoreCase)
-            ? name[..^4]
-            : name;
+        var normalized = name;
+        if (normalized.EndsWith(".rsc", StringComparison.OrdinalIgnoreCase) ||
+            normalized.EndsWith(".smb", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = normalized[..^4];
+        }
         OberonFiles.ValidateName(normalized);
         return normalized;
     }
