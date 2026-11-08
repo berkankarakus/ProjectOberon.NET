@@ -99,18 +99,24 @@ internal static class OberonTextEditorTests
         AddInt16(data, 1);
         AddInt16(data, 'A');
         AddInt16(data, 'C');
-        AddGlyph(data);
-        AddGlyph(data);
+        AddGlyphMetrics(data);
+        AddGlyphMetrics(data);
+        AddGlyphRaster(data);
+        AddGlyphRaster(data);
         return OberonFont.Parse(data.ToArray());
     }
 
-    private static void AddGlyph(List<byte> data)
+    private static void AddGlyphMetrics(List<byte> data)
     {
         AddInt16(data, 3);
         AddInt16(data, 0);
         AddInt16(data, 0);
         AddInt16(data, 2);
         AddInt16(data, 2);
+    }
+
+    private static void AddGlyphRaster(List<byte> data)
+    {
         data.Add(1);
         data.Add(2);
     }

@@ -16,6 +16,7 @@ public sealed record OberonGlyph(
 public sealed class OberonFont
 {
     private const byte FontFileId = 0xdb;
+    private const int GlyphCapacity = 256;
     private readonly OberonGlyph[] _glyphs;
 
     private OberonFont(
@@ -76,7 +77,7 @@ public sealed class OberonFont
         {
             var begin = reader.ReadInt16();
             var end = reader.ReadInt16();
-            if (begin < 0 || end < begin || end > 128)
+            if (begin < 0 || end < begin || end > GlyphCapacity)
             {
                 throw new InvalidDataException("invalid Oberon font glyph range");
             }
@@ -85,10 +86,8 @@ public sealed class OberonFont
             glyphCount = checked(glyphCount + end - begin);
         }
 
-        var glyphs = Enumerable.Range(0, 128)
-            .Select(_ => new OberonGlyph(0, 0, 0, 0, 0, []))
-            .ToArray();
-        for (var index = 0; index < glyphCount; index++)
+        var metrics = new GlyphMetrics[glyphCount];
+        for (var index = 0; index < metrics.Length; index++)
         {
             var advance = reader.ReadInt16();
             var offsetX = reader.ReadInt16();
@@ -100,16 +99,37 @@ public sealed class OberonFont
                 throw new InvalidDataException("invalid Oberon glyph dimensions");
             }
 
-            var rowBytes = (width + 7) / 8;
-            var raster = reader.ReadBytes(checked(rowBytes * glyphHeight));
+            metrics[index] = new GlyphMetrics(advance, offsetX, offsetY, width, glyphHeight);
+        }
+
+        var glyphs = Enumerable.Range(0, GlyphCapacity)
+            .Select(_ => new OberonGlyph(0, 0, 0, 0, 0, []))
+            .ToArray();
+        for (var index = 0; index < glyphCount; index++)
+        {
+            var metric = metrics[index];
+            var rowBytes = (metric.Width + 7) / 8;
+            var raster = reader.ReadBytes(checked(rowBytes * metric.Height));
             glyphs[GlyphIndex(runs, index)] = new OberonGlyph(
-                advance, offsetX, offsetY, width, glyphHeight, raster);
+                metric.Advance,
+                metric.OffsetX,
+                metric.OffsetY,
+                metric.Width,
+                metric.Height,
+                raster);
         }
 
         return new OberonFont(name, height, minimumX, maximumX, minimumY, maximumY, glyphs);
     }
 
-    public OberonGlyph GetGlyph(char character) => _glyphs[character & 0x7f];
+    public OberonGlyph GetGlyph(char character) => _glyphs[character & 0xff];
+
+    private readonly record struct GlyphMetrics(
+        int Advance,
+        int OffsetX,
+        int OffsetY,
+        int Width,
+        int Height);
 
     private static int GlyphIndex((int Begin, int End)[] runs, int glyphOffset)
     {
