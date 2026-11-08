@@ -94,6 +94,15 @@ public static class OberonKernelHostBinding
                 kernel.SyncModuleData(dataAddress);
                 context.Return();
             },
+            "Install" => context =>
+            {
+                var procedureAddress = context.Argument(0);
+                var targetAddress = context.Argument(1);
+                var displacement = ((long)procedureAddress - targetAddress) / 4 - 1;
+                var instruction = unchecked(0xe700_0000u + (uint)displacement);
+                context.Memory.Write32(targetAddress, instruction);
+                context.Return();
+            },
             "Time" => context =>
             {
                 context.Cpu.SetRegister(0, unchecked((uint)kernel.Time));

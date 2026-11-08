@@ -59,22 +59,27 @@ internal static class KernelHostBindingTests
         TestAssertions.Equal(0u, machine.Memory.Read32(0x3004));
     }
 
-    public static void RejectsUnsupportedKernelProcedure()
+    public static void DispatchesInstallService()
     {
         var symbol = new OberonSymbolModule(
             "Kernel",
             1,
             1,
                 [new OberonSymbolExport("Install", 1, 0x20)]);
-        var binding = OberonKernelHostBinding.Create(symbol, new OberonKernel(new Memory()), 0x3000, 0x4000);
         var machine = new Machine();
+        var binding = OberonKernelHostBinding.Create(symbol, new OberonKernel(machine.Memory), 0x3000, 0x4000);
         var loader = new OberonModuleLoader(_ => null);
         loader.RegisterExternal(symbol);
         var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, loader);
         runtime.BindExternal(binding, machine.HostCalls);
+        machine.Cpu.SetRegister(0, 0x1234);
+        machine.Cpu.SetRegister(1, 0x1000);
+        machine.Cpu.SetRegister(15, 0x200);
         machine.Cpu.SetProgramCounter(0x4020);
+        machine.Step();
 
-        TestAssertions.Throws<OberonHostCallException>(() => machine.Step());
+        TestAssertions.Equal(0xe700_008cu, machine.Memory.Read32(0x1000));
+        TestAssertions.Equal(0x200u, machine.Cpu.PcByte);
     }
 
     public static void DispatchesHeapAllocationService()
