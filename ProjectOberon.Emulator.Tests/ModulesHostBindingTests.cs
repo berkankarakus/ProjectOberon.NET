@@ -42,13 +42,28 @@ internal static class ModulesHostBindingTests
         var commandAddress = machine.Cpu.Register(0);
         TestAssertions.Equal(runtime.MemoryLoader.LoadedImages.Single().CodeAddress, commandAddress);
 
+        runtime.Initialize(runtime.MemoryLoader.LoadedImages.Single(), machine.HostCalls);
+        TestAssertions.Equal(0x200u, machine.Cpu.PcByte);
+        TestAssertions.Equal(0x200u, machine.Cpu.Register(15));
+
         machine.Cpu.SetRegister(0, 0x600);
         machine.Cpu.SetProgramCounter(0x5028);
         machine.Step();
         TestAssertions.False(loader.LoadedModules.Any(module => module.Name == "Demo"));
     }
 
-    private static byte[] BuildRsc()
+    public static void LimitsNonReturningInitializer()
+    {
+        var loader = new OberonModuleLoader(_ => BuildRsc(0));
+        using var machine = new Machine();
+        var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, loader);
+        var image = runtime.MemoryLoader.Load("Demo");
+
+        TestAssertions.Throws<OberonModuleLoadException>(
+            () => runtime.Initialize(image, machine.HostCalls, maxSteps: 3));
+    }
+
+    private static byte[] BuildRsc(uint code = 0xc700_000fu)
     {
         var data = new List<byte>();
         AddString(data, "Demo");
@@ -60,7 +75,7 @@ internal static class ModulesHostBindingTests
         AddInt(data, 0);
         AddInt(data, 0);
         AddInt(data, 1);
-        AddInt(data, unchecked((int)0xc700_0000u));
+        AddInt(data, unchecked((int)code));
         AddString(data, "Start");
         AddInt(data, 0);
         AddString(data, string.Empty);

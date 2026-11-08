@@ -42,6 +42,51 @@ public sealed class OberonModuleRuntime
         }
     }
 
+    public void Initialize(
+        OberonModuleImage image,
+        OberonHostCallDispatcher dispatcher,
+        ulong maxSteps = 100_000)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentNullException.ThrowIfNull(dispatcher);
+        if (maxSteps == 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxSteps));
+        }
+
+        const uint returnAddress = Memory.RomBase;
+        var savedProgramCounter = _cpu.PcByte;
+        var savedLink = _cpu.Register(15);
+        try
+        {
+            _cpu.SetRegister(15, returnAddress);
+            _cpu.SetProgramCounter(image.BodyAddress);
+            for (ulong step = 0; step < maxSteps; step++)
+            {
+                if (_cpu.PcByte == returnAddress)
+                {
+                    return;
+                }
+
+                if (!dispatcher.TryDispatch(_memory, _cpu))
+                {
+                    _cpu.Step();
+                }
+            }
+
+            if (_cpu.PcByte != returnAddress)
+            {
+                throw new OberonModuleLoadException(7,
+                    $"Oberon module initializer exceeded {maxSteps} steps: {image.Module.Name}");
+            }
+        }
+        finally
+        {
+            _cpu.SetRegister(15, savedLink);
+            _cpu.SetProgramCounter(savedProgramCounter);
+        }
+    }
+
     public OberonModuleImage Start(string name, uint? stackPointer = null)
     {
         return StartCore(name, commandName: null, stackPointer);
