@@ -9,6 +9,7 @@ internal sealed record Options(
     bool BootTrace,
     bool BootGraph,
     string? StartModule,
+    bool Initialize,
     string? Command)
 {
     public static Options Parse(string[] args)
@@ -23,6 +24,7 @@ internal sealed record Options(
         var bootTrace = false;
         var bootGraph = false;
         string? startModule = null;
+        var initialize = false;
         string? command = null;
         for (var index = 0; index < args.Length; index++)
         {
@@ -65,6 +67,9 @@ internal sealed record Options(
                 case "--start-module":
                     startModule = Next(args, ref index, "--start-module");
                     break;
+                case "--initialize":
+                    initialize = true;
+                    break;
                 case "--command":
                     command = Next(args, ref index, "--command");
                     break;
@@ -79,13 +84,17 @@ internal sealed record Options(
             throw new ArgumentException("--boot-trace/--boot-graph requires --disk FILE");
         if (startModule is not null && disk is null)
             throw new ArgumentException("--start-module requires --disk FILE");
+        if (initialize && startModule is null)
+            throw new ArgumentException("--initialize requires --start-module NAME");
         if (command is not null && startModule is null)
             throw new ArgumentException("--command requires --start-module NAME");
 
-        return new Options(rom, disk, diskWritable, steps, help, trace, breakpoint, bootTrace, bootGraph, startModule, command);
+        return new Options(rom, disk, diskWritable, steps, help, trace, breakpoint, bootTrace, bootGraph,
+            startModule, initialize, command);
     }
 
-    public static void PrintUsage() => Console.Error.WriteLine("usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--breakpoint HEX-PC] [--boot-trace] [--boot-graph] [--start-module NAME [--command NAME]]");
+    public static void PrintUsage() => Console.Error.WriteLine(
+        "usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--breakpoint HEX-PC] [--boot-trace] [--boot-graph] [--start-module NAME [--initialize] [--command NAME]]");
 
     private static string Next(string[] args, ref int index, string option)
     {

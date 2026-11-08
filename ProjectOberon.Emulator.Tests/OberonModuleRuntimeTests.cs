@@ -6,7 +6,7 @@ internal static partial class OberonModuleTests
     {
         var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal)
         {
-            ["A.rsc"] = BuildRsc("A", 100, [("B", 200)], "Start", code: [0xc700_0010u]),
+            ["A.rsc"] = BuildRsc("A", 100, [("B", 200)], "Start", code: [0xc700_0010u], bodyOffset: 4),
             ["B.rsc"] = BuildRsc("B", 200, [], "Run", typePayload: [0x44, 0x33, 0x22, 0x11], variableBytes: 4, stringPayload: [(byte)'x', 0, 0, 0], code: [0xc700_0020u])
         };
         var moduleLoader = new OberonModuleLoader(name => modules.TryGetValue($"{name}.rsc", out var data) ? data : null);
@@ -23,7 +23,7 @@ internal static partial class OberonModuleTests
         TestAssertions.Equal((uint)'x', memory.Read32(imported.DataAddress + 8));
         TestAssertions.Equal(0xc700_0020u, memory.Read32(imported.CodeAddress));
         TestAssertions.Equal(imported.CodeAddress, imported.FindCommandAddress("Run")!.Value);
-        TestAssertions.Equal(image.CodeAddress, image.BodyAddress);
+        TestAssertions.Equal(image.CodeAddress + 4, image.BodyAddress);
         TestAssertions.Equal(0x100u, cpu.Register(12));
         TestAssertions.Equal((uint)memory.RamSize - 4, cpu.Register(14));
         TestAssertions.Equal(image.BodyAddress, cpu.PcByte);

@@ -61,8 +61,14 @@ public sealed class OberonModuleRuntime
         const uint returnAddress = Memory.RomBase;
         var savedProgramCounter = _cpu.PcByte;
         var savedLink = _cpu.Register(15);
+        var savedModuleTable = _cpu.Register(12);
+        var savedStack = _cpu.Register(14);
         try
         {
+            var initializerStack = savedStack == 0 ? AlignStack(_memory.RamSize) : savedStack;
+            ValidateStack(initializerStack);
+            _cpu.SetRegister(12, ModuleTableAddress);
+            _cpu.SetRegister(14, initializerStack);
             _cpu.SetRegister(15, returnAddress);
             _cpu.SetProgramCounter(image.BodyAddress);
             for (ulong step = 0; step < maxSteps; step++)
@@ -86,6 +92,8 @@ public sealed class OberonModuleRuntime
         }
         finally
         {
+            _cpu.SetRegister(12, savedModuleTable);
+            _cpu.SetRegister(14, savedStack);
             _cpu.SetRegister(15, savedLink);
             _cpu.SetProgramCounter(savedProgramCounter);
         }

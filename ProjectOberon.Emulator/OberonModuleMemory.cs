@@ -148,7 +148,7 @@ public sealed class OberonModuleMemoryLoader
         _memory.Write32(ModuleTableAddress + checked((uint)module.Number * 4), dataAddress);
 
         var image = new OberonModuleImage(module, descriptorAddress, dataAddress, codeAddress, importAddress,
-            commandAddress, entryAddress, pointerAddress, codeAddress + checked((uint)definition.BodyOffset * 4),
+            commandAddress, entryAddress, pointerAddress, codeAddress + checked((uint)definition.BodyOffset),
             allocationSize);
         _fixups.Apply(image, imports);
 

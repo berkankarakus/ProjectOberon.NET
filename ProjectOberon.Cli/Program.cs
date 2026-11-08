@@ -21,6 +21,12 @@ try
         var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, moduleLoader);
         OberonCoreHostBinding.Bind(moduleLoader, runtime,
             new OberonKernel(machine.Memory, machine.Disk), files, machine.HostCalls);
+        if (options.Initialize)
+        {
+            var descriptor = InitializeModule(machine, moduleLoader, options.StartModule);
+            Console.WriteLine($"initialized module {options.StartModule} descriptor=0x{descriptor:x8}");
+        }
+
         var image = options.Command is null
             ? runtime.Start(options.StartModule)
             : runtime.StartCommand(options.StartModule, options.Command);
@@ -78,6 +84,78 @@ catch (Exception error)
 finally
 {
     machine?.Dispose();
+}
+
+static uint InitializeModule(Machine machine, OberonModuleLoader modules, string name)
+{
+    if (!modules.TryGetExternalSymbol("Modules", out var symbol))
+    {
+        throw new OberonModuleLoadException(5, "Modules symbol module is not available");
+    }
+
+    var load = symbol.Exports.FirstOrDefault(export =>
+        export.Name == "Load" && (export.IsProcedure ?? export.Class == 1));
+    if (load is null)
+    {
+        throw new OberonModuleLoadException(5, "Modules.Load export is not available");
+    }
+
+    const uint nameAddress = 0x600;
+    const uint descriptorAddress = 0x700;
+    const uint resultAddress = OberonCoreHostBinding.ModulesDataAddress + 20;
+    WriteCString(machine.Memory, nameAddress, name);
+    machine.Cpu.SetRegister(0, nameAddress);
+    machine.Cpu.SetRegister(1, descriptorAddress);
+    machine.Cpu.SetRegister(15, Memory.RomBase);
+    machine.Cpu.SetProgramCounter(
+        OberonCoreHostBinding.ModulesCodeAddress + checked((uint)load.Value * 4));
+    machine.Step();
+
+    var result = unchecked((int)machine.Memory.Read32(resultAddress));
+    if (result != 0)
+    {
+        var importing = ReadCString(machine.Memory, OberonCoreHostBinding.ModulesDataAddress + 24, 32);
+        var imported = ReadCString(machine.Memory, OberonCoreHostBinding.ModulesDataAddress + 56, 32);
+        var detail = imported.Length == 0 ? importing : $"{importing} imports {imported}";
+        var reason = result == 7 ? "initializer exceeded the step budget" : $"error code {result}";
+        throw new OberonModuleLoadException(result,
+            $"Modules.Load failed for {name}: {detail}; {reason}");
+    }
+
+    return machine.Memory.Read32(descriptorAddress);
+}
+
+static void WriteCString(Memory memory, uint address, string value)
+{
+    var bytes = System.Text.Encoding.ASCII.GetBytes(value);
+    if (bytes.Length >= 32)
+    {
+        throw new ArgumentException("Oberon module name must be shorter than 32 characters", nameof(value));
+    }
+
+    for (var index = 0; index < bytes.Length; index++)
+    {
+        memory.Write8(address + checked((uint)index), bytes[index]);
+    }
+
+    memory.Write8(address + checked((uint)bytes.Length), 0);
+}
+
+static string ReadCString(Memory memory, uint address, int maxLength)
+{
+    var bytes = new List<byte>();
+    for (var index = 0; index < maxLength; index++)
+    {
+        var value = memory.Read8(address + checked((uint)index));
+        if (value == 0)
+        {
+            return System.Text.Encoding.ASCII.GetString(bytes.ToArray());
+        }
+
+        bytes.Add(value);
+    }
+
+    return System.Text.Encoding.ASCII.GetString(bytes.ToArray());
 }
 
 static BootTraceState AttachBootTrace(Machine machine)

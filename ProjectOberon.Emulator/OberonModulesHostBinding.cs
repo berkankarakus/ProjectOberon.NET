@@ -50,16 +50,17 @@ public static class OberonModulesHostBinding
             "Load" => context =>
             {
                 var name = context.ReadCString(context.Argument(0));
+                var outputAddress = context.Argument(1);
                 try
                 {
                     var image = state.Runtime.MemoryLoader.Load(name);
                     state.Initialize(image);
-                    context.Memory.Write32(context.Argument(1), image.DescriptorAddress);
+                    context.Memory.Write32(outputAddress, image.DescriptorAddress);
                     state.SetResult(0, name);
                 }
                 catch (OberonModuleLoadException error)
                 {
-                    context.Memory.Write32(context.Argument(1), 0);
+                    context.Memory.Write32(outputAddress, 0);
                     state.SetResult(error.Code, name);
                 }
 
