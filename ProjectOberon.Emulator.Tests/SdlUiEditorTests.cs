@@ -68,6 +68,10 @@ internal static partial class SdlUiTests
 
             session.InsertText("C");
             TestAssertions.Equal("CAB", session.Editor.Text.GetText());
+            TestAssertions.True(session.HandleKey('z', SdlNative.KeymodCtrl));
+            TestAssertions.Equal("AB", session.Editor.Text.GetText());
+            TestAssertions.True(session.HandleKey('y', SdlNative.KeymodCtrl));
+            TestAssertions.Equal("CAB", session.Editor.Text.GetText());
             TestAssertions.True(session.HandleKey(0x4000004f, 0));
             TestAssertions.True(session.HandleMouseButton(true, 1, 0, 0, 100, 100, flipY: false));
             TestAssertions.False(session.HandleKey('?', 0));

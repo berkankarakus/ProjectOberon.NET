@@ -2,6 +2,9 @@ namespace ProjectOberon.Emulator;
 
 public sealed class OberonTextEditor
 {
+    private readonly Stack<EditorState> _undo = [];
+    private readonly Stack<EditorState> _redo = [];
+
     public OberonTextEditor(OberonTextFrame frame)
     {
         Frame = frame ?? throw new ArgumentNullException(nameof(frame));
@@ -15,6 +18,10 @@ public sealed class OberonTextEditor
     public int SelectionStart => Math.Min(Cursor, Anchor);
     public int SelectionEnd => Math.Max(Cursor, Anchor);
     public string SelectedText => HasSelection ? Text.GetText()[SelectionStart..SelectionEnd] : string.Empty;
+
+    public bool CanUndo => _undo.Count > 0;
+
+    public bool CanRedo => _redo.Count > 0;
 
     public void SetCursor(int position, bool extendSelection = false)
     {
@@ -83,7 +90,7 @@ public sealed class OberonTextEditor
         }
 
         var style = Cursor < Text.Length ? Text.Attributes(Cursor) : OberonTextStyle.Default;
-        ReplaceSelection(value, style);
+        Edit(() => ReplaceSelection(value, style));
     }
 
     public void Backspace()
@@ -98,8 +105,11 @@ public sealed class OberonTextEditor
             return;
         }
 
-        Text.Delete(Cursor - 1, Cursor);
-        SetCursor(Cursor - 1);
+        Edit(() =>
+        {
+            Text.Delete(Cursor - 1, Cursor);
+            SetCursor(Cursor - 1);
+        });
     }
 
     public void Delete()
@@ -111,7 +121,7 @@ public sealed class OberonTextEditor
         }
         if (Cursor < Text.Length)
         {
-            Text.Delete(Cursor, Cursor + 1);
+            Edit(() => Text.Delete(Cursor, Cursor + 1));
         }
     }
 
@@ -122,12 +132,36 @@ public sealed class OberonTextEditor
             return;
         }
 
-        var start = SelectionStart;
-        Text.Delete(start, SelectionEnd);
-        SetCursor(start);
+        Edit(DeleteSelectionCore);
     }
 
     public void ClearSelection() => SetCursor(Cursor);
+
+    public bool Undo()
+    {
+        if (_undo.Count == 0)
+        {
+            return false;
+        }
+
+        var current = CaptureState();
+        RestoreState(_undo.Pop());
+        _redo.Push(current);
+        return true;
+    }
+
+    public bool Redo()
+    {
+        if (_redo.Count == 0)
+        {
+            return false;
+        }
+
+        var current = CaptureState();
+        RestoreState(_redo.Pop());
+        _undo.Push(current);
+        return true;
+    }
 
     private void ReplaceSelection(string value, OberonTextStyle style)
     {
@@ -142,4 +176,65 @@ public sealed class OberonTextEditor
         Text.Insert(start, buffer);
         SetCursor(start + value.Length);
     }
+
+    private void DeleteSelectionCore()
+    {
+        var start = SelectionStart;
+        Text.Delete(start, SelectionEnd);
+        SetCursor(start);
+    }
+
+    private void Edit(Action action)
+    {
+        var before = CaptureState();
+        action();
+        var after = CaptureState();
+        if (StatesEqual(before, after))
+        {
+            return;
+        }
+
+        _undo.Push(before);
+        _redo.Clear();
+    }
+
+    private EditorState CaptureState()
+    {
+        return new EditorState(Text.Copy(0, Text.Length), Cursor, Anchor);
+    }
+
+    private void RestoreState(EditorState state)
+    {
+        Text.Delete(0, Text.Length);
+        Text.Insert(0, state.Buffer);
+        SetCursor(state.Anchor);
+        SetCursor(state.Cursor, extendSelection: true);
+    }
+
+    private static bool StatesEqual(EditorState left, EditorState right)
+    {
+        if (left.Cursor != right.Cursor || left.Anchor != right.Anchor || left.Buffer.Length != right.Buffer.Length)
+        {
+            return false;
+        }
+
+        if (left.Buffer.Pieces.Count != right.Buffer.Pieces.Count)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < left.Buffer.Pieces.Count; index++)
+        {
+            var leftPiece = left.Buffer.Pieces[index];
+            var rightPiece = right.Buffer.Pieces[index];
+            if (leftPiece.Text != rightPiece.Text || leftPiece.Style != rightPiece.Style)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private sealed record EditorState(OberonTextBuffer Buffer, int Cursor, int Anchor);
 }

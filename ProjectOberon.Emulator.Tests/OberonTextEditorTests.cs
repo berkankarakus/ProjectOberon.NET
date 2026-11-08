@@ -7,6 +7,7 @@ internal static class OberonTextEditorTests
     {
         EditsAndSelectsText();
         MapsMouseToCursor();
+        UndoesAndRedoesStyledEdits();
     }
 
     private static void EditsAndSelectsText()
@@ -47,6 +48,31 @@ internal static class OberonTextEditorTests
         var caret = editor.GetCaretLocation(10, 20, 100);
         TestAssertions.Equal(16, caret.X);
         TestAssertions.Equal(20, caret.Y);
+    }
+
+    private static void UndoesAndRedoesStyledEdits()
+    {
+        var text = new OberonText("abc");
+        var editor = new OberonTextEditor(new OberonTextFrame(text, CreateFont()));
+        editor.SetCursor(1);
+        editor.Insert("X");
+        editor.SetCursor(2, extendSelection: true);
+        editor.Insert("Y");
+
+        TestAssertions.True(editor.CanUndo);
+        TestAssertions.True(editor.Undo());
+        TestAssertions.Equal("aXbc", text.GetText());
+        TestAssertions.Equal(2, editor.Cursor);
+        TestAssertions.True(editor.Undo());
+        TestAssertions.Equal("abc", text.GetText());
+        TestAssertions.Equal(1, editor.Cursor);
+        TestAssertions.False(editor.Undo());
+
+        TestAssertions.True(editor.Redo());
+        TestAssertions.Equal("aXbc", text.GetText());
+        TestAssertions.True(editor.Redo());
+        TestAssertions.Equal("aXYbc", text.GetText());
+        TestAssertions.False(editor.Redo());
     }
 
     private static OberonFont CreateFont()

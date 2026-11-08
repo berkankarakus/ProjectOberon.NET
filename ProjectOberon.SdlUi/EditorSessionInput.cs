@@ -21,6 +21,20 @@ internal sealed partial class EditorSession
     private bool HandleKeyCore(int key, ushort modifiers)
     {
         var extendSelection = (modifiers & SdlNative.KeymodShift) != 0;
+        if ((modifiers & SdlNative.KeymodCtrl) != 0 && key is 'z' or 'Z')
+        {
+            Editor.Undo();
+            EnsureCursorVisible();
+            return true;
+        }
+
+        if ((modifiers & SdlNative.KeymodCtrl) != 0 && key is 'y' or 'Y')
+        {
+            Editor.Redo();
+            EnsureCursorVisible();
+            return true;
+        }
+
         if ((modifiers & SdlNative.KeymodCtrl) != 0 && key is 's' or 'S')
         {
             Save();

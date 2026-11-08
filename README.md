@@ -131,11 +131,12 @@ dotnet run --project dotnet/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
 
 Editor mode reads and writes the selected file as Latin-1 text. SDL text input
 inserts characters, arrow/Home/End move the caret, Shift extends a selection,
-Backspace/Delete edit it, the left mouse button places or drags the selection,
-and Ctrl-S saves. PageUp/PageDown scroll the text surface, and caret movement
-keeps the active line visible. The emulated machine continues running in the
-background, but editor mode displays the host text surface; word wrapping is
-width-based and horizontal scrolling is not implemented yet.
+Backspace/Delete edit it, Ctrl-Z/Ctrl-Y undo and redo edits, the left mouse
+button places or drags the selection, and Ctrl-S saves. PageUp/PageDown scroll
+the text surface, and caret movement keeps the active line visible. The
+emulated machine continues running in the background, but editor mode displays
+the host text surface; word wrapping is width-based and horizontal scrolling
+is not implemented yet.
 
 The emulator library also contains a UI-independent viewer core based on
 Oberon `Viewers.Mod`. `OberonViewerSystem` models tracks and vertically split
