@@ -10,6 +10,7 @@ public sealed class OberonKernel
     private readonly Memory _memory;
     private readonly DiskImage? _disk;
     private readonly bool[] _sectorMap = new bool[MapSize];
+    private readonly uint _heapOrigin;
     private readonly uint _heapLimit;
     private uint _heapNext;
     private int _clock;
@@ -18,8 +19,9 @@ public sealed class OberonKernel
     {
         _memory = memory ?? throw new ArgumentNullException(nameof(memory));
         _disk = disk;
-        _heapNext = 0x10000;
-        _heapLimit = checked((uint)Math.Max((int)_heapNext, memory.RamSize - 0x8000));
+        _heapOrigin = 0x10000;
+        _heapNext = _heapOrigin;
+        _heapLimit = checked((uint)Math.Max((int)_heapOrigin, memory.RamSize - 0x8000));
         InitSectorMap();
     }
 
@@ -126,6 +128,18 @@ public sealed class OberonKernel
     public void SetClock(int value)
     {
         _clock = value;
+    }
+
+    internal void SyncModuleData(uint dataAddress)
+    {
+        _memory.Write32(dataAddress, checked((uint)AllocatedBytes));
+        _memory.Write32(dataAddress + 4, checked((uint)AllocatedSectors));
+        _memory.Write32(dataAddress + 8, _heapOrigin);
+        _memory.Write32(dataAddress + 12, _heapLimit);
+        _memory.Write32(dataAddress + 16, _heapOrigin);
+        _memory.Write32(dataAddress + 20, 0x8000);
+        _memory.Write32(dataAddress + 24, checked((uint)_memory.RamSize));
+        _memory.Write32(dataAddress + 28, unchecked((uint)_clock));
     }
 
     public static uint PhysicalSector(int address)

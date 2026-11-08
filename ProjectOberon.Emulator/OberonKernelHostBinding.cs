@@ -11,10 +11,11 @@ public static class OberonKernelHostBinding
     {
         ArgumentNullException.ThrowIfNull(symbol);
         ArgumentNullException.ThrowIfNull(kernel);
+        kernel.SyncModuleData(dataAddress);
 
         var procedureExports = OberonSymbolBinding.Procedures(symbol);
         var handlers = procedureExports
-            .Select(export => CreateHandler(symbol.Name, export.Name, kernel))
+            .Select(export => CreateHandler(symbol.Name, export.Name, kernel, dataAddress))
             .ToArray();
         return new OberonExternalModuleBinding(
             symbol.Name,
@@ -32,31 +33,41 @@ public static class OberonKernelHostBinding
     private static Action<OberonHostCallContext> CreateHandler(
         string moduleName,
         string procedureName,
-        OberonKernel kernel)
+        OberonKernel kernel,
+        uint dataAddress)
     {
         return procedureName switch
         {
-            "InitSecMap" => Return(() => kernel.InitSectorMap()),
+            "InitSecMap" => context =>
+            {
+                kernel.InitSectorMap();
+                kernel.SyncModuleData(dataAddress);
+                context.Return();
+            },
             "MarkSector" => context =>
             {
                 kernel.MarkSector(checked((int)context.Argument(0)));
+                kernel.SyncModuleData(dataAddress);
                 context.Return();
             },
             "FreeSector" => context =>
             {
                 kernel.FreeSector(checked((int)context.Argument(0)));
+                kernel.SyncModuleData(dataAddress);
                 context.Return();
             },
             "AllocSector" => context =>
             {
                 var sector = kernel.AllocSector(checked((int)context.Argument(0)));
                 context.Memory.Write32(context.Argument(1), checked((uint)sector));
+                kernel.SyncModuleData(dataAddress);
                 context.Return();
             },
             "New" => context =>
             {
                 var pointer = kernel.New(context.Argument(1));
                 context.Memory.Write32(context.Argument(0), pointer);
+                kernel.SyncModuleData(dataAddress);
                 context.Return();
             },
             "GetSector" => context =>
@@ -74,6 +85,7 @@ public static class OberonKernelHostBinding
             "SetClock" => context =>
             {
                 kernel.SetClock(checked((int)context.Argument(0)));
+                kernel.SyncModuleData(dataAddress);
                 context.Return();
             },
             "Time" => context =>
@@ -87,15 +99,6 @@ public static class OberonKernelHostBinding
                 context.Return();
             },
             _ => Unsupported(moduleName, procedureName)
-        };
-    }
-
-    private static Action<OberonHostCallContext> Return(Action action)
-    {
-        return context =>
-        {
-            action();
-            context.Return();
         };
     }
 

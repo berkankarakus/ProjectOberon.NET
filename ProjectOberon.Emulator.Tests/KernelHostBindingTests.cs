@@ -4,8 +4,8 @@ internal static class KernelHostBindingTests
 {
     public static void DispatchesClockAndSectorMapServices()
     {
-        var memory = new Memory();
-        var kernel = new OberonKernel(memory);
+        var machine = new Machine();
+        var kernel = new OberonKernel(machine.Memory);
         kernel.SetClock(1234);
         var symbol = new OberonSymbolModule(
             "Kernel",
@@ -19,12 +19,13 @@ internal static class KernelHostBindingTests
                 new OberonSymbolExport("AllocSector", 1, 0x30)
             ]);
         var binding = OberonKernelHostBinding.Create(symbol, kernel, 0x3000, 0x4000);
-        var machine = new Machine();
         var loader = new OberonModuleLoader(_ => null);
         loader.RegisterExternal(symbol);
         var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, loader);
 
         runtime.BindExternal(binding, machine.HostCalls);
+        TestAssertions.Equal(0x10000u, machine.Memory.Read32(0x3008));
+        TestAssertions.Equal((uint)machine.Memory.RamSize, machine.Memory.Read32(0x3018));
 
         machine.Cpu.SetRegister(15, 0x200);
         machine.Cpu.SetProgramCounter(0x4020);
@@ -41,12 +42,14 @@ internal static class KernelHostBindingTests
         machine.Cpu.SetProgramCounter(0x402c);
         machine.Step();
         TestAssertions.Equal(1, kernel.AllocatedSectors);
+        TestAssertions.Equal(1u, machine.Memory.Read32(0x3004));
 
         machine.Cpu.SetRegister(0, 0);
         machine.Cpu.SetRegister(1, 0x500);
         machine.Cpu.SetProgramCounter(0x4030);
         machine.Step();
         TestAssertions.Equal(1856u, machine.Memory.Read32(0x500));
+        TestAssertions.Equal(2u, machine.Memory.Read32(0x3004));
     }
 
     public static void RejectsUnsupportedKernelProcedure()
