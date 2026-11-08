@@ -29,6 +29,37 @@ public sealed class OberonHostCallContext
         return bytes;
     }
 
+    public string ReadCString(uint address, int maximumLength = 256)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumLength);
+        var bytes = new List<byte>();
+        for (var index = 0; index < maximumLength; index++)
+        {
+            var value = Memory.Read8(address + checked((uint)index));
+            if (value == 0)
+            {
+                return System.Text.Encoding.Latin1.GetString(bytes.ToArray());
+            }
+
+            bytes.Add(value);
+        }
+
+        throw new InvalidDataException("Oberon string is not NUL-terminated within the host buffer limit");
+    }
+
+    public void WriteCString(uint address, string value, int maximumLength = 256)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var bytes = System.Text.Encoding.Latin1.GetBytes(value);
+        if (bytes.Length >= maximumLength)
+        {
+            throw new InvalidDataException("Oberon string does not fit in the host buffer limit");
+        }
+
+        WriteBytes(address, bytes);
+        Memory.Write8(address + checked((uint)bytes.Length), 0);
+    }
+
     public void WriteBytes(uint address, ReadOnlySpan<byte> bytes)
     {
         for (var index = 0; index < bytes.Length; index++)
