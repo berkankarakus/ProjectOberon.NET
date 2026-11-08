@@ -19,6 +19,7 @@ var tests = new (string Name, Action Test)[]
     ("Files host binding", FilesHostBindingTests.DispatchesReadServices),
     ("Files write host binding", FilesHostBindingTests.DispatchesWriteAndLifecycleServices),
     ("Modules host binding", ModulesHostBindingTests.DispatchesLoadAndCommandServices),
+    ("Modules load error state", ModulesHostBindingTests.ReportsLoadErrorsThroughModuleState),
     ("module initializer limits", ModulesHostBindingTests.LimitsNonReturningInitializer),
     ("core host binding composition", CoreHostBindingTests.BindsCoreExternalModules),
     ("runtime diagnostics", RuntimeDiagnosticsTests.FormatsMachineState),

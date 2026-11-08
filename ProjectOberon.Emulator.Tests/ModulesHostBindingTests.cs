@@ -61,6 +61,33 @@ internal static class ModulesHostBindingTests
         TestAssertions.False(loader.LoadedModules.Any(module => module.Name == "Demo"));
     }
 
+    public static void ReportsLoadErrorsThroughModuleState()
+    {
+        var symbol = new OberonSymbolModule(
+            "Modules",
+            1,
+            1,
+            [new OberonSymbolExport("Load", 1, 0x20)]);
+        var loader = new OberonModuleLoader(_ => null);
+        loader.RegisterExternal(symbol);
+        using var machine = new Machine();
+        var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, loader);
+        var binding = OberonModulesHostBinding.Create(symbol, runtime, loader, 0x3000, 0x5000, machine.HostCalls);
+        runtime.BindExternal(binding, machine.HostCalls);
+        WriteCString(machine.Memory, 0x600, "Missing");
+        machine.Cpu.SetRegister(0, 0x600);
+        machine.Cpu.SetRegister(1, 0x800);
+        machine.Cpu.SetRegister(15, 0x200);
+        machine.Cpu.SetProgramCounter(0x5020);
+
+        machine.Step();
+
+        TestAssertions.Equal(0u, machine.Memory.Read32(0x800));
+        TestAssertions.Equal(2u, machine.Memory.Read32(0x3014));
+        TestAssertions.Equal("Missing", ReadCString(machine.Memory, 0x3018));
+        TestAssertions.Equal(0x200u, machine.Cpu.PcByte);
+    }
+
     public static void LimitsNonReturningInitializer()
     {
         var loader = new OberonModuleLoader(_ => BuildRsc(0));
@@ -117,5 +144,20 @@ internal static class ModulesHostBindingTests
         var bytes = Encoding.Latin1.GetBytes(value);
         for (var index = 0; index < bytes.Length; index++) memory.Write8(address + (uint)index, bytes[index]);
         memory.Write8(address + (uint)bytes.Length, 0);
+    }
+
+    private static string ReadCString(Memory memory, uint address)
+    {
+        var bytes = new List<byte>();
+        while (true)
+        {
+            var value = memory.Read8(address + (uint)bytes.Count);
+            if (value == 0)
+            {
+                return Encoding.ASCII.GetString(bytes.ToArray());
+            }
+
+            bytes.Add(value);
+        }
     }
 }
