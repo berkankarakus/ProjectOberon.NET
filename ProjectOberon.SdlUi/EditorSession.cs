@@ -16,13 +16,16 @@ internal sealed partial class EditorSession
     private readonly OberonViewerSystem _inputSystem;
     private readonly OberonEventLoop _eventLoop;
     private readonly OberonViewer _inputViewer;
+    private readonly ITextClipboard _clipboard;
     private bool _dragging;
     private bool _flipY;
 
-    private EditorSession(string path, OberonTextEditor editor)
+    private EditorSession(string path, OberonTextEditor editor, ITextClipboard clipboard)
     {
+        ArgumentNullException.ThrowIfNull(clipboard);
         Path = path;
         Editor = editor;
+        _clipboard = clipboard;
         _viewport = new OberonTextViewportController(Editor);
         _surfaceDisplay = new OberonDisplay(_surfaceMemory);
         _inputSystem = new OberonViewerSystem(Display.Width, Display.Height);
@@ -40,13 +43,19 @@ internal sealed partial class EditorSession
 
     public static EditorSession Load(string path, string fontPath)
     {
+        return Load(path, fontPath, new SdlTextClipboard());
+    }
+
+    internal static EditorSession Load(string path, string fontPath, ITextClipboard clipboard)
+    {
         ArgumentException.ThrowIfNullOrEmpty(path);
         ArgumentException.ThrowIfNullOrEmpty(fontPath);
+        ArgumentNullException.ThrowIfNull(clipboard);
 
         var text = Encoding.Latin1.GetString(File.ReadAllBytes(path));
         var font = OberonFont.Load(fontPath);
         var frame = new OberonTextFrame(new OberonText(text), font);
-        return new EditorSession(path, new OberonTextEditor(frame));
+        return new EditorSession(path, new OberonTextEditor(frame), clipboard);
     }
 
 }

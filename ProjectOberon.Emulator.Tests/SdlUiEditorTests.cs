@@ -72,6 +72,16 @@ internal static partial class SdlUiTests
             TestAssertions.Equal("AB", session.Editor.Text.GetText());
             TestAssertions.True(session.HandleKey('y', SdlNative.KeymodCtrl));
             TestAssertions.Equal("CAB", session.Editor.Text.GetText());
+            var clipboard = new RecordingClipboard();
+            session = EditorSession.Load(textPath, fontPath, clipboard);
+            session.InsertText("C");
+            TestAssertions.True(session.HandleKey('a', SdlNative.KeymodCtrl));
+            TestAssertions.True(session.HandleKey('c', SdlNative.KeymodCtrl));
+            TestAssertions.Equal("CAB", clipboard.Text);
+            TestAssertions.True(session.HandleKey('x', SdlNative.KeymodCtrl));
+            TestAssertions.Equal(string.Empty, session.Editor.Text.GetText());
+            TestAssertions.True(session.HandleKey('v', SdlNative.KeymodCtrl));
+            TestAssertions.Equal("CAB", session.Editor.Text.GetText());
             TestAssertions.True(session.HandleKey(0x4000004f, 0));
             TestAssertions.True(session.HandleMouseButton(true, 1, 0, 0, 100, 100, flipY: false));
             TestAssertions.False(session.HandleKey('?', 0));
@@ -81,6 +91,15 @@ internal static partial class SdlUiTests
             File.Delete(textPath);
             File.Delete(fontPath);
         }
+    }
+
+    private sealed class RecordingClipboard : ITextClipboard
+    {
+        public string Text { get; private set; } = string.Empty;
+
+        public string GetText() => Text;
+
+        public void SetText(string text) => Text = text;
     }
 
 }

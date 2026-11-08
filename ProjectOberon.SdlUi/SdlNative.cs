@@ -24,4 +24,31 @@ internal static partial class SdlNative
     }
 
     public static string Error() => Marshal.PtrToStringAnsi(SDL_GetError()) ?? "SDL error";
+
+    public static string GetClipboardText()
+    {
+        var text = SDL_GetClipboardText();
+        if (text == IntPtr.Zero)
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            return Marshal.PtrToStringUTF8(text) ?? string.Empty;
+        }
+        finally
+        {
+            SDL_free(text);
+        }
+    }
+
+    public static void SetClipboardText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (SDL_SetClipboardText(text) != 0)
+        {
+            throw new InvalidOperationException(Error());
+        }
+    }
 }

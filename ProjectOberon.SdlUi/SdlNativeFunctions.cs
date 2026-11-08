@@ -22,4 +22,7 @@ internal static partial class SdlNative
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_RenderCopy(IntPtr renderer, IntPtr texture, IntPtr source, IntPtr destination);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_RenderPresent(IntPtr renderer);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_Delay(uint milliseconds);
+    [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern IntPtr SDL_GetClipboardText();
+    [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)] public static extern int SDL_SetClipboardText(string text);
+    [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_free(IntPtr memory);
 }

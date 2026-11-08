@@ -21,6 +21,33 @@ internal sealed partial class EditorSession
     private bool HandleKeyCore(int key, ushort modifiers)
     {
         var extendSelection = (modifiers & SdlNative.KeymodShift) != 0;
+        if ((modifiers & SdlNative.KeymodCtrl) != 0 && key is 'a' or 'A')
+        {
+            Editor.SetCursor(0);
+            Editor.SetCursor(Editor.Text.Length, extendSelection: true);
+            return true;
+        }
+
+        if ((modifiers & SdlNative.KeymodCtrl) != 0 && key is 'c' or 'C')
+        {
+            _clipboard.SetText(Editor.SelectedText);
+            return true;
+        }
+
+        if ((modifiers & SdlNative.KeymodCtrl) != 0 && key is 'x' or 'X')
+        {
+            _clipboard.SetText(Editor.SelectedText);
+            Editor.DeleteSelection();
+            EnsureCursorVisible();
+            return true;
+        }
+
+        if ((modifiers & SdlNative.KeymodCtrl) != 0 && key is 'v' or 'V')
+        {
+            InsertTextCore(_clipboard.GetText());
+            return true;
+        }
+
         if ((modifiers & SdlNative.KeymodCtrl) != 0 && key is 'z' or 'Z')
         {
             Editor.Undo();
