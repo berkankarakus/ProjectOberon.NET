@@ -11,6 +11,9 @@ internal sealed record UiOptions(
     bool FlipY,
     string? Editor,
     string? Font,
+    string? StartModule,
+    bool Initialize,
+    string? Command,
     bool Help)
 {
     public static UiOptions Parse(string[] args)
@@ -20,7 +23,8 @@ internal sealed record UiOptions(
         var steps = 100_000UL;
         var scale = 1.25;
         var flipY = true;
-        string? editor = null, font = null;
+        string? editor = null, font = null, startModule = null, command = null;
+        var initialize = false;
         var help = false;
         for (var index = 0; index < args.Length; index++)
         {
@@ -56,6 +60,15 @@ internal sealed record UiOptions(
                 case "--font" when index + 1 < args.Length:
                     font = args[++index];
                     break;
+                case "--start-module" when index + 1 < args.Length:
+                    startModule = args[++index];
+                    break;
+                case "--initialize":
+                    initialize = true;
+                    break;
+                case "--command" when index + 1 < args.Length:
+                    command = args[++index];
+                    break;
                 default:
                     throw new ArgumentException($"unknown or incomplete command-line option: {args[index]}");
             }
@@ -64,8 +77,16 @@ internal sealed record UiOptions(
             throw new ArgumentException("--read-only requires --disk FILE");
         if (font is not null && editor is null)
             throw new ArgumentException("--font requires --editor FILE");
-        return new UiOptions(rom, disk, writable, steps, scale, flipY, editor, font, help);
+        if (startModule is not null && disk is null)
+            throw new ArgumentException("--start-module requires --disk FILE");
+        if (initialize && startModule is null)
+            throw new ArgumentException("--initialize requires --start-module NAME");
+        if (command is not null && startModule is null)
+            throw new ArgumentException("--command requires --start-module NAME");
+        return new UiOptions(rom, disk, writable, steps, scale, flipY, editor, font,
+            startModule, initialize, command, help);
     }
 
-    public static void PrintUsage() => Console.Error.WriteLine("usage: project-oberon-ui [--rom FILE] [--disk FILE] [--read-only] [--steps-per-frame N] [--scale N] [--no-flip-y] [--editor FILE --font FILE]");
+    public static void PrintUsage() => Console.Error.WriteLine(
+        "usage: project-oberon-ui [--rom FILE] [--disk FILE] [--read-only] [--steps-per-frame N] [--scale N] [--no-flip-y] [--editor FILE --font FILE] [--start-module NAME [--initialize] [--command NAME]]");
 }
