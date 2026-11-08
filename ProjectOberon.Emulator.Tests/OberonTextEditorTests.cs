@@ -8,6 +8,7 @@ internal static class OberonTextEditorTests
         EditsAndSelectsText();
         MapsMouseToCursor();
         UndoesAndRedoesStyledEdits();
+        MovesCaretBetweenLines();
     }
 
     private static void EditsAndSelectsText()
@@ -73,6 +74,18 @@ internal static class OberonTextEditorTests
         TestAssertions.True(editor.Redo());
         TestAssertions.Equal("aXYbc", text.GetText());
         TestAssertions.False(editor.Redo());
+    }
+
+    private static void MovesCaretBetweenLines()
+    {
+        var text = new OberonText("ab\rcd");
+        var editor = new OberonTextEditor(new OberonTextFrame(text, CreateFont()));
+        editor.SetCursor(4);
+
+        editor.MoveUp(100);
+        TestAssertions.Equal(0, editor.Cursor);
+        editor.MoveDown(100);
+        TestAssertions.Equal(3, editor.Cursor);
     }
 
     private static OberonFont CreateFont()

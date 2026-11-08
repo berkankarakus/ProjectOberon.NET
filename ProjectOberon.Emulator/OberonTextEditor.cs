@@ -81,6 +81,16 @@ public sealed class OberonTextEditor
         SetCursor(position, extendSelection);
     }
 
+    public void MoveUp(int maximumWidth, bool extendSelection = false)
+    {
+        MoveVertical(-1, maximumWidth, extendSelection);
+    }
+
+    public void MoveDown(int maximumWidth, bool extendSelection = false)
+    {
+        MoveVertical(1, maximumWidth, extendSelection);
+    }
+
     public void Insert(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -175,6 +185,27 @@ public sealed class OberonTextEditor
         buffer.Append(value, style);
         Text.Insert(start, buffer);
         SetCursor(start + value.Length);
+    }
+
+    private void MoveVertical(int direction, int maximumWidth, bool extendSelection)
+    {
+        if (maximumWidth <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximumWidth));
+        }
+
+        var caret = Frame.GetCaretLocation(Cursor, 0, 0, maximumWidth);
+        var lines = Frame.Layout(maximumWidth);
+        var targetLine = Math.Clamp(caret.Line + direction, 0, lines.Count - 1);
+        if (targetLine == caret.Line)
+        {
+            SetCursor(Cursor, extendSelection);
+            return;
+        }
+
+        var targetY = targetLine * Frame.Font.Height + Frame.Font.Height / 2;
+        var position = Frame.HitTest(caret.X, targetY, 0, 0, maximumWidth);
+        SetCursor(position, extendSelection);
     }
 
     private void DeleteSelectionCore()

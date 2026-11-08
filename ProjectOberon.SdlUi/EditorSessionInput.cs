@@ -71,6 +71,14 @@ internal sealed partial class EditorSession
                 Editor.MoveEnd(extendSelection);
                 EnsureCursorVisible();
                 return true;
+            case 0x40000052:
+                Editor.MoveUp(SurfaceWidth, extendSelection);
+                EnsureCursorVisible();
+                return true;
+            case 0x40000051:
+                Editor.MoveDown(SurfaceWidth, extendSelection);
+                EnsureCursorVisible();
+                return true;
             case 0x4000004b:
                 ScrollBy(-1);
                 return true;
