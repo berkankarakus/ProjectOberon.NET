@@ -37,6 +37,7 @@ public static class OberonFilesHostBinding
     {
         return procedureName switch
         {
+            "Init" or "RestoreList" => context => context.Return(),
             "Old" => context =>
             {
                 var file = state.Files.Old(context.ReadCString(context.Argument(0)));

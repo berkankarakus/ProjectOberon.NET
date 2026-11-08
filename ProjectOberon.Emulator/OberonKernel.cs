@@ -30,6 +30,14 @@ public sealed class OberonKernel
     public int Clock => _clock;
     public int Time => checked((int)_memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.Timer));
 
+    public void Initialize()
+    {
+        _heapNext = _heapOrigin;
+        AllocatedBytes = 0;
+        _clock = 0;
+        InitSectorMap();
+    }
+
     public void InitSectorMap()
     {
         Array.Clear(_sectorMap);

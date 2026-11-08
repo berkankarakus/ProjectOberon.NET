@@ -16,7 +16,8 @@ internal static class KernelHostBindingTests
                 new OberonSymbolExport("SetClock", 1, 0x24),
                 new OberonSymbolExport("Time", 1, 0x28),
                 new OberonSymbolExport("MarkSector", 1, 0x2c),
-                new OberonSymbolExport("AllocSector", 1, 0x30)
+                new OberonSymbolExport("AllocSector", 1, 0x30),
+                new OberonSymbolExport("Init", 1, 0x34)
             ]);
         var binding = OberonKernelHostBinding.Create(symbol, kernel, 0x3000, 0x4000);
         var loader = new OberonModuleLoader(_ => null);
@@ -50,6 +51,12 @@ internal static class KernelHostBindingTests
         machine.Step();
         TestAssertions.Equal(1856u, machine.Memory.Read32(0x500));
         TestAssertions.Equal(2u, machine.Memory.Read32(0x3004));
+
+        machine.Cpu.SetRegister(15, 0x200);
+        machine.Cpu.SetProgramCounter(0x4034);
+        machine.Step();
+        TestAssertions.Equal(0, kernel.AllocatedSectors);
+        TestAssertions.Equal(0u, machine.Memory.Read32(0x3004));
     }
 
     public static void RejectsUnsupportedKernelProcedure()

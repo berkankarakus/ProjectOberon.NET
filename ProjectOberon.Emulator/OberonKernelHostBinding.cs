@@ -38,6 +38,12 @@ public static class OberonKernelHostBinding
     {
         return procedureName switch
         {
+            "Init" => context =>
+            {
+                kernel.Initialize();
+                kernel.SyncModuleData(dataAddress);
+                context.Return();
+            },
             "InitSecMap" => context =>
             {
                 kernel.InitSectorMap();

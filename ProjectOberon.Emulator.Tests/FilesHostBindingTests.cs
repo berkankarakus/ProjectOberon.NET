@@ -32,7 +32,9 @@ internal static class FilesHostBindingTests
                     new OberonSymbolExport("Pos", 1, 0x30),
                     new OberonSymbolExport("Length", 1, 0x34),
                     new OberonSymbolExport("Date", 1, 0x38),
-                    new OberonSymbolExport("Base", 1, 0x3c)
+                    new OberonSymbolExport("Base", 1, 0x3c),
+                    new OberonSymbolExport("Init", 1, 0x40),
+                    new OberonSymbolExport("RestoreList", 1, 0x44)
                 ]);
             var binding = OberonFilesHostBinding.Create(symbol, files, 0x3000, 0x5000);
             var loader = new OberonModuleLoader(_ => null);
@@ -85,6 +87,12 @@ internal static class FilesHostBindingTests
             machine.Cpu.SetProgramCounter(0x503c);
             machine.Step();
             TestAssertions.Equal(fileHandle, machine.Cpu.Register(0));
+
+            machine.Cpu.SetProgramCounter(0x5040);
+            machine.Step();
+            machine.Cpu.SetProgramCounter(0x5044);
+            machine.Step();
+            TestAssertions.Equal(0x200u, machine.Cpu.Register(15));
         }
         finally
         {
