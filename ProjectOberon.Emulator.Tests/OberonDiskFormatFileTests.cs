@@ -1,0 +1,55 @@
+using System.Buffers.Binary;
+using ProjectOberon.Emulator;
+
+internal static partial class OberonDiskFormatTests
+{
+    private static void RoundTripsFileHeaderAndExtensions()
+    {
+        var sector = new byte[OberonDiskLayout.SectorLength];
+        OberonFileHeaderCodec.Write(
+            sector,
+            "Demo.Mod",
+            allocatedPages: 65,
+            lastPageLength: 512,
+            date: 123,
+            extensions: [2000],
+            pages: Enumerable.Range(1, 66).Select(index => index * OberonDiskLayout.LogicalSectorUnit).ToArray());
+
+        var header = OberonFileHeaderCodec.Read(sector, 29);
+        var extension = new byte[OberonDiskLayout.SectorLength];
+        for (var index = 0; index < 2; index++)
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(
+                extension.AsSpan(index * 4),
+                (64 + index + 1) * OberonDiskLayout.LogicalSectorUnit);
+        }
+
+        var pages = OberonFileHeaderCodec.ReadPageAddresses(header, address =>
+            address == 2000 ? extension : throw new InvalidOperationException("unexpected extension address"));
+
+        TestAssertions.Equal("Demo.Mod", header.Name);
+        TestAssertions.Equal(65, header.AllocatedPages);
+        TestAssertions.Equal(512, header.LastPageLength);
+        TestAssertions.Equal(123, header.Date);
+        TestAssertions.Equal(66, pages.Length);
+        TestAssertions.Equal(66 * OberonDiskLayout.LogicalSectorUnit, pages[^1]);
+        TestAssertions.Equal(512 + 65 * OberonDiskLayout.SectorLength, header.TotalLength);
+    }
+
+    private static void RejectsInvalidFileHeader()
+    {
+        var sector = new byte[OberonDiskLayout.SectorLength];
+
+        TestAssertions.Throws<InvalidDataException>(() => OberonFileHeaderCodec.Read(sector, 29));
+        TestAssertions.Throws<ArgumentException>(() => OberonFileHeaderCodec.Read(sector[..100], 29));
+        TestAssertions.Throws<ArgumentException>(() => OberonFileHeaderCodec.Write(new byte[100], "Demo", 0, 0, 0, [], []));
+        TestAssertions.Throws<ArgumentException>(() => OberonFileHeaderCodec.Write(sector, new string('x', 32), 0, 0, 0, [], []));
+    }
+
+    private static void RejectsMissingFilePages()
+    {
+        var header = new OberonFileHeader("Demo", 1, 1, 0, [0], [29, 0]);
+
+        TestAssertions.Throws<InvalidDataException>(() => OberonFileHeaderCodec.ReadPageAddresses(header, _ => []));
+    }
+}

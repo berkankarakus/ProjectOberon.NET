@@ -8,5 +8,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../ProjectOberon.Emulator/ProjectOberon.Emulator.csproj" />
+    <ProjectReference Include="../ProjectOberon.Cli/ProjectOberon.Cli.csproj" />
+    <ProjectReference Include="../ProjectOberon.FsCli/ProjectOberon.FsCli.csproj" />
+    <ProjectReference Include="../ProjectOberon.RscCli/ProjectOberon.RscCli.csproj" />
+    <ProjectReference Include="../ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj" />
   </ItemGroup>
 </Project>
