@@ -55,7 +55,7 @@ internal static class KernelHostBindingTests
             "Kernel",
             1,
             1,
-            [new OberonSymbolExport("New", 1, 0x20)]);
+                [new OberonSymbolExport("Install", 1, 0x20)]);
         var binding = OberonKernelHostBinding.Create(symbol, new OberonKernel(new Memory()), 0x3000, 0x4000);
         var machine = new Machine();
         var loader = new OberonModuleLoader(_ => null);
@@ -65,6 +65,36 @@ internal static class KernelHostBindingTests
         machine.Cpu.SetProgramCounter(0x4020);
 
         TestAssertions.Throws<OberonHostCallException>(() => machine.Step());
+    }
+
+    public static void DispatchesHeapAllocationService()
+    {
+        var machine = new Machine();
+        var kernel = new OberonKernel(machine.Memory);
+        var symbol = new OberonSymbolModule(
+            "Kernel",
+            1,
+            1,
+            [new OberonSymbolExport("New", 1, 0x20)]);
+        var binding = OberonKernelHostBinding.Create(symbol, kernel, 0x3000, 0x4000);
+        var loader = new OberonModuleLoader(_ => null);
+        loader.RegisterExternal(symbol);
+        var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, loader);
+        runtime.BindExternal(binding, machine.HostCalls);
+
+        machine.Memory.Write32(0x500, 16);
+        machine.Cpu.SetRegister(0, 0x600);
+        machine.Cpu.SetRegister(1, 0x500);
+        machine.Cpu.SetRegister(15, 0x200);
+        machine.Cpu.SetProgramCounter(0x4020);
+        machine.Step();
+
+        var pointer = machine.Memory.Read32(0x600);
+        TestAssertions.Equal(0x10008u, pointer);
+        TestAssertions.Equal(0x500u, machine.Memory.Read32(pointer - 8));
+        TestAssertions.Equal(0u, machine.Memory.Read32(pointer - 4));
+        TestAssertions.Equal(0u, machine.Memory.Read32(pointer));
+        TestAssertions.Equal(16, kernel.AllocatedBytes);
     }
 
     public static void DispatchesSectorIoServices()

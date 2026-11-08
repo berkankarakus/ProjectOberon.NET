@@ -10,16 +10,21 @@ public sealed class OberonKernel
     private readonly Memory _memory;
     private readonly DiskImage? _disk;
     private readonly bool[] _sectorMap = new bool[MapSize];
+    private readonly uint _heapLimit;
+    private uint _heapNext;
     private int _clock;
 
     public OberonKernel(Memory memory, DiskImage? disk = null)
     {
         _memory = memory ?? throw new ArgumentNullException(nameof(memory));
         _disk = disk;
+        _heapNext = 0x10000;
+        _heapLimit = checked((uint)Math.Max((int)_heapNext, memory.RamSize - 0x8000));
         InitSectorMap();
     }
 
     public int AllocatedSectors { get; private set; }
+    public int AllocatedBytes { get; private set; }
     public int Clock => _clock;
     public int Time => checked((int)_memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.Timer));
 
@@ -79,6 +84,33 @@ public sealed class OberonKernel
         }
 
         throw new InvalidOperationException("Oberon disk has no free logical sectors");
+    }
+
+    public uint New(uint tagAddress)
+    {
+        var size = checked((int)_memory.Read32(tagAddress));
+        if (size < 8 || (size & 3) != 0)
+        {
+            throw new InvalidDataException("Oberon heap object size must be a multiple of four and include its header");
+        }
+
+        var end = checked(_heapNext + (uint)size);
+        if (end > _heapLimit)
+        {
+            throw new OutOfMemoryException("Oberon heap is full");
+        }
+
+        var block = _heapNext;
+        _heapNext = end;
+        _memory.Write32(block, tagAddress);
+        _memory.Write32(block + 4, 0);
+        for (var address = block + 8; address < end; address += 4)
+        {
+            _memory.Write32(address, 0);
+        }
+
+        AllocatedBytes = checked(AllocatedBytes + size);
+        return block + 8;
     }
 
     public byte[] GetSector(int address)

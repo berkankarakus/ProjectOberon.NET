@@ -48,6 +48,12 @@ public static class OberonKernelHostBinding
                 context.Memory.Write32(context.Argument(1), checked((uint)sector));
                 context.Return();
             },
+            "New" => context =>
+            {
+                var pointer = kernel.New(context.Argument(1));
+                context.Memory.Write32(context.Argument(0), pointer);
+                context.Return();
+            },
             "GetSector" => context =>
             {
                 var data = kernel.GetSector(checked((int)context.Argument(0)));
