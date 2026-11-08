@@ -10,6 +10,7 @@ public sealed class Machine : IDisposable
 
     public Memory Memory { get; }
     public Risc5Cpu Cpu { get; }
+    public OberonHostCallDispatcher HostCalls { get; } = new();
     public DiskImage? Disk => _disk;
     public const ulong TimerInterruptPeriod = 1000;
     private DiskImage? _disk;
@@ -32,7 +33,11 @@ public sealed class Machine : IDisposable
 
     public void Step(bool irq = false)
     {
-        Cpu.Step(irq || _timerPhase == TimerInterruptPeriod - 1);
+        if (!HostCalls.TryDispatch(Memory, Cpu))
+        {
+            Cpu.Step(irq || _timerPhase == TimerInterruptPeriod - 1);
+        }
+
         _timerPhase = (_timerPhase + 1) % TimerInterruptPeriod;
         Memory.AdvanceTime();
     }

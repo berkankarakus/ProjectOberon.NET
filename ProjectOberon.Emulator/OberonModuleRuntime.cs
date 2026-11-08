@@ -25,6 +25,23 @@ public sealed class OberonModuleRuntime
         MemoryLoader.BindExternal(binding);
     }
 
+    public void BindExternal(
+        OberonExternalModuleBinding binding,
+        OberonHostCallDispatcher dispatcher)
+    {
+        ArgumentNullException.ThrowIfNull(dispatcher);
+        BindExternal(binding);
+        if (binding.EntryHandlers.Count != binding.EntryOffsets.Count)
+        {
+            throw new ArgumentException("external handler count does not match the symbol module", nameof(binding));
+        }
+
+        for (var index = 0; index < binding.EntryOffsets.Count; index++)
+        {
+            dispatcher.Register(binding.CodeAddress + binding.EntryOffsets[index], binding.EntryHandlers[index]);
+        }
+    }
+
     public OberonModuleImage Start(string name, uint? stackPointer = null)
     {
         return StartCore(name, commandName: null, stackPointer);

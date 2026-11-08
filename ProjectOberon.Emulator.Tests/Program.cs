@@ -9,6 +9,8 @@ var tests = new (string Name, Action Test)[]
     ("disk image read/write", DeviceTests.DiskImageReadWrite),
     ("SPI disk read/write", DeviceTests.SpiDiskReadWrite),
     ("machine timer", DeviceTests.MachineTimer),
+    ("host call dispatcher", HostCallTests.DispatchesRegisteredHostCalls),
+    ("external host binding", HostCallTests.BindsExternalEntryHandlers),
     ("disassembler and breakpoint", DeviceTests.DisassemblerAndBreakpoint),
     ("display and input mapping", DeviceTests.DisplayAndInputMapping),
     ("Oberon input decoder", DeviceTests.OberonInputDecoder),

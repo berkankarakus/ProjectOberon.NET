@@ -1,0 +1,51 @@
+using ProjectOberon.Emulator;
+
+internal static class HostCallTests
+{
+    public static void DispatchesRegisteredHostCalls()
+    {
+        using var machine = new Machine();
+        machine.Cpu.SetRegister(15, 0x200);
+        machine.Cpu.SetProgramCounter(0x100);
+        machine.HostCalls.Register(0x100, context =>
+        {
+            TestAssertions.Equal(7u, context.Argument(0));
+            context.Cpu.SetRegister(1, 42);
+            context.Return();
+        });
+        machine.Cpu.SetRegister(0, 7);
+
+        machine.Step();
+
+        TestAssertions.Equal(42u, machine.Cpu.Register(1));
+        TestAssertions.Equal(0x200u, machine.Cpu.PcByte);
+        TestAssertions.Equal(1ul, machine.Cpu.Steps);
+    }
+
+    public static void BindsExternalEntryHandlers()
+    {
+        var symbol = new OberonSymbolModule(
+            "Kernel",
+            1,
+            1,
+            [new OberonSymbolExport("clock", 1, 0)]);
+        var loader = new OberonModuleLoader(_ => null);
+        loader.RegisterExternal(symbol);
+        var memory = new Memory();
+        var runtime = new OberonModuleRuntime(memory, new Risc5Cpu(memory), loader);
+        var called = false;
+        var dispatcher = new OberonHostCallDispatcher();
+        var binding = new OberonExternalModuleBinding("Kernel", 0x3000, 0x4000, [0x20])
+        {
+            EntryHandlers = [context =>
+            {
+                called = true;
+                context.Return();
+            }]
+        };
+
+        runtime.BindExternal(binding, dispatcher);
+        TestAssertions.False(called);
+        TestAssertions.True(dispatcher.Addresses.Contains(0x4020u));
+    }
+}

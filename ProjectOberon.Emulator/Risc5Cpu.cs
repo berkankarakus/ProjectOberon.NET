@@ -122,4 +122,9 @@ public sealed partial class Risc5Cpu
         Steps++;
     }
 
+    internal void CountHostCall()
+    {
+        Steps++;
+    }
+
 }
