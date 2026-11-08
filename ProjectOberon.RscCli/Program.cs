@@ -1,72 +1,33 @@
 using ProjectOberon.Emulator;
 
-string? diskPath = null;
-var moduleName = "Oberon.rsc";
-var graph = false;
-var sourceMap = false;
-var sourceRoot = ".";
-var disassemble = false;
-string? commandName = null;
-var disassemblyCount = 32;
-for (var index = 0; index < args.Length; index++)
+var options = RscOptions.Parse(args);
+if (options.Help)
 {
-    switch (args[index])
-    {
-        case "--disk" when index + 1 < args.Length:
-            diskPath = args[++index];
-            break;
-        case "--module" when index + 1 < args.Length:
-            moduleName = args[++index];
-            break;
-        case "--graph":
-            graph = true;
-            break;
-        case "--source-map":
-            sourceMap = true;
-            break;
-        case "--root" when index + 1 < args.Length:
-            sourceRoot = args[++index];
-            break;
-        case "--disassemble":
-            disassemble = true;
-            break;
-        case "--command" when index + 1 < args.Length:
-            commandName = args[++index];
-            break;
-        case "--count" when index + 1 < args.Length:
-            if (!int.TryParse(args[++index], out disassemblyCount) || disassemblyCount < 1)
-                throw new ArgumentException("--count must be a positive integer");
-            break;
-        case "--help":
-            Console.WriteLine("usage: project-oberon-rsc --disk FILE [--module NAME] [--graph] [--source-map] [--root PATH] [--disassemble] [--command NAME] [--count N]");
-            return;
-        default:
-            throw new ArgumentException($"unknown or incomplete option: {args[index]}");
-    }
+    Console.WriteLine("usage: project-oberon-rsc --disk FILE [--module NAME] [--graph] [--source-map] [--root PATH] [--disassemble] [--command NAME] [--count N]");
+    return;
 }
 
-if (diskPath is null) throw new ArgumentException("--disk FILE is required");
 using var disk = new DiskImage();
-disk.Open(diskPath, writable: false);
+disk.Open(options.Disk!, writable: false);
 var fileSystem = new OberonFileSystem(disk);
-if (disassemble)
+if (options.Disassemble)
 {
-    var disassemblyEntry = fileSystem.Enumerate(moduleName).SingleOrDefault(candidate => candidate.Name.Equals(moduleName, StringComparison.Ordinal));
-    if (disassemblyEntry is null) throw new FileNotFoundException($"module not found in disk image: {moduleName}");
+    var disassemblyEntry = fileSystem.Enumerate(options.ModuleName).SingleOrDefault(candidate => candidate.Name.Equals(options.ModuleName, StringComparison.Ordinal));
+    if (disassemblyEntry is null) throw new FileNotFoundException($"module not found in disk image: {options.ModuleName}");
     var disassemblyModule = RscModuleReader.Parse(fileSystem.ReadFile(disassemblyEntry));
-    var sourcePath = OberonSourceLocator.FindModules(sourceRoot).TryGetValue(disassemblyModule.Name, out var located) ? located : null;
+    var sourcePath = OberonSourceLocator.FindModules(options.SourceRoot).TryGetValue(disassemblyModule.Name, out var located) ? located : null;
     var startOffset = 0;
-    if (commandName is not null)
+    if (options.CommandName is not null)
     {
-        var command = disassemblyModule.Commands.SingleOrDefault(candidate => candidate.Name.Equals(commandName, StringComparison.Ordinal));
-        if (command is null) throw new InvalidOperationException($"command not found in {disassemblyModule.Name}: {commandName}");
+        var command = disassemblyModule.Commands.SingleOrDefault(candidate => candidate.Name.Equals(options.CommandName, StringComparison.Ordinal));
+        if (command is null) throw new InvalidOperationException($"command not found in {disassemblyModule.Name}: {options.CommandName}");
         startOffset = command.CodeOffset;
-        var sourceProcedure = sourcePath is null ? null : OberonSourceAnalysis.FindProcedures(System.IO.Path.Combine(sourceRoot, sourcePath)).FirstOrDefault(procedure => procedure.Name == commandName);
-        Console.WriteLine($"command: {commandName}  code offset={startOffset}  source={(sourceProcedure is null ? "unknown" : $"{sourcePath}:{sourceProcedure.Line}")}");
+        var sourceProcedure = sourcePath is null ? null : OberonSourceAnalysis.FindProcedures(System.IO.Path.Combine(options.SourceRoot, sourcePath)).FirstOrDefault(procedure => procedure.Name == options.CommandName);
+        Console.WriteLine($"command: {options.CommandName}  code offset={startOffset}  source={(sourceProcedure is null ? "unknown" : $"{sourcePath}:{sourceProcedure.Line}")}");
     }
     else Console.WriteLine($"module: {disassemblyModule.Name}  code words={disassemblyModule.Code.Count}  start offset={startOffset}");
     var startWord = Math.Max(0, startOffset / 4);
-    var endWord = Math.Min(disassemblyModule.Code.Count, startWord + disassemblyCount);
+    var endWord = Math.Min(disassemblyModule.Code.Count, startWord + options.DisassemblyCount);
     for (var word = startWord; word < endWord; word++)
     {
         var raw = disassemblyModule.Code[word];
@@ -74,9 +35,9 @@ if (disassemble)
     }
     return;
 }
-if (sourceMap)
+if (options.SourceMap)
 {
-    var sources = OberonSourceLocator.FindModules(sourceRoot);
+    var sources = OberonSourceLocator.FindModules(options.SourceRoot);
     var entries = fileSystem.Enumerate()
         .Where(entry => entry.Name.EndsWith(".rsc", StringComparison.OrdinalIgnoreCase))
         .ToDictionary(entry => entry.Name, StringComparer.Ordinal);
@@ -90,7 +51,7 @@ if (sourceMap)
             Console.WriteLine($"  commands: {string.Join(", ", sourceModule.Commands.Select(command => command.Name))}");
             if (path is not null)
             {
-                var procedures = OberonSourceAnalysis.FindProcedures(System.IO.Path.Combine(sourceRoot, path));
+                var procedures = OberonSourceAnalysis.FindProcedures(System.IO.Path.Combine(options.SourceRoot, path));
                 foreach (var command in sourceModule.Commands)
                 {
                     var sourceProcedure = procedures.FirstOrDefault(procedure => procedure.Name == command.Name);
@@ -105,7 +66,7 @@ if (sourceMap)
     }
     return;
 }
-if (graph)
+if (options.Graph)
 {
     var entries = fileSystem.Enumerate()
         .Where(entry => entry.Name.EndsWith(".rsc", StringComparison.OrdinalIgnoreCase))
@@ -126,8 +87,8 @@ if (graph)
     Console.WriteLine("}");
     return;
 }
-var entry = fileSystem.Enumerate(moduleName).SingleOrDefault(e => e.Name.Equals(moduleName, StringComparison.Ordinal));
-if (entry is null) throw new FileNotFoundException($"module not found in disk image: {moduleName}");
+var entry = fileSystem.Enumerate(options.ModuleName).SingleOrDefault(e => e.Name.Equals(options.ModuleName, StringComparison.Ordinal));
+if (entry is null) throw new FileNotFoundException($"module not found in disk image: {options.ModuleName}");
 
 var module = RscModuleReader.Parse(fileSystem.ReadFile(entry));
 Console.WriteLine($"module: {module.Name}");

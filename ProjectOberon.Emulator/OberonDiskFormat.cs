@@ -8,6 +8,7 @@ public static class OberonDiskLayout
     public const int SectorLength = 1024;
     public const int FileSystemOffset = 0x80000;
     public const int LogicalSectorUnit = 29;
+    public const int DirectoryRootAddress = LogicalSectorUnit;
 
     public static uint PhysicalSector(int address)
     {

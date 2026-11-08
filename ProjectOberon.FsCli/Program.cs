@@ -1,34 +1,60 @@
 using ProjectOberon.Emulator;
 
-if (args.Length == 0 || args.Contains("--help", StringComparer.Ordinal))
+var options = FsOptions.Parse(args);
+if (options.Help)
 {
     Console.WriteLine("usage: project-oberon-fs --disk FILE [--prefix PREFIX]");
+    Console.WriteLine("       project-oberon-fs --disk FILE --cat NAME");
+    Console.WriteLine("       project-oberon-fs --disk FILE --put NAME HOST-FILE --writable");
+    Console.WriteLine("       project-oberon-fs --disk FILE --delete NAME --writable");
+    Console.WriteLine("       project-oberon-fs --disk FILE --rename OLD NEW --writable");
     return;
 }
 
-string? diskPath = null;
-var prefix = string.Empty;
-for (var index = 0; index < args.Length; index++)
+using var disk = new DiskImage();
+disk.Open(options.Disk!, writable: options.Writable);
+if (options.Command == FsCommand.List)
 {
-    switch (args[index])
+    var fileSystem = new OberonFileSystem(disk);
+    foreach (var entry in fileSystem.Enumerate(options.Prefix))
     {
-        case "--disk" when index + 1 < args.Length:
-            diskPath = args[++index];
-            break;
-        case "--prefix" when index + 1 < args.Length:
-            prefix = args[++index];
-            break;
-        default:
-            throw new ArgumentException($"unknown or incomplete option: {args[index]}");
+        var header = fileSystem.ReadHeader(entry.HeaderAddress);
+        Console.WriteLine($"{entry.Name,-16} {header.ContentLength,8} bytes  header={entry.HeaderAddress}");
     }
 }
-
-if (diskPath is null) throw new ArgumentException("--disk FILE is required");
-using var disk = new DiskImage();
-disk.Open(diskPath, writable: false);
-var fileSystem = new OberonFileSystem(disk);
-foreach (var entry in fileSystem.Enumerate(prefix))
+else if (options.Command == FsCommand.Cat)
 {
-    var header = fileSystem.ReadHeader(entry.HeaderAddress);
-    Console.WriteLine($"{entry.Name,-16} {header.ContentLength,8} bytes  header={entry.HeaderAddress}");
+    var fileSystem = new OberonFileSystem(disk);
+    var entry = fileSystem.Enumerate().SingleOrDefault(item => item.Name == options.Name);
+    if (entry is null) throw new FileNotFoundException($"Oberon file not found: {options.Name}");
+    using var output = Console.OpenStandardOutput();
+    output.Write(fileSystem.ReadFile(entry));
+}
+else
+{
+    var kernel = new OberonKernel(new Memory(), disk);
+    var files = new OberonFiles(kernel);
+    switch (options.Command)
+    {
+        case FsCommand.Put:
+            if (files.Old(options.Name!) is not null)
+                throw new IOException($"Oberon file already exists: {options.Name}");
+            var file = files.New(options.Name!);
+            file.Set().Write(File.ReadAllBytes(options.Path!));
+            files.Register(file);
+            Console.WriteLine($"created {file.Name} ({file.Length} bytes)");
+            break;
+        case FsCommand.Delete:
+            if (!files.Delete(options.Name!))
+                throw new FileNotFoundException($"Oberon file not found: {options.Name}");
+            Console.WriteLine($"deleted {options.Name}");
+            break;
+        case FsCommand.Rename:
+            if (files.Old(options.NewName!) is not null)
+                throw new IOException($"Oberon file already exists: {options.NewName}");
+            if (!files.Rename(options.Name!, options.NewName!))
+                throw new FileNotFoundException($"Oberon file not found: {options.Name}");
+            Console.WriteLine($"renamed {options.Name} to {options.NewName}");
+            break;
+    }
 }

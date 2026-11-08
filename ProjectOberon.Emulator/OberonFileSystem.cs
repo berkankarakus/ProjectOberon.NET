@@ -20,7 +20,7 @@ public sealed class OberonFileSystem
     public const int SectorLength = OberonDiskLayout.SectorLength;
     public const int FileSystemOffset = OberonDiskLayout.FileSystemOffset;
     public const int LogicalSectorUnit = OberonDiskLayout.LogicalSectorUnit;
-    public const int DirectoryRootAddress = OberonFileDirectory.RootAddress;
+    public const int DirectoryRootAddress = OberonDiskLayout.DirectoryRootAddress;
     public const int DirectoryMark = OberonDirectoryPageCodec.DirectoryMark;
     public const int HeaderMark = OberonFileHeaderCodec.HeaderMark;
 

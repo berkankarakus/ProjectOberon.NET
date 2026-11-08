@@ -60,16 +60,25 @@ public sealed class OberonKernel
 
     public int AllocSector(int hint)
     {
+        var limit = AvailableMapSize();
         var index = SectorIndex(hint);
-        do
+        if (index >= limit)
+        {
+            index = 0;
+        }
+
+        for (var scanned = 0; scanned < limit - 1; scanned++)
         {
             index++;
-            if (index == MapSize) index = 1;
-        } while (_sectorMap[index]);
+            if (index >= limit) index = 1;
+            if (_sectorMap[index]) continue;
 
-        _sectorMap[index] = true;
-        AllocatedSectors++;
-        return checked(index * LogicalSectorUnit);
+            _sectorMap[index] = true;
+            AllocatedSectors++;
+            return checked(index * LogicalSectorUnit);
+        }
+
+        throw new InvalidOperationException("Oberon disk has no free logical sectors");
     }
 
     public byte[] GetSector(int address)
@@ -107,5 +116,21 @@ public sealed class OberonKernel
             throw new ArgumentOutOfRangeException(nameof(address));
         }
         return index;
+    }
+
+    private int AvailableMapSize()
+    {
+        if (_disk is null)
+        {
+            return MapSize;
+        }
+
+        if (_disk.SectorCount <= FileSystemOffset)
+        {
+            throw new InvalidOperationException("Oberon disk image has no filesystem area");
+        }
+
+        var available = (_disk.SectorCount - (uint)FileSystemOffset) / 2;
+        return checked((int)Math.Min((uint)MapSize, available));
     }
 }

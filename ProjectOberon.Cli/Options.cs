@@ -1,0 +1,96 @@
+internal sealed record Options(
+    string? Rom,
+    string? Disk,
+    bool DiskWritable,
+    ulong Steps,
+    bool Help,
+    int? Trace,
+    uint? Breakpoint,
+    bool BootTrace,
+    bool BootGraph,
+    string? StartModule,
+    string? Command)
+{
+    public static Options Parse(string[] args)
+    {
+        string? rom = null;
+        string? disk = null;
+        var diskWritable = true;
+        ulong steps = 1000;
+        var help = false;
+        int? trace = null;
+        uint? breakpoint = null;
+        var bootTrace = false;
+        var bootGraph = false;
+        string? startModule = null;
+        string? command = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            switch (args[index])
+            {
+                case "--help":
+                case "-h":
+                    help = true;
+                    break;
+                case "--rom":
+                    rom = Next(args, ref index, "--rom");
+                    break;
+                case "--steps":
+                    if (!ulong.TryParse(Next(args, ref index, "--steps"), out steps))
+                        throw new ArgumentException("--steps must be an unsigned integer");
+                    break;
+                case "--disk":
+                    disk = Next(args, ref index, "--disk");
+                    break;
+                case "--read-only":
+                    diskWritable = false;
+                    break;
+                case "--trace":
+                    if (!int.TryParse(Next(args, ref index, "--trace"), out var traceValue) || traceValue < 0)
+                        throw new ArgumentException("--trace must be a non-negative integer");
+                    trace = traceValue;
+                    break;
+                case "--breakpoint":
+                    var breakpointText = Next(args, ref index, "--breakpoint").Replace("0x", string.Empty, StringComparison.OrdinalIgnoreCase);
+                    if (!uint.TryParse(breakpointText, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var breakpointValue))
+                        throw new ArgumentException("--breakpoint must be a hexadecimal PC address");
+                    breakpoint = breakpointValue;
+                    break;
+                case "--boot-trace":
+                    bootTrace = true;
+                    break;
+                case "--boot-graph":
+                    bootGraph = true;
+                    break;
+                case "--start-module":
+                    startModule = Next(args, ref index, "--start-module");
+                    break;
+                case "--command":
+                    command = Next(args, ref index, "--command");
+                    break;
+                default:
+                    throw new ArgumentException($"unknown or incomplete command-line option: {args[index]}");
+            }
+        }
+
+        if (!diskWritable && disk is null)
+            throw new ArgumentException("--read-only requires --disk FILE");
+        if ((bootTrace || bootGraph) && disk is null)
+            throw new ArgumentException("--boot-trace/--boot-graph requires --disk FILE");
+        if (startModule is not null && disk is null)
+            throw new ArgumentException("--start-module requires --disk FILE");
+        if (command is not null && startModule is null)
+            throw new ArgumentException("--command requires --start-module NAME");
+
+        return new Options(rom, disk, diskWritable, steps, help, trace, breakpoint, bootTrace, bootGraph, startModule, command);
+    }
+
+    public static void PrintUsage() => Console.Error.WriteLine("usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--breakpoint HEX-PC] [--boot-trace] [--boot-graph] [--start-module NAME [--command NAME]]");
+
+    private static string Next(string[] args, ref int index, string option)
+    {
+        if (++index >= args.Length)
+            throw new ArgumentException($"unknown or incomplete command-line option: {option}");
+        return args[index];
+    }
+}

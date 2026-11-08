@@ -27,13 +27,32 @@ public sealed class OberonModuleRuntime
 
     public OberonModuleImage Start(string name, uint? stackPointer = null)
     {
+        return StartCore(name, commandName: null, stackPointer);
+    }
+
+    public OberonModuleImage StartCommand(string name, string commandName, uint? stackPointer = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(commandName);
+        return StartCore(name, commandName, stackPointer);
+    }
+
+    private OberonModuleImage StartCore(string name, string? commandName, uint? stackPointer)
+    {
         var image = MemoryLoader.Load(name);
         var stack = stackPointer ?? AlignStack(_memory.RamSize);
         ValidateStack(stack);
 
+        var entryAddress = image.BodyAddress;
+        if (commandName is not null)
+        {
+            entryAddress = image.FindCommandAddress(commandName)
+                ?? throw new OberonModuleLoadException(2,
+                    $"Oberon command is not available: {image.Module.Name}.{commandName}");
+        }
+
         _cpu.SetRegister(12, ModuleTableAddress);
         _cpu.SetRegister(14, stack);
-        _cpu.SetProgramCounter(image.BodyAddress);
+        _cpu.SetProgramCounter(entryAddress);
         return image;
     }
 
