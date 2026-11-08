@@ -19,6 +19,7 @@ internal static partial class SdlNative
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_UpdateTexture(IntPtr texture, IntPtr rect, uint[] pixels, int pitch);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_SetWindowTitle(IntPtr window, string title);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_PollEvent(out Event sdlEvent);
+    [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern uint SDL_GetMouseState(out int x, out int y);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_RenderClear(IntPtr renderer);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_RenderCopy(IntPtr renderer, IntPtr texture, IntPtr source, IntPtr destination);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_RenderPresent(IntPtr renderer);

@@ -84,6 +84,8 @@ static void Run(Machine machine, UiOptions options, UiLog log)
         var paused = false;
         var uartOutput = string.Empty;
         byte mouseButtons = 0;
+        var lastLoggedMouseX = -1;
+        var lastLoggedMouseY = -1;
         UiLogic.UpdateMouse(machine.Memory, width / 2, height / 2, width, height, options.FlipY, mouseButtons);
 
         while (running)
@@ -139,6 +141,15 @@ static void Run(Machine machine, UiOptions options, UiLog log)
                 }
             }
 
+            var mouseState = SdlNative.SDL_GetMouseState(out var mouseX, out var mouseY);
+            mouseButtons = InputMapping.MouseButtonsFromState(mouseState);
+            UiLogic.UpdateMouse(machine.Memory, mouseX, mouseY, width, height, options.FlipY, mouseButtons);
+            if (mouseX != lastLoggedMouseX || mouseY != lastLoggedMouseY)
+            {
+                log.Write($"mouse motion x={mouseX} y={mouseY}");
+                lastLoggedMouseX = mouseX;
+                lastLoggedMouseY = mouseY;
+            }
             if (!paused) machine.Run(options.StepsPerFrame);
             var uart = machine.Memory.TakeUartOutput();
             if (uart.Length != 0) uartOutput += uart;
