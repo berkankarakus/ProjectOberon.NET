@@ -21,6 +21,7 @@ var tests = new (string Name, Action Test)[]
     ("Modules host binding", ModulesHostBindingTests.DispatchesLoadAndCommandServices),
     ("Modules load error state", ModulesHostBindingTests.ReportsLoadErrorsThroughModuleState),
     ("module initializer limits", ModulesHostBindingTests.LimitsNonReturningInitializer),
+    ("Oberon boot session", OberonBootSessionTests.InitializesAndStartsModule),
     ("core host binding composition", CoreHostBindingTests.BindsCoreExternalModules),
     ("runtime diagnostics", RuntimeDiagnosticsTests.FormatsMachineState),
     ("disassembler and breakpoint", DeviceTests.DisassemblerAndBreakpoint),
