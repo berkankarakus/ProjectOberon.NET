@@ -26,16 +26,17 @@ internal static class UiLogic
         return lit;
     }
 
-    public static void EnqueueKeyboard(Memory memory, int key, bool pressed)
+    public static bool EnqueueKeyboard(Memory memory, int key, bool pressed)
     {
         var mapped = InputMapping.KeyboardKey(key);
         if (mapped is not KeyboardKey keyboard)
         {
-            return;
+            return false;
         }
         if (keyboard.Extended) memory.EnqueueKeyboard(0xe0);
         if (!pressed) memory.EnqueueKeyboard(0xf0);
         memory.EnqueueKeyboard(keyboard.Code);
+        return true;
     }
 
     public static unsafe void EnqueueTextInput(Memory memory, SdlNative.TextInputEvent text)
@@ -55,8 +56,7 @@ internal static class UiLogic
     {
         var screenX = InputMapping.ScaleCoordinate(x, width, Display.Width);
         var screenY = InputMapping.ScaleCoordinate(y, height, Display.Height);
-        var memoryY = flipY ? (ushort)(Display.Height - 1 - screenY) : screenY;
-        memory.SetMouse(screenX, memoryY, buttons);
+        memory.SetMouse(screenX, screenY, buttons);
     }
 
     public static string WindowTitle(Machine machine, bool paused, string uart, int litPixels)

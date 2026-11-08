@@ -5,7 +5,7 @@ internal static partial class SdlUiTests
 {
     private static void ParsesUiOptions()
     {
-        var options = UiOptions.Parse(["--rom", "prom.mem", "--disk", "work.img", "--read-only", "--steps-per-frame", "200", "--scale", "2", "--no-flip-y", "--editor", "notes.txt", "--font", "Oberon10.Scn.Fnt", "--start-module", "Input", "--boot", "--command", "Start"]);
+        var options = UiOptions.Parse(["--rom", "prom.mem", "--disk", "work.img", "--read-only", "--steps-per-frame", "200", "--scale", "2", "--no-flip-y", "--log", "ui.log", "--editor", "notes.txt", "--font", "Oberon10.Scn.Fnt", "--start-module", "Input", "--boot", "--command", "Start"]);
 
         TestAssertions.Equal("prom.mem", options.Rom);
         TestAssertions.Equal("work.img", options.Disk);
@@ -15,6 +15,7 @@ internal static partial class SdlUiTests
         TestAssertions.False(options.FlipY);
         TestAssertions.Equal("notes.txt", options.Editor);
         TestAssertions.Equal("Oberon10.Scn.Fnt", options.Font);
+        TestAssertions.Equal("ui.log", options.LogPath);
         TestAssertions.Equal("Input", options.StartModule);
         TestAssertions.False(options.Initialize);
         TestAssertions.True(options.Boot);
@@ -57,7 +58,7 @@ internal static partial class SdlUiTests
         var memory = new Memory();
         UiLogic.UpdateMouse(memory, 50, 25, 100, 50, flipY: true, buttons: 5);
         var status = memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.KeyboardStatus);
-        TestAssertions.Equal((5u << 24) | (376u << 12) | 516u, status & 0x0fff_ffffu | (5u << 24));
+        TestAssertions.Equal((5u << 24) | (391u << 12) | 516u, status & 0x0fff_ffffu | (5u << 24));
     }
 
     private static void RendersFramebufferPixels()

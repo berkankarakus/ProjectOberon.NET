@@ -11,6 +11,7 @@ internal sealed record UiOptions(
     bool FlipY,
     string? Editor,
     string? Font,
+    string? LogPath,
     string? StartModule,
     bool Initialize,
     bool Boot,
@@ -24,7 +25,7 @@ internal sealed record UiOptions(
         var steps = 100_000UL;
         var scale = 1.25;
         var flipY = true;
-        string? editor = null, font = null, startModule = null, command = null;
+        string? editor = null, font = null, logPath = null, startModule = null, command = null;
         var initialize = false;
         var boot = false;
         var help = false;
@@ -62,6 +63,9 @@ internal sealed record UiOptions(
                 case "--font" when index + 1 < args.Length:
                     font = args[++index];
                     break;
+                case "--log" when index + 1 < args.Length:
+                    logPath = args[++index];
+                    break;
                 case "--start-module" when index + 1 < args.Length:
                     startModule = args[++index];
                     break;
@@ -92,10 +96,10 @@ internal sealed record UiOptions(
             throw new ArgumentException("--initialize and --boot cannot be used together");
         if (command is not null && startModule is null)
             throw new ArgumentException("--command requires --start-module NAME");
-        return new UiOptions(rom, disk, writable, steps, scale, flipY, editor, font,
+        return new UiOptions(rom, disk, writable, steps, scale, flipY, editor, font, logPath,
             startModule, initialize, boot, command, help);
     }
 
     public static void PrintUsage() => Console.Error.WriteLine(
-        "usage: project-oberon-ui [--rom FILE] [--disk FILE] [--read-only] [--steps-per-frame N] [--scale N] [--no-flip-y] [--editor FILE --font FILE] [--start-module NAME [--initialize|--boot] [--command NAME]]");
+        "usage: project-oberon-ui [--rom FILE] [--disk FILE] [--read-only] [--steps-per-frame N] [--scale N] [--no-flip-y] [--log FILE] [--editor FILE --font FILE] [--start-module NAME [--initialize|--boot] [--command NAME]]");
 }

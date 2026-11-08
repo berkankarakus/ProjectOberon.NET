@@ -181,10 +181,9 @@ internal sealed partial class EditorSession
     {
         var screenX = InputMapping.ScaleCoordinate(x, width, Display.Width);
         var screenY = InputMapping.ScaleCoordinate(y, height, Display.Height);
-        var memoryY = flipY ? Display.Height - 1 - screenY : screenY;
         _flipY = flipY;
         var keys = extendSelection ? 1u : 4u;
-        _eventLoop.ProcessMouse(keys, screenX, memoryY, extendSelection);
+        _eventLoop.ProcessMouse(keys, screenX, screenY, extendSelection);
     }
 
     private void SetCursorFromDisplayCoordinates(int x, int y, bool extendSelection)

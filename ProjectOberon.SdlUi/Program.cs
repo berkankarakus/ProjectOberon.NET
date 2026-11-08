@@ -13,6 +13,7 @@ try
         return;
     }
 
+    using var log = UiLog.Open(options.LogPath);
     machine = new Machine();
     if (options.Rom is not null) machine.Memory.LoadRomFile(options.Rom);
     if (options.Disk is not null) machine.OpenDisk(options.Disk, options.DiskWritable);
@@ -25,6 +26,7 @@ try
             Console.WriteLine($"booted module {image.Module.Name}"
                 + (options.Command is null ? string.Empty : $" command {options.Command}")
                 + $" at pc=0x{machine.Cpu.PcByte:x6}");
+            log.Write($"boot module={image.Module.Name} pc=0x{machine.Cpu.PcByte:x6}");
         }
         else
         {
@@ -32,15 +34,17 @@ try
             {
                 var descriptor = boot.Initialize(options.StartModule);
                 Console.WriteLine($"initialized module {options.StartModule} descriptor=0x{descriptor:x8}");
+                log.Write($"initialize module={options.StartModule} descriptor=0x{descriptor:x8}");
             }
 
             var image = boot.Start(options.StartModule, options.Command);
             Console.WriteLine($"started module {image.Module.Name}"
                 + (options.Command is null ? string.Empty : $" command {options.Command}")
                 + $" at pc=0x{machine.Cpu.PcByte:x6}");
+            log.Write($"start module={image.Module.Name} pc=0x{machine.Cpu.PcByte:x6}");
         }
     }
-    Run(machine, options);
+    Run(machine, options, log);
 }
 catch (Exception error)
 {
@@ -51,7 +55,7 @@ finally
 {
     machine?.Dispose();
 }
-static void Run(Machine machine, UiOptions options)
+static void Run(Machine machine, UiOptions options, UiLog log)
 {
     if (SdlNative.SDL_Init(SdlNative.InitVideo) != 0) throw new InvalidOperationException(SdlNative.Error());
     IntPtr window = IntPtr.Zero, renderer = IntPtr.Zero, texture = IntPtr.Zero;
@@ -91,8 +95,10 @@ static void Run(Machine machine, UiOptions options)
                         running = false;
                         break;
                     case SdlNative.TextInput:
+                        var text = UiLogic.ReadTextInput(sdlEvent.Text);
+                        log.Write($"text-input length={text.Length}");
                         if (editor is null) UiLogic.EnqueueTextInput(machine.Memory, sdlEvent.Text);
-                        else editor.InsertText(UiLogic.ReadTextInput(sdlEvent.Text));
+                        else editor.InsertText(text);
                         break;
                     case SdlNative.WindowEvent when sdlEvent.Window.Event == SdlNative.WindowEventSizeChanged:
                         width = Math.Max(1, sdlEvent.Window.Data1);
@@ -109,6 +115,8 @@ static void Run(Machine machine, UiOptions options)
                         if (sdlEvent.Type == SdlNative.MouseButtonDown) mouseButtons |= mask;
                         else mouseButtons &= (byte)~mask;
                         UiLogic.UpdateMouse(machine.Memory, sdlEvent.Button.X, sdlEvent.Button.Y, width, height, options.FlipY, mouseButtons);
+                        log.Write($"mouse button={(sdlEvent.Type == SdlNative.MouseButtonDown ? "down" : "up")} "
+                            + $"button={sdlEvent.Button.Button} x={sdlEvent.Button.X} y={sdlEvent.Button.Y}");
                         editor?.HandleMouseButton(sdlEvent.Type == SdlNative.MouseButtonDown, sdlEvent.Button.Button,
                             sdlEvent.Button.X, sdlEvent.Button.Y, width, height, options.FlipY);
                         break;
@@ -120,7 +128,12 @@ static void Run(Machine machine, UiOptions options)
                         else if (sdlEvent.Type == SdlNative.KeyDown && key == 0x40000042) paused = !paused;
                         else if (sdlEvent.Type == SdlNative.KeyDown && key == 0x40000043) machine.Step();
                         else if (editor is not null && sdlEvent.Type == SdlNative.KeyDown) editor.HandleKey(key, sdlEvent.Key.Keysym.Mod);
-                        else UiLogic.EnqueueKeyboard(machine.Memory, key, sdlEvent.Type == SdlNative.KeyDown);
+                        else
+                        {
+                            var pressed = sdlEvent.Type == SdlNative.KeyDown;
+                            var mapped = UiLogic.EnqueueKeyboard(machine.Memory, key, pressed);
+                            log.Write($"key {(pressed ? "down" : "up")} sym=0x{key:x8} mapped={mapped} repeat={sdlEvent.Key.Repeat}");
+                        }
                         break;
                 }
             }
