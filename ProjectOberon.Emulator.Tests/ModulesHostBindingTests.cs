@@ -20,7 +20,7 @@ internal static class ModulesHostBindingTests
         loader.RegisterExternal(symbol);
         using var machine = new Machine();
         var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, loader);
-        var binding = OberonModulesHostBinding.Create(symbol, runtime, loader, 0x3000, 0x5000);
+        var binding = OberonModulesHostBinding.Create(symbol, runtime, loader, 0x3000, 0x5000, machine.HostCalls);
         runtime.BindExternal(binding, machine.HostCalls);
         WriteCString(machine.Memory, 0x600, "Demo");
         WriteCString(machine.Memory, 0x700, "Start");
@@ -42,9 +42,15 @@ internal static class ModulesHostBindingTests
         var commandAddress = machine.Cpu.Register(0);
         TestAssertions.Equal(runtime.MemoryLoader.LoadedImages.Single().CodeAddress, commandAddress);
 
-        runtime.Initialize(runtime.MemoryLoader.LoadedImages.Single(), machine.HostCalls);
         TestAssertions.Equal(0x200u, machine.Cpu.PcByte);
         TestAssertions.Equal(0x200u, machine.Cpu.Register(15));
+        TestAssertions.Equal(3ul, machine.Cpu.Steps);
+
+        machine.Cpu.SetRegister(0, 0x600);
+        machine.Cpu.SetRegister(1, 0x800);
+        machine.Cpu.SetProgramCounter(0x5020);
+        machine.Step();
+        TestAssertions.Equal(4ul, machine.Cpu.Steps);
 
         machine.Cpu.SetRegister(0, 0x600);
         machine.Cpu.SetProgramCounter(0x5028);
