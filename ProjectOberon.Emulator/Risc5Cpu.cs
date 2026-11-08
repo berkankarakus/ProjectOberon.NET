@@ -36,6 +36,31 @@ public sealed class Risc5Cpu
     public ulong Steps { get; private set; }
     public uint Register(int index) => _registers[index & 15];
 
+    public void SetRegister(int index, uint value)
+    {
+        if (index is < 0 or > 15)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), "RISC5 has 16 general-purpose registers");
+        }
+
+        WriteRegister(index, value);
+    }
+
+    public void SetProgramCounter(uint byteAddress)
+    {
+        if ((byteAddress & 3) != 0)
+        {
+            throw new ArgumentException("program counter must be word-aligned", nameof(byteAddress));
+        }
+
+        if (byteAddress > Memory.AddressMask)
+        {
+            throw new ArgumentOutOfRangeException(nameof(byteAddress));
+        }
+
+        _pc = (byteAddress >> 2) & InstructionBits.BranchDisplacementMask;
+    }
+
     public void Reset()
     {
         Array.Clear(_registers);

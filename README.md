@@ -160,3 +160,14 @@ dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
   --steps 1000000 \
   --boot-graph > oberon-boot.dot
 ```
+
+Start a compiled module directly from the disk image using the C# module
+loader. This prepares its RAM image, module table, stack and body entry point
+before executing the requested number of instructions:
+
+```sh
+dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+  --disk RISC-work.img \
+  --start-module Oberon \
+  --steps 1000
+```

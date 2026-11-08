@@ -438,9 +438,10 @@ static void OberonModuleMemoryImage()
     };
     var moduleLoader = new OberonModuleLoader(name => modules.TryGetValue($"{name}.rsc", out var data) ? data : null);
     var memory = new Memory(64 * 1024);
-    var imageLoader = new OberonModuleMemoryLoader(memory, moduleLoader, 0x1000, 0x100);
-    var image = imageLoader.Load("A");
-    var imported = imageLoader.LoadedImages.Single(candidate => candidate.Module.Name == "B");
+    var cpu = new Risc5Cpu(memory);
+    var runtime = new OberonModuleRuntime(memory, cpu, moduleLoader, 0x1000, 0x100);
+    var image = runtime.Start("A");
+    var imported = runtime.MemoryLoader.LoadedImages.Single(candidate => candidate.Module.Name == "B");
 
     Equal(imported.DescriptorAddress, memory.Read32(image.ImportAddress));
     Equal(imported.DataAddress, memory.Read32(0x100u + (uint)imported.Module.Number * 4));
@@ -451,6 +452,9 @@ static void OberonModuleMemoryImage()
     Equal(0xc700_0020u, memory.Read32(imported.CodeAddress));
     Equal(imported.CodeAddress, imported.FindCommandAddress("Run")!.Value);
     Equal(image.CodeAddress, image.BodyAddress);
+    Equal(0x100u, cpu.Register(12));
+    Equal((uint)memory.RamSize - 4, cpu.Register(14));
+    Equal(image.BodyAddress, cpu.PcByte);
 }
 
 static void OberonModuleFixups()

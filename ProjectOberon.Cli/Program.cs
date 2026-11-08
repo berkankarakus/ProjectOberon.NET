@@ -12,6 +12,16 @@ try
     using var machine = new Machine();
     if (options.Rom is not null) machine.Memory.LoadRomFile(options.Rom);
     if (options.Disk is not null) machine.OpenDisk(options.Disk, options.DiskWritable);
+    if (options.StartModule is not null)
+    {
+        var fileSystem = new OberonFileSystem(machine.Disk!);
+        var files = new OberonFiles(fileSystem);
+        var moduleLoader = new OberonModuleLoader(files);
+        var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, moduleLoader);
+        var image = runtime.Start(options.StartModule);
+        Console.WriteLine($"started module {image.Module.Name} at pc=0x{image.BodyAddress:x6}");
+    }
+
     var debugger = new MachineDebugger(machine);
     if (options.Breakpoint is uint breakpoint) debugger.AddBreakpoint(breakpoint);
     var loadedModules = options.BootTrace || options.BootGraph ? AttachBootTrace(machine) : null;
@@ -53,7 +63,7 @@ try
     Console.WriteLine($"steps={cpu.Steps} pc=0x{cpu.PcByte:x6} r14=0x{cpu.Register(14):x8} r15=0x{cpu.Register(15):x8}");
 }
 
-catch (Exception error) when (error is ArgumentException or InvalidDataException or IOException or OverflowException)
+catch (Exception error) when (error is ArgumentException or InvalidDataException or IOException or OverflowException or OberonModuleLoadException)
 {
     Console.Error.WriteLine($"project-oberon: {error.Message}");
     Environment.ExitCode = 1;
@@ -107,7 +117,17 @@ static void PrintBootGraph(Machine machine, BootTraceState state)
     Console.WriteLine("}");
 }
 
-internal sealed record Options(string? Rom, string? Disk, bool DiskWritable, ulong Steps, bool Help, int? Trace, uint? Breakpoint, bool BootTrace, bool BootGraph)
+internal sealed record Options(
+    string? Rom,
+    string? Disk,
+    bool DiskWritable,
+    ulong Steps,
+    bool Help,
+    int? Trace,
+    uint? Breakpoint,
+    bool BootTrace,
+    bool BootGraph,
+    string? StartModule)
 {
     public static Options Parse(string[] args)
     {
@@ -120,6 +140,7 @@ internal sealed record Options(string? Rom, string? Disk, bool DiskWritable, ulo
         uint? breakpoint = null;
         var bootTrace = false;
         var bootGraph = false;
+        string? startModule = null;
         for (var index = 0; index < args.Length; index++)
         {
             switch (args[index])
@@ -158,16 +179,20 @@ internal sealed record Options(string? Rom, string? Disk, bool DiskWritable, ulo
                 case "--boot-graph":
                     bootGraph = true;
                     break;
+                case "--start-module":
+                    startModule = Next(args, ref index, "--start-module");
+                    break;
                 default:
                     throw new ArgumentException($"unknown or incomplete command-line option: {args[index]}");
             }
         }
         if (!diskWritable && disk is null) throw new ArgumentException("--read-only requires --disk FILE");
         if ((bootTrace || bootGraph) && disk is null) throw new ArgumentException("--boot-trace/--boot-graph requires --disk FILE");
-        return new Options(rom, disk, diskWritable, steps, help, trace, breakpoint, bootTrace, bootGraph);
+        if (startModule is not null && disk is null) throw new ArgumentException("--start-module requires --disk FILE");
+        return new Options(rom, disk, diskWritable, steps, help, trace, breakpoint, bootTrace, bootGraph, startModule);
     }
 
-    public static void PrintUsage() => Console.Error.WriteLine("usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--breakpoint HEX-PC] [--boot-trace] [--boot-graph]");
+    public static void PrintUsage() => Console.Error.WriteLine("usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--breakpoint HEX-PC] [--boot-trace] [--boot-graph] [--start-module NAME]");
 
     private static string Next(string[] args, ref int index, string option)
     {
