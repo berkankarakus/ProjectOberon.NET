@@ -171,3 +171,9 @@ dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
   --start-module Oberon \
   --steps 1000
 ```
+
+The reference `RISC-work.img` keeps `Kernel`, `Files` and `Modules` as
+kernel-linked modules and stores only their `.smb` symbol files. A direct
+`--start-module Oberon` run therefore requires host-backed bindings for those
+core modules; the CLI reports the missing binding instead of treating it as a
+normal RSC file.
