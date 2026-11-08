@@ -16,7 +16,7 @@ if (options.Disassemble)
     if (disassemblyEntry is null) throw new FileNotFoundException($"module not found in disk image: {options.ModuleName}");
     var disassemblyModule = RscModuleReader.Parse(fileSystem.ReadFile(disassemblyEntry));
     var sourcePath = OberonSourceLocator.FindModules(options.SourceRoot).TryGetValue(disassemblyModule.Name, out var located) ? located : null;
-    var startOffset = 0;
+    var startOffset = disassemblyModule.BodyOffset;
     if (options.CommandName is not null)
     {
         var command = disassemblyModule.Commands.SingleOrDefault(candidate => candidate.Name.Equals(options.CommandName, StringComparison.Ordinal));
@@ -25,7 +25,7 @@ if (options.Disassemble)
         var sourceProcedure = sourcePath is null ? null : OberonSourceAnalysis.FindProcedures(System.IO.Path.Combine(options.SourceRoot, sourcePath)).FirstOrDefault(procedure => procedure.Name == options.CommandName);
         Console.WriteLine($"command: {options.CommandName}  code offset={startOffset}  source={(sourceProcedure is null ? "unknown" : $"{sourcePath}:{sourceProcedure.Line}")}");
     }
-    else Console.WriteLine($"module: {disassemblyModule.Name}  code words={disassemblyModule.Code.Count}  start offset={startOffset}");
+    else Console.WriteLine($"module: {disassemblyModule.Name}  code words={disassemblyModule.Code.Count}  body offset={startOffset}");
     var startWord = Math.Max(0, startOffset / 4);
     var endWord = Math.Min(disassemblyModule.Code.Count, startWord + options.DisassemblyCount);
     for (var word = startWord; word < endWord; word++)
