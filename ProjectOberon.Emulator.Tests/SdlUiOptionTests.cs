@@ -58,7 +58,7 @@ internal static partial class SdlUiTests
         var memory = new Memory();
         UiLogic.UpdateMouse(memory, 50, 25, 100, 50, flipY: true, buttons: 5);
         var status = memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.KeyboardStatus);
-        TestAssertions.Equal((5u << 24) | (391u << 12) | 516u, status & 0x0fff_ffffu | (5u << 24));
+        TestAssertions.Equal((5u << 24) | (376u << 12) | 516u, status & 0x0fff_ffffu | (5u << 24));
     }
 
     private static void RendersFramebufferPixels()

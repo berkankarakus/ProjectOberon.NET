@@ -56,7 +56,8 @@ internal static class UiLogic
     {
         var screenX = InputMapping.ScaleCoordinate(x, width, Display.Width);
         var screenY = InputMapping.ScaleCoordinate(y, height, Display.Height);
-        memory.SetMouse(screenX, screenY, buttons);
+        var memoryY = flipY ? (ushort)(Display.Height - 1 - screenY) : screenY;
+        memory.SetMouse(screenX, memoryY, buttons);
     }
 
     public static string WindowTitle(Machine machine, bool paused, string uart, int litPixels)
