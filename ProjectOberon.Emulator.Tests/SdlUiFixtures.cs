@@ -20,10 +20,6 @@ internal static partial class SdlUiTests
             AddInt16(data, 0);
             AddInt16(data, 2);
             AddInt16(data, 2);
-        }
-
-        for (var index = 0; index < 3; index++)
-        {
             data.Add(1);
             data.Add(2);
         }

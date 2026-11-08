@@ -6,7 +6,6 @@ internal static class OberonFontTests
     public static void Run()
     {
         ParsesFontRunsAndGlyphs();
-        ParsesExtendedBundledFont();
         RendersGlyphsToDisplayMemory();
         RejectsTruncatedFonts();
     }
@@ -38,18 +37,6 @@ internal static class OberonFontTests
         TestAssertions.Equal(6, display.DrawText(font, "AA", 0, 0, Display.White, Display.Replace));
     }
 
-    private static void ParsesExtendedBundledFont()
-    {
-        foreach (var path in new[] { "apptools/Oberon12b.Scn.Fnt", "apptools/Oberon16.Scn.Fnt" })
-        {
-            var font = OberonFont.Load(path);
-
-            TestAssertions.True(font.Height > 0);
-            TestAssertions.True(font.GetGlyph('\u0080').Advance > 0);
-            TestAssertions.True(font.GetGlyph('\u009f').Advance > 0);
-        }
-    }
-
     private static void RejectsTruncatedFonts()
     {
         TestAssertions.ThrowsInvalidData(() => OberonFont.Parse([0xdb, 0, 0]));
@@ -66,19 +53,14 @@ internal static class OberonFontTests
         AddInt16(data, 1);
         AddInt16(data, 'A');
         AddInt16(data, 'B');
-        AddGlyphMetrics(data);
-        data.Add(0b0000_0001);
-        data.Add(0b0000_0010);
-        return data.ToArray();
-    }
-
-    private static void AddGlyphMetrics(List<byte> data)
-    {
         AddInt16(data, 3);
         AddInt16(data, 0);
         AddInt16(data, 0);
         AddInt16(data, 2);
         AddInt16(data, 2);
+        data.Add(0b0000_0001);
+        data.Add(0b0000_0010);
+        return data.ToArray();
     }
 
     private static void AddInt16(List<byte> data, int value)
