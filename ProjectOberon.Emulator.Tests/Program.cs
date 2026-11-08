@@ -48,6 +48,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon text viewport controller", OberonTextViewportControllerTests.Run),
     ("Oberon messages", OberonMessageTests.Run),
     ("Oberon event loop", OberonEventLoopTests.Run),
+    ("Oberon task scheduler", OberonTaskSchedulerTests.Run),
     ("Oberon text codec", OberonTextCodecTests.Run),
     ("Oberon text editor", OberonTextEditorTests.Run),
     ("Oberon file name rules", OberonFileNameTests.Run),

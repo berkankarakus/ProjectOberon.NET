@@ -191,6 +191,11 @@ normal emulator path continues to feed the emulated keyboard and mouse MMIO
 devices directly. SDL constants, event layouts and native bindings are kept
 behind focused source files in the SDL project.
 
+`OberonTaskScheduler` ports the task-list portion of `Oberon.Mod`: task
+creation, circular-list installation/removal, periodic dispatch, active/idle
+state and the collector activity counter are available as a deterministic
+host-side component with focused tests.
+
 List the files in an Oberon disk image without booting the emulator:
 
 ```sh
