@@ -17,6 +17,26 @@ public sealed class OberonHostCallContext
         return Cpu.Register(register);
     }
 
+    public byte[] ReadBytes(uint address, int length)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
+        var bytes = new byte[length];
+        for (var index = 0; index < bytes.Length; index++)
+        {
+            bytes[index] = Memory.Read8(address + checked((uint)index));
+        }
+
+        return bytes;
+    }
+
+    public void WriteBytes(uint address, ReadOnlySpan<byte> bytes)
+    {
+        for (var index = 0; index < bytes.Length; index++)
+        {
+            Memory.Write8(address + checked((uint)index), bytes[index]);
+        }
+    }
+
     public void Return()
     {
         Cpu.SetProgramCounter(Cpu.Register(15));

@@ -42,6 +42,24 @@ public static class OberonKernelHostBinding
                 kernel.FreeSector(checked((int)context.Argument(0)));
                 context.Return();
             },
+            "AllocSector" => context =>
+            {
+                var sector = kernel.AllocSector(checked((int)context.Argument(0)));
+                context.Memory.Write32(context.Argument(1), checked((uint)sector));
+                context.Return();
+            },
+            "GetSector" => context =>
+            {
+                var data = kernel.GetSector(checked((int)context.Argument(0)));
+                context.WriteBytes(context.Argument(1), data);
+                context.Return();
+            },
+            "PutSector" => context =>
+            {
+                var data = context.ReadBytes(context.Argument(1), OberonKernel.SectorLength);
+                kernel.PutSector(checked((int)context.Argument(0)), data);
+                context.Return();
+            },
             "SetClock" => context =>
             {
                 kernel.SetClock(checked((int)context.Argument(0)));
