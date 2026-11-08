@@ -12,7 +12,7 @@ var tests = new (string Name, Action Test)[]
     ("host call dispatcher", HostCallTests.DispatchesRegisteredHostCalls),
     ("external host binding", HostCallTests.BindsExternalEntryHandlers),
     ("Kernel host binding", KernelHostBindingTests.DispatchesClockAndSectorMapServices),
-    ("Kernel host binding guards", KernelHostBindingTests.RejectsUnsupportedKernelProcedure),
+    ("Kernel install host binding", KernelHostBindingTests.DispatchesInstallService),
     ("Kernel heap host binding", KernelHostBindingTests.DispatchesHeapAllocationService),
     ("Kernel sector I/O host binding", KernelHostBindingTests.DispatchesSectorIoServices),
     ("Files host binding", FilesHostBindingTests.DispatchesReadServices),
