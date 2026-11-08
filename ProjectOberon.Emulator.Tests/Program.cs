@@ -11,6 +11,8 @@ var tests = new (string Name, Action Test)[]
     ("machine timer", DeviceTests.MachineTimer),
     ("host call dispatcher", HostCallTests.DispatchesRegisteredHostCalls),
     ("external host binding", HostCallTests.BindsExternalEntryHandlers),
+    ("Kernel host binding", KernelHostBindingTests.DispatchesClockAndSectorMapServices),
+    ("Kernel host binding guards", KernelHostBindingTests.RejectsUnsupportedKernelProcedure),
     ("disassembler and breakpoint", DeviceTests.DisassemblerAndBreakpoint),
     ("display and input mapping", DeviceTests.DisplayAndInputMapping),
     ("Oberon input decoder", DeviceTests.OberonInputDecoder),
