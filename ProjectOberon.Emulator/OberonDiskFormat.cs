@@ -31,7 +31,10 @@ public static class OberonDiskLayout
     public static void WriteSector(DiskImage disk, int address, ReadOnlySpan<byte> data)
     {
         ArgumentNullException.ThrowIfNull(disk);
-        if (data.Length != SectorLength) throw new ArgumentException($"sector must contain {SectorLength} bytes", nameof(data));
+        if (data.Length != SectorLength)
+        {
+            throw new ArgumentException($"sector must contain {SectorLength} bytes", nameof(data));
+        }
         var physical = PhysicalSector(address);
         disk.Write(physical, data[..DiskImage.SectorSize]);
         disk.Write(physical + 1, data[DiskImage.SectorSize..]);
@@ -47,8 +50,15 @@ public static class OberonFileHeaderCodec
 
     public static OberonFileHeader Read(ReadOnlySpan<byte> sector, int headerAddress)
     {
-        if (sector.Length < OberonDiskLayout.SectorLength) throw new ArgumentException("header sector is too small", nameof(sector));
-        if (ReadInt32(sector, 0) != HeaderMark) throw new InvalidDataException($"invalid Oberon file header at sector {headerAddress:x}");
+        if (sector.Length < OberonDiskLayout.SectorLength)
+        {
+            throw new ArgumentException("header sector is too small", nameof(sector));
+        }
+
+        if (ReadInt32(sector, 0) != HeaderMark)
+        {
+            throw new InvalidDataException($"invalid Oberon file header at sector {headerAddress:x}");
+        }
         return new OberonFileHeader(
             ReadName(sector, 4),
             ReadInt32(sector, 36),
@@ -61,7 +71,10 @@ public static class OberonFileHeaderCodec
     public static int[] ReadPageAddresses(OberonFileHeader header, Func<int, byte[]> readSector)
     {
         ArgumentNullException.ThrowIfNull(readSector);
-        if (header.AllocatedPages < 0) throw new InvalidDataException("invalid Oberon file length");
+        if (header.AllocatedPages < 0)
+        {
+            throw new InvalidDataException("invalid Oberon file length");
+        }
         var pages = new int[header.AllocatedPages + 1];
         for (var index = 0; index < pages.Length; index++)
         {
@@ -71,11 +84,16 @@ public static class OberonFileHeaderCodec
                 var extensionIndex = (index - SectorCount) / 256;
                 var entry = (index - SectorCount) % 256;
                 if (extensionIndex >= header.ExtensionAddresses.Length || header.ExtensionAddresses[extensionIndex] == 0)
+                {
                     throw new InvalidDataException("Oberon file header contains a missing extension page");
+                }
                 var extension = readSector(header.ExtensionAddresses[extensionIndex]);
                 pages[index] = ReadInt32(extension, entry * 4);
             }
-            if (pages[index] == 0) throw new InvalidDataException("Oberon file header contains a missing page address");
+            if (pages[index] == 0)
+            {
+                throw new InvalidDataException("Oberon file header contains a missing page address");
+            }
         }
         return pages;
     }
@@ -83,8 +101,15 @@ public static class OberonFileHeaderCodec
     public static void Write(Span<byte> sector, string name, int allocatedPages, int lastPageLength, int date,
         ReadOnlySpan<int> extensions, ReadOnlySpan<int> pages)
     {
-        if (sector.Length < OberonDiskLayout.SectorLength) throw new ArgumentException("header sector is too small", nameof(sector));
-        if (name.Length >= 32) throw new ArgumentException("Oberon file name is too long", nameof(name));
+        if (sector.Length < OberonDiskLayout.SectorLength)
+        {
+            throw new ArgumentException("header sector is too small", nameof(sector));
+        }
+
+        if (name.Length >= 32)
+        {
+            throw new ArgumentException("Oberon file name is too long", nameof(name));
+        }
         sector.Clear();
         BinaryPrimitives.WriteInt32LittleEndian(sector, HeaderMark);
         Encoding.ASCII.GetBytes(name).CopyTo(sector[4..]);
@@ -102,7 +127,10 @@ public static class OberonFileHeaderCodec
     private static int[] ReadIntArray(ReadOnlySpan<byte> data, int offset, int count)
     {
         var result = new int[count];
-        for (var index = 0; index < count; index++) result[index] = ReadInt32(data, offset + index * 4);
+        for (var index = 0; index < count; index++)
+        {
+            result[index] = ReadInt32(data, offset + index * 4);
+        }
         return result;
     }
 
@@ -132,11 +160,17 @@ public static class OberonDirectoryPageCodec
 
     public static OberonDirectoryPage Read(ReadOnlySpan<byte> data, int address)
     {
-        if (data.Length < PageSize) throw new ArgumentException("directory page is too small", nameof(data));
+        if (data.Length < PageSize)
+        {
+            throw new ArgumentException("directory page is too small", nameof(data));
+        }
         if (BinaryPrimitives.ReadInt32LittleEndian(data) != DirectoryMark)
             throw new InvalidDataException($"invalid Oberon directory page at sector {address:x}");
         var count = BinaryPrimitives.ReadInt32LittleEndian(data[4..]);
-        if (count < 0 || count > MaxEntries) throw new InvalidDataException($"invalid directory entry count: {count}");
+        if (count < 0 || count > MaxEntries)
+        {
+            throw new InvalidDataException($"invalid directory entry count: {count}");
+        }
         var page = new OberonDirectoryPage { Children = [BinaryPrimitives.ReadInt32LittleEndian(data[8..])] };
         for (var index = 0; index < count; index++)
         {

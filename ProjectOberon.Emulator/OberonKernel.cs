@@ -26,7 +26,10 @@ public sealed class OberonKernel
     public void InitSectorMap()
     {
         Array.Clear(_sectorMap);
-        for (var index = 0; index < 64; index++) _sectorMap[index] = true;
+        for (var index = 0; index < 64; index++)
+        {
+            _sectorMap[index] = true;
+        }
         AllocatedSectors = 0;
     }
 
@@ -40,7 +43,10 @@ public sealed class OberonKernel
     public void ReserveSector(int sector)
     {
         var index = SectorIndex(sector);
-        if (_sectorMap[index]) return;
+        if (_sectorMap[index])
+        {
+            return;
+        }
         _sectorMap[index] = true;
         AllocatedSectors++;
     }
@@ -76,18 +82,30 @@ public sealed class OberonKernel
         OberonDiskLayout.WriteSector(RequireDisk(), address, data);
     }
 
-    public void SetClock(int value) => _clock = value;
+    public void SetClock(int value)
+    {
+        _clock = value;
+    }
 
-    public static uint PhysicalSector(int address) => OberonDiskLayout.PhysicalSector(address);
+    public static uint PhysicalSector(int address)
+    {
+        return OberonDiskLayout.PhysicalSector(address);
+    }
 
-    private DiskImage RequireDisk() => _disk ?? throw new InvalidOperationException("Kernel disk is not attached");
+    private DiskImage RequireDisk()
+    {
+        return _disk ?? throw new InvalidOperationException("Kernel disk is not attached");
+    }
 
     private static int SectorIndex(int address)
     {
         if (address < 0 || address % LogicalSectorUnit != 0)
             throw new ArgumentOutOfRangeException(nameof(address), "Oberon disk addresses must be non-negative multiples of 29");
         var index = address / LogicalSectorUnit;
-        if (index >= MapSize) throw new ArgumentOutOfRangeException(nameof(address));
+        if (index >= MapSize)
+        {
+            throw new ArgumentOutOfRangeException(nameof(address));
+        }
         return index;
     }
 }

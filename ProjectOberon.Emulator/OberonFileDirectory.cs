@@ -27,7 +27,10 @@ public sealed class OberonFileDirectory
         _kernel.InitSectorMap();
         var files = new List<int>();
         TraverseAndReserve(RootAddress, files, new HashSet<int>());
-        foreach (var headerAddress in files) ReserveFile(headerAddress);
+        foreach (var headerAddress in files)
+        {
+            ReserveFile(headerAddress);
+        }
     }
 
     public int Search(string name)
@@ -38,7 +41,10 @@ public sealed class OberonFileDirectory
         {
             var page = ReadPage(address);
             var index = LowerBound(page, name);
-            if (index < page.Entries.Count && page.Entries[index].Name == name) return page.Entries[index].Address;
+            if (index < page.Entries.Count && page.Entries[index].Name == name)
+            {
+                return page.Entries[index].Address;
+            }
             address = page.Children[index];
         }
         return 0;
@@ -58,7 +64,10 @@ public sealed class OberonFileDirectory
             throw new ArgumentOutOfRangeException(nameof(fileAddress));
 
         var promotion = InsertPage(RootAddress, new Entry(name, fileAddress, 0));
-        if (promotion is null) return;
+        if (promotion is null)
+        {
+            return;
+        }
         var promoted = promotion.Value;
 
         var leftAddress = _kernel.AllocSector(RootAddress);
@@ -77,7 +86,10 @@ public sealed class OberonFileDirectory
         OberonFiles.ValidateName(name);
         var result = DeletePage(RootAddress, name);
         fileAddress = result.Address;
-        if (!result.Found) return false;
+        if (!result.Found)
+        {
+            return false;
+        }
 
         var root = ReadPage(RootAddress);
         if (root.Entries.Count == 0 && root.Children[0] != 0)
@@ -93,7 +105,10 @@ public sealed class OberonFileDirectory
         OberonFiles.ValidateName(oldName);
         OberonFiles.ValidateName(newName);
         var address = Search(oldName);
-        if (address == 0) return false;
+        if (address == 0)
+        {
+            return false;
+        }
         Delete(oldName, out _);
         Insert(newName, address);
         return true;
@@ -113,7 +128,10 @@ public sealed class OberonFileDirectory
         if (page.Children[index] != 0)
         {
             var promotion = InsertPage(page.Children[index], entry);
-            if (promotion is null) return null;
+            if (promotion is null)
+            {
+                return null;
+            }
             var promoted = promotion.Value;
             page.Entries.Insert(index, new Entry(promoted.Name, promoted.Address, promoted.RightChild));
             page.Children.Insert(index + 1, promoted.RightChild);
@@ -173,7 +191,10 @@ public sealed class OberonFileDirectory
         }
 
         var child = page.Children[index];
-        if (child == 0) return new DeleteResult(false, 0, false);
+        if (child == 0)
+        {
+            return new DeleteResult(false, 0, false);
+        }
         var deleted = DeletePage(child, name);
         if (deleted.Underflow) Rebalance(page, index);
         WritePage(address, page);
@@ -240,7 +261,10 @@ public sealed class OberonFileDirectory
 
     private void EnumeratePage(int address, string prefix, List<OberonDirectoryEntry> result, HashSet<int> visited)
     {
-        if (address == 0 || !visited.Add(address)) return;
+        if (address == 0 || !visited.Add(address))
+        {
+            return;
+        }
         var page = ReadPage(address);
         for (var index = 0; index < page.Entries.Count; index++)
         {
@@ -253,12 +277,21 @@ public sealed class OberonFileDirectory
 
     private void TraverseAndReserve(int address, List<int> files, HashSet<int> visited)
     {
-        if (address == 0 || !visited.Add(address)) return;
+        if (address == 0 || !visited.Add(address))
+        {
+            return;
+        }
         var page = ReadPage(address);
         _kernel.ReserveSector(address);
-        foreach (var entry in page.Entries) files.Add(entry.Address);
+        foreach (var entry in page.Entries)
+        {
+            files.Add(entry.Address);
+        }
         TraverseAndReserve(page.Children[0], files, visited);
-        foreach (var entry in page.Entries) TraverseAndReserve(entry.Child, files, visited);
+        foreach (var entry in page.Entries)
+        {
+            TraverseAndReserve(entry.Child, files, visited);
+        }
     }
 
     private void ReserveFile(int headerAddress)

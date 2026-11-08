@@ -73,7 +73,10 @@ public sealed class OberonFileSystem
 
     private void EnumeratePage(int address, string prefix, List<OberonDirectoryEntry> entries, HashSet<int> visited)
     {
-        if (!visited.Add(address)) throw new InvalidDataException($"directory cycle at sector {address}");
+        if (!visited.Add(address))
+        {
+            throw new InvalidDataException($"directory cycle at sector {address}");
+        }
         var page = OberonDirectoryPageCodec.Read(ReadLogicalSector(address), address);
         for (var index = 0; index < page.Entries.Count; index++)
         {
