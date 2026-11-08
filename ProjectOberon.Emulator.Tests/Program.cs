@@ -18,7 +18,9 @@ var tests = new (string Name, Action Test)[]
     ("Oberon files and riders", OberonFilesAndRiders),
     ("Oberon file directory", OberonFileDirectoryBTree),
     ("Oberon persistent files", OberonPersistentFiles),
-    ("Oberon module loader", OberonModuleLoaderGraph)
+    ("Oberon module loader", OberonModuleLoaderGraph),
+    ("Oberon module memory image", OberonModuleMemoryImage),
+    ("Oberon module fixups", OberonModuleFixups)
 };
 
 foreach (var (name, test) in tests)
@@ -425,8 +427,91 @@ static void OberonModuleLoaderGraph()
     Equal(0, cycle.LoadedModules.Count);
 }
 
-static byte[] BuildRsc(string name, int key, (string Name, int Key)[] imports, string command)
+static void OberonModuleMemoryImage()
 {
+    var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+    {
+        ["A.rsc"] = BuildRsc("A", 100, [("B", 200)], "Start", code: [0xc700_0010u]),
+        ["B.rsc"] = BuildRsc("B", 200, [], "Run",
+            typePayload: [0x44, 0x33, 0x22, 0x11], variableBytes: 4,
+            stringPayload: [(byte)'x', 0, 0, 0], code: [0xc700_0020u])
+    };
+    var moduleLoader = new OberonModuleLoader(name => modules.TryGetValue($"{name}.rsc", out var data) ? data : null);
+    var memory = new Memory(64 * 1024);
+    var imageLoader = new OberonModuleMemoryLoader(memory, moduleLoader, 0x1000, 0x100);
+    var image = imageLoader.Load("A");
+    var imported = imageLoader.LoadedImages.Single(candidate => candidate.Module.Name == "B");
+
+    Equal(imported.DescriptorAddress, memory.Read32(image.ImportAddress));
+    Equal(imported.DataAddress, memory.Read32(0x100u + (uint)imported.Module.Number * 4));
+    Equal(image.DataAddress, memory.Read32(0x100u + (uint)image.Module.Number * 4));
+    Equal(0x11_22_33_44u, memory.Read32(imported.DataAddress));
+    Equal(0u, memory.Read32(imported.DataAddress + 4));
+    Equal((uint)'x', memory.Read32(imported.DataAddress + 8));
+    Equal(0xc700_0020u, memory.Read32(imported.CodeAddress));
+    Equal(imported.CodeAddress, imported.FindCommandAddress("Run")!.Value);
+    Equal(image.CodeAddress, image.BodyAddress);
+}
+
+static void OberonModuleFixups()
+{
+    var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+    {
+        ["A.rsc"] = BuildRsc("A", 100, [("B", 200)], "Start",
+            typePayload: [0x44, 0x33, 0x22, 0x11, 1, 0, 0, 0],
+            code:
+            [
+                0xc700_0000u,
+                0x0010_0001u,
+                0,
+                0x8b10_0003u,
+                0x0000_0100u
+            ],
+            fixupProgram: 1,
+            fixupData: 3,
+            fixupTypes: 1),
+        ["B.rsc"] = BuildRsc("B", 200, [], "Run",
+            typePayload: [0, 0, 0, 0], variableBytes: 4,
+            code: [0], entries: [4])
+    };
+    var moduleLoader = new OberonModuleLoader(name => modules.TryGetValue($"{name}.rsc", out var data) ? data : null);
+    var memory = new Memory(64 * 1024);
+    var imageLoader = new OberonModuleMemoryLoader(memory, moduleLoader, 0x1000, 0x100);
+    var image = imageLoader.Load("A");
+    var imported = imageLoader.LoadedImages.Single(candidate => candidate.Module.Name == "B");
+
+    var branchAddress = image.CodeAddress + 4;
+    var branchTarget = imported.CodeAddress + (uint)imported.Module.Definition.Entries[0];
+    var branchOffset = (uint)(((long)branchTarget - branchAddress - 4) / 4);
+    Equal(0xf700_0000u | (branchOffset & 0x00ff_ffffu), memory.Read32(branchAddress));
+
+    var dataFixup = image.CodeAddress + 12;
+    var expectedDataInstruction = (((0x8bu * 0x10u) + 12) << 20) | ((uint)imported.Module.Number * 4);
+    Equal(expectedDataInstruction, memory.Read32(dataFixup));
+    var importedOffset = 4u + imported.CodeAddress - imported.DataAddress;
+    Equal(importedOffset, memory.Read32(dataFixup + 4));
+    Equal(image.DataAddress, memory.Read32(image.DataAddress + 4));
+}
+
+static byte[] BuildRsc(
+    string name,
+    int key,
+    (string Name, int Key)[] imports,
+    string command,
+    byte[]? typePayload = null,
+    int variableBytes = 0,
+    byte[]? stringPayload = null,
+    uint[]? code = null,
+    int[]? entries = null,
+    int fixupProgram = 0,
+    int fixupData = 0,
+    int fixupTypes = 0,
+    int bodyOffset = 0)
+{
+    typePayload ??= [];
+    stringPayload ??= [];
+    code ??= [0xc700_0000u];
+    entries ??= [0];
     var data = new List<byte>();
     AddString(data, name);
     AddInt(data, key);
@@ -438,20 +523,29 @@ static byte[] BuildRsc(string name, int key, (string Name, int Key)[] imports, s
         AddInt(data, import.Key);
     }
     AddString(data, string.Empty);
-    AddInt(data, 0);
-    AddInt(data, 0);
-    AddInt(data, 0);
-    AddInt(data, 1);
-    AddInt(data, unchecked((int)0xc700_0000u));
+    AddInt(data, typePayload.Length);
+    data.AddRange(typePayload);
+    AddInt(data, variableBytes);
+    AddInt(data, stringPayload.Length);
+    data.AddRange(stringPayload);
+    AddInt(data, code.Length);
+    foreach (var word in code)
+    {
+        AddInt(data, unchecked((int)word));
+    }
     AddString(data, command);
     AddInt(data, 0);
     AddString(data, string.Empty);
-    AddInt(data, 0);
+    AddInt(data, entries.Length);
+    foreach (var entry in entries)
+    {
+        AddInt(data, entry);
+    }
     AddInt(data, -1);
-    AddInt(data, 0);
-    AddInt(data, 0);
-    AddInt(data, 0);
-    AddInt(data, 0);
+    AddInt(data, fixupProgram);
+    AddInt(data, fixupData);
+    AddInt(data, fixupTypes);
+    AddInt(data, bodyOffset);
     data.Add((byte)'O');
     return data.ToArray();
 }

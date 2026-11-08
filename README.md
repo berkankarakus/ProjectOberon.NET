@@ -54,6 +54,11 @@ disk is reopened.
 `OberonModuleLoader` ports the first `Modules.Mod` runtime layer: recursive
 RSC import loading, module caching, key-conflict and cycle detection, command
 lookup, and reference-counted freeing.
+`OberonModuleMemoryLoader` materializes that module graph in emulator RAM,
+writes module descriptors and tables, and applies the `Modules.Mod` BL, data
+and type-descriptor fixup chains. The CPU boot path is not wired to invoke
+module bodies yet; the next integration step is initializing the module-table
+register and starting the loaded module entry point.
 
 `--trace N` prints the first `N` instructions with the program counter and
 selected registers, which is useful when learning the boot ROM and debugging
