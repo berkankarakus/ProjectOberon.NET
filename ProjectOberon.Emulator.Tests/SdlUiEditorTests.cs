@@ -4,6 +4,29 @@ using ProjectOberon.SdlUi;
 
 internal static partial class SdlUiTests
 {
+    private static void RendersModernEditorCaret()
+    {
+        var textPath = Path.GetTempFileName();
+        var fontPath = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllBytes(textPath, Encoding.Latin1.GetBytes("A"));
+            File.WriteAllBytes(fontPath, BuildFont());
+            var session = EditorSession.Load(textPath, fontPath);
+            var pixels = new uint[Display.Width * Display.Height];
+
+            session.Render(pixels, flipY: false);
+
+            TestAssertions.Equal(0xff00_d9ffu, pixels[EditorSession.OriginY * Display.Width + EditorSession.OriginX]);
+            TestAssertions.Equal(0xff007a_99u, pixels[EditorSession.OriginY * Display.Width + EditorSession.OriginX + 1]);
+        }
+        finally
+        {
+            File.Delete(textPath);
+            File.Delete(fontPath);
+        }
+    }
+
     private static void EditsAndSavesHostText()
     {
         var textPath = Path.GetTempFileName();

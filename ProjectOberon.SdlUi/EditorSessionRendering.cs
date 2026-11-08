@@ -26,13 +26,37 @@ internal sealed partial class EditorSession
 
         var caret = Editor.Frame.GetCaretLocation(Editor.Cursor, OriginX, originY, SurfaceWidth,
             ViewportHeight, ScrollLine, ScrollX);
+        var litPixels = UiLogic.UpdateFramebuffer(_surfaceMemory, pixels, flipY);
         if (caret.Y >= 0 && caret.Y + Editor.Frame.Font.Height <= Display.Height)
         {
-            Editor.Frame.RenderCaret(_surfaceDisplay, Editor.Cursor, OriginX, originY, SurfaceWidth,
-                ViewportHeight, ScrollLine, ScrollX);
+            DrawModernCaret(pixels, caret.X, caret.Y, Editor.Frame.Font.Height, flipY);
         }
 
-        return UiLogic.UpdateFramebuffer(_surfaceMemory, pixels, flipY);
+        return litPixels;
+    }
+
+    private static void DrawModernCaret(uint[] pixels, int x, int y, int height, bool flipY)
+    {
+        for (var row = 0; row < height; row++)
+        {
+            var memoryY = y + row;
+            var screenY = flipY ? Display.Height - 1 - memoryY : memoryY;
+            if ((uint)screenY >= Display.Height)
+            {
+                continue;
+            }
+
+            for (var column = 0; column < 2; column++)
+            {
+                var screenX = x + column;
+                if ((uint)screenX < Display.Width)
+                {
+                    pixels[screenY * Display.Width + screenX] = column == 0
+                        ? 0xff00_d9ffu
+                        : 0xff007a_99u;
+                }
+            }
+        }
     }
 
     private int GetOriginY(int lineCount, bool flipY)

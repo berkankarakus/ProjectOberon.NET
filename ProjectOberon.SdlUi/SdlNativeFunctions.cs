@@ -22,6 +22,8 @@ internal static partial class SdlNative
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern uint SDL_GetMouseState(out int x, out int y);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_RenderClear(IntPtr renderer);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_RenderCopy(IntPtr renderer, IntPtr texture, IntPtr source, IntPtr destination);
+    [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_SetRenderDrawColor(IntPtr renderer, byte r, byte g, byte b, byte a);
+    [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_RenderDrawLine(IntPtr renderer, int x1, int y1, int x2, int y2);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_RenderPresent(IntPtr renderer);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_Delay(uint milliseconds);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern IntPtr SDL_GetClipboardText();

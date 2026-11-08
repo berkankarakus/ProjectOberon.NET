@@ -8,6 +8,7 @@ internal static partial class SdlUiTests
         ScalesMouseCoordinates();
         RendersFramebufferPixels();
         FormatsWindowTitle();
+        RendersModernEditorCaret();
         EditsAndSavesHostText();
         ScrollsLongHostText();
         RoutesEditorEventsThroughOberonMessages();

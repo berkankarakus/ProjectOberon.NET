@@ -65,4 +65,33 @@ internal static class UiLogic
         var suffix = uart.Length == 0 ? string.Empty : $" | uart=\"{uart[^Math.Min(32, uart.Length)..].Replace('\n', ' ').Replace('\r', ' ')}\"";
         return $"Project Oberon | {(paused ? "paused" : "running")} | pc=0x{machine.Cpu.PcByte:x6} | steps={machine.Cpu.Steps} | fb={litPixels}{suffix}";
     }
+
+    public static void DrawHostCursor(IntPtr renderer, int x, int y)
+    {
+        var outline = new[]
+        {
+            (x, y), (x, y + 18), (x + 5, y + 13), (x + 10, y + 23),
+            (x + 14, y + 21), (x + 9, y + 11), (x + 17, y + 11), (x, y)
+        };
+        var inner = new[]
+        {
+            (x + 2, y + 4), (x + 2, y + 13), (x + 6, y + 10), (x + 11, y + 20),
+            (x + 12, y + 19), (x + 7, y + 9), (x + 13, y + 9), (x + 2, y + 4)
+        };
+
+        SdlNative.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        DrawLines(renderer, outline);
+        SdlNative.SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        DrawLines(renderer, inner);
+    }
+
+    private static void DrawLines(IntPtr renderer, (int X, int Y)[] points)
+    {
+        for (var index = 1; index < points.Length; index++)
+        {
+            SdlNative.SDL_RenderDrawLine(renderer,
+                points[index - 1].X, points[index - 1].Y,
+                points[index].X, points[index].Y);
+        }
+    }
 }

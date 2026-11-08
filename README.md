@@ -150,6 +150,11 @@ dotnet run --project dotnet/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
   --font systools/Oberon10.Scn.Fnt
 ```
 
+For a larger/bolder host presentation, use `apptools/Oberon12b.Scn.Fnt` or
+`apptools/Oberon16.Scn.Fnt`. Editor mode renders a two-pixel colored caret and
+a host mouse cursor over the text surface; normal emulated Oberon mode keeps
+the original framebuffer cursor and font unchanged.
+
 Editor mode reads and writes the selected file as Latin-1 text. SDL text input
 inserts characters, arrow/Home/End and Up/Down move the caret, Shift extends a selection,
 Ctrl-A selects all, Ctrl-C/Ctrl-X/Ctrl-V copy, cut and paste through the SDL

@@ -84,6 +84,8 @@ static void Run(Machine machine, UiOptions options, UiLog log)
         var paused = false;
         var uartOutput = string.Empty;
         byte mouseButtons = 0;
+        var cursorX = width / 2;
+        var cursorY = height / 2;
         var lastLoggedMouseX = -1;
         var lastLoggedMouseY = -1;
         UiLogic.UpdateMouse(machine.Memory, width / 2, height / 2, width, height, options.FlipY, mouseButtons);
@@ -108,12 +110,16 @@ static void Run(Machine machine, UiOptions options, UiLog log)
                         height = Math.Max(1, sdlEvent.Window.Data2);
                         break;
                     case SdlNative.MouseMotion:
+                        cursorX = sdlEvent.Motion.X;
+                        cursorY = sdlEvent.Motion.Y;
                         UiLogic.UpdateMouse(machine.Memory, sdlEvent.Motion.X, sdlEvent.Motion.Y, width, height, options.FlipY,
                             InputMapping.MouseButtonsFromState(sdlEvent.Motion.State));
                         editor?.HandleMouseMotion(sdlEvent.Motion.X, sdlEvent.Motion.Y, width, height, options.FlipY, sdlEvent.Motion.State);
                         break;
                     case SdlNative.MouseButtonDown:
                     case SdlNative.MouseButtonUp:
+                        cursorX = sdlEvent.Button.X;
+                        cursorY = sdlEvent.Button.Y;
                         var mask = InputMapping.MouseButtonMask(sdlEvent.Button.Button);
                         if (sdlEvent.Type == SdlNative.MouseButtonDown) mouseButtons |= mask;
                         else mouseButtons &= (byte)~mask;
@@ -160,6 +166,7 @@ static void Run(Machine machine, UiOptions options, UiLog log)
             if (SdlNative.SDL_UpdateTexture(texture, IntPtr.Zero, pixels, Display.Width * sizeof(uint)) != 0) throw new InvalidOperationException(SdlNative.Error());
             SdlNative.SDL_RenderClear(renderer);
             SdlNative.SDL_RenderCopy(renderer, texture, IntPtr.Zero, IntPtr.Zero);
+            if (editor is not null) UiLogic.DrawHostCursor(renderer, cursorX, cursorY);
             SdlNative.SDL_RenderPresent(renderer);
             SdlNative.SDL_Delay(1);
         }
