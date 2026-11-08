@@ -58,6 +58,7 @@ finally
 static void Run(Machine machine, UiOptions options, UiLog log)
 {
     if (SdlNative.SDL_Init(SdlNative.InitVideo) != 0) throw new InvalidOperationException(SdlNative.Error());
+    SdlNative.SDL_ShowCursor(0);
     IntPtr window = IntPtr.Zero, renderer = IntPtr.Zero, texture = IntPtr.Zero;
     EditorSession? editor = null;
     try
@@ -158,6 +159,7 @@ static void Run(Machine machine, UiOptions options, UiLog log)
         SdlNative.SDL_StopTextInput();
         if (renderer != IntPtr.Zero) SdlNative.SDL_DestroyRenderer(renderer);
         if (window != IntPtr.Zero) SdlNative.SDL_DestroyWindow(window);
+        SdlNative.SDL_ShowCursor(1);
         SdlNative.SDL_Quit();
     }
 }

@@ -6,6 +6,7 @@ internal static partial class SdlNative
 {
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_Init(uint flags);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_Quit();
+    [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern int SDL_ShowCursor(int toggle);
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_StartTextInput();
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern void SDL_StopTextInput();
     [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)] public static extern IntPtr SDL_GetError();
