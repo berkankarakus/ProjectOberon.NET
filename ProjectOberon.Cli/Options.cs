@@ -10,6 +10,7 @@ internal sealed record Options(
     bool BootGraph,
     string? StartModule,
     bool Initialize,
+    bool Boot,
     string? Command)
 {
     public static Options Parse(string[] args)
@@ -25,6 +26,7 @@ internal sealed record Options(
         var bootGraph = false;
         string? startModule = null;
         var initialize = false;
+        var boot = false;
         string? command = null;
         for (var index = 0; index < args.Length; index++)
         {
@@ -70,6 +72,9 @@ internal sealed record Options(
                 case "--initialize":
                     initialize = true;
                     break;
+                case "--boot":
+                    boot = true;
+                    break;
                 case "--command":
                     command = Next(args, ref index, "--command");
                     break;
@@ -86,15 +91,19 @@ internal sealed record Options(
             throw new ArgumentException("--start-module requires --disk FILE");
         if (initialize && startModule is null)
             throw new ArgumentException("--initialize requires --start-module NAME");
+        if (boot && startModule is null)
+            throw new ArgumentException("--boot requires --start-module NAME");
+        if (initialize && boot)
+            throw new ArgumentException("--initialize and --boot cannot be used together");
         if (command is not null && startModule is null)
             throw new ArgumentException("--command requires --start-module NAME");
 
         return new Options(rom, disk, diskWritable, steps, help, trace, breakpoint, bootTrace, bootGraph,
-            startModule, initialize, command);
+            startModule, initialize, boot, command);
     }
 
     public static void PrintUsage() => Console.Error.WriteLine(
-        "usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--breakpoint HEX-PC] [--boot-trace] [--boot-graph] [--start-module NAME [--initialize] [--command NAME]]");
+        "usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--breakpoint HEX-PC] [--boot-trace] [--boot-graph] [--start-module NAME [--initialize|--boot] [--command NAME]]");
 
     private static string Next(string[] args, ref int index, string option)
     {

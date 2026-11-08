@@ -22,7 +22,7 @@ internal static class CliOptionTests
             "--boot-trace",
             "--boot-graph",
             "--start-module", "Oberon",
-            "--initialize",
+            "--boot",
             "--command", "Start"]);
 
         TestAssertions.Equal("prom.mem", options.Rom);
@@ -34,7 +34,8 @@ internal static class CliOptionTests
         TestAssertions.True(options.BootTrace);
         TestAssertions.True(options.BootGraph);
         TestAssertions.Equal("Oberon", options.StartModule);
-        TestAssertions.True(options.Initialize);
+        TestAssertions.False(options.Initialize);
+        TestAssertions.True(options.Boot);
         TestAssertions.Equal("Start", options.Command);
     }
 
@@ -48,6 +49,7 @@ internal static class CliOptionTests
         TestAssertions.True(options.Trace is null);
         TestAssertions.True(options.Breakpoint is null);
         TestAssertions.False(options.Initialize);
+        TestAssertions.False(options.Boot);
     }
 
     private static void RejectsOptionsThatRequireADisk()
@@ -57,6 +59,8 @@ internal static class CliOptionTests
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--boot-graph"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--start-module", "Oberon"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--initialize"]));
+        TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--boot"]));
+        TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--initialize", "--boot", "--start-module", "Oberon", "--disk", "work.img"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--disk", "work.img", "--command", "Start"]));
     }
 

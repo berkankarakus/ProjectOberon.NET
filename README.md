@@ -121,17 +121,17 @@ sudo apt install libsdl2-2.0-0    # Debian/Ubuntu runtime
 
 The SDL frontend also supports `--read-only`, `--steps-per-frame N`,
 `--scale N`, `--no-flip-y` and the shared module startup options
-`--start-module NAME`, `--initialize` and `--command NAME`.
+`--start-module NAME`, `--initialize`, `--boot` and `--command NAME`.
 
-For example, start the `Input` module through the same host-backed boot session
-used by the CLI:
+For example, start the `Oberon` event loop after initializing its imported
+modules through the same host-backed boot session used by the CLI:
 
 ```sh
 dotnet run --project dotnet/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
   --disk RISC-work.img \
   --read-only \
-  --start-module Input \
-  --initialize
+  --start-module Oberon \
+  --boot
 ```
 
 When `--start-module` is omitted, the SDL frontend keeps its original ROM boot

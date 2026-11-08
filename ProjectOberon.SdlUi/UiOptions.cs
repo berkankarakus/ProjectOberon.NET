@@ -13,6 +13,7 @@ internal sealed record UiOptions(
     string? Font,
     string? StartModule,
     bool Initialize,
+    bool Boot,
     string? Command,
     bool Help)
 {
@@ -25,6 +26,7 @@ internal sealed record UiOptions(
         var flipY = true;
         string? editor = null, font = null, startModule = null, command = null;
         var initialize = false;
+        var boot = false;
         var help = false;
         for (var index = 0; index < args.Length; index++)
         {
@@ -66,6 +68,9 @@ internal sealed record UiOptions(
                 case "--initialize":
                     initialize = true;
                     break;
+                case "--boot":
+                    boot = true;
+                    break;
                 case "--command" when index + 1 < args.Length:
                     command = args[++index];
                     break;
@@ -81,12 +86,16 @@ internal sealed record UiOptions(
             throw new ArgumentException("--start-module requires --disk FILE");
         if (initialize && startModule is null)
             throw new ArgumentException("--initialize requires --start-module NAME");
+        if (boot && startModule is null)
+            throw new ArgumentException("--boot requires --start-module NAME");
+        if (initialize && boot)
+            throw new ArgumentException("--initialize and --boot cannot be used together");
         if (command is not null && startModule is null)
             throw new ArgumentException("--command requires --start-module NAME");
         return new UiOptions(rom, disk, writable, steps, scale, flipY, editor, font,
-            startModule, initialize, command, help);
+            startModule, initialize, boot, command, help);
     }
 
     public static void PrintUsage() => Console.Error.WriteLine(
-        "usage: project-oberon-ui [--rom FILE] [--disk FILE] [--read-only] [--steps-per-frame N] [--scale N] [--no-flip-y] [--editor FILE --font FILE] [--start-module NAME [--initialize] [--command NAME]]");
+        "usage: project-oberon-ui [--rom FILE] [--disk FILE] [--read-only] [--steps-per-frame N] [--scale N] [--no-flip-y] [--editor FILE --font FILE] [--start-module NAME [--initialize|--boot] [--command NAME]]");
 }

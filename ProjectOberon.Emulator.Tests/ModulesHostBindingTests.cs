@@ -94,9 +94,15 @@ internal static class ModulesHostBindingTests
         using var machine = new Machine();
         var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, loader);
         var image = runtime.MemoryLoader.Load("Demo");
+        machine.Cpu.SetRegister(0, 0x1234);
+        machine.Cpu.SetRegister(1, 0x5678);
+        machine.Cpu.SetRegister(13, 0x9abc);
 
         TestAssertions.Throws<OberonModuleLoadException>(
             () => runtime.Initialize(image, machine.HostCalls, maxSteps: 3));
+        TestAssertions.Equal(0x1234u, machine.Cpu.Register(0));
+        TestAssertions.Equal(0x5678u, machine.Cpu.Register(1));
+        TestAssertions.Equal(0x9abcu, machine.Cpu.Register(13));
         TestAssertions.Equal(0u, machine.Cpu.Register(12));
         TestAssertions.Equal(0u, machine.Cpu.Register(14));
     }

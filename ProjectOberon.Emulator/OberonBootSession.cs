@@ -4,6 +4,7 @@ namespace ProjectOberon.Emulator;
 
 public sealed class OberonBootSession
 {
+    private const uint TrapVectorAddress = 0x20;
     private const uint ModuleNameAddress = 0x600;
     private const uint DescriptorAddress = 0x700;
     private const int ModuleNameLength = 32;
@@ -30,8 +31,11 @@ public sealed class OberonBootSession
         var files = new OberonFiles(new OberonFileSystem(disk));
         var modules = new OberonModuleLoader(files, ["Kernel", "Files", "Modules"]);
         var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, modules);
+        var kernel = new OberonKernel(machine.Memory, disk);
         OberonCoreHostBinding.Bind(modules, runtime,
-            new OberonKernel(machine.Memory, disk), files, machine.HostCalls);
+            kernel, files, machine.HostCalls);
+        kernel.Initialize();
+        InstallAllocationTrap(machine, modules);
         return new OberonBootSession(machine, modules, runtime);
     }
 
@@ -90,6 +94,62 @@ public sealed class OberonBootSession
         return command is null
             ? Runtime.Start(name, stackPointer)
             : Runtime.StartCommand(name, command, stackPointer);
+    }
+
+    public OberonModuleImage Boot(string name, string? command = null, uint? stackPointer = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        var image = Runtime.MemoryLoader.Load(name);
+        var initialized = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var importedModule in image.Module.Imports)
+        {
+            var importedImage = Runtime.MemoryLoader.Load(importedModule.Name);
+            InitializeDependency(importedImage, initialized);
+        }
+
+        return Start(name, command, stackPointer);
+    }
+
+    private void InitializeDependency(
+        OberonModuleImage image,
+        HashSet<string> initialized)
+    {
+        if (!initialized.Add(image.Module.Name))
+        {
+            return;
+        }
+
+        foreach (var importedModule in image.Module.Imports)
+        {
+            var importedImage = Runtime.MemoryLoader.Load(importedModule.Name);
+            InitializeDependency(importedImage, initialized);
+        }
+
+        if (!image.Module.IsExternal)
+        {
+            Runtime.Initialize(image, Machine.HostCalls);
+        }
+    }
+
+    private static void InstallAllocationTrap(Machine machine, OberonModuleLoader modules)
+    {
+        if (!modules.TryGetExternalSymbol("Kernel", out var symbol))
+        {
+            throw new OberonModuleLoadException(5, "Kernel symbol module is not available");
+        }
+
+        var allocation = symbol.Exports.FirstOrDefault(export =>
+            export.Name == "New" && (export.IsProcedure ?? export.Class == 1));
+        if (allocation is null)
+        {
+            throw new OberonModuleLoadException(5, "Kernel.New export is not available");
+        }
+
+        var targetAddress = OberonCoreHostBinding.KernelCodeAddress
+            + checked((uint)allocation.Value * 4);
+        var displacement = ((long)targetAddress - TrapVectorAddress) / 4 - 1;
+        var instruction = unchecked(0xe700_0000u + (uint)displacement);
+        machine.Memory.Write32(TrapVectorAddress, instruction);
     }
 
     private void WriteCString(uint address, string value)

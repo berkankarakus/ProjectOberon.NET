@@ -30,13 +30,52 @@ internal static class OberonBootSessionTests
         TestAssertions.Equal(image.BodyAddress, machine.Cpu.PcByte);
     }
 
-    private static byte[] BuildRsc()
+    public static void BootsDependenciesBeforeRoot()
     {
+        var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+        {
+            ["Root"] = BuildRsc("Root", [("Dependency", 2)], key: 1),
+            ["Dependency"] = BuildRsc("Dependency", key: 2)
+        };
+        var loader = new OberonModuleLoader(name => modules.GetValueOrDefault(name));
+        loader.RegisterExternal(new OberonSymbolModule(
+            "Modules", 1, 1,
+            [new OberonSymbolExport("Load", 1, 0x20)]));
+        TestAssertions.True(loader.TryGetExternalSymbol("Modules", out var symbol));
+        using var machine = new Machine();
+        var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, loader);
+        var binding = OberonModulesHostBinding.Create(
+            symbol, runtime, loader,
+            OberonCoreHostBinding.ModulesDataAddress,
+            OberonCoreHostBinding.ModulesCodeAddress,
+            machine.HostCalls,
+            entryOffsetScale: 4);
+        runtime.BindExternal(binding, machine.HostCalls);
+        var boot = OberonBootSession.Create(machine, loader, runtime);
+
+        var image = boot.Boot("Root");
+
+        TestAssertions.Equal(image.BodyAddress, machine.Cpu.PcByte);
+        TestAssertions.True(machine.Cpu.Steps > 0);
+        TestAssertions.True(runtime.MemoryLoader.LoadedImages.Any(candidate => candidate.Module.Name == "Dependency"));
+    }
+
+    private static byte[] BuildRsc(
+        string name = "Demo",
+        (string Name, int Key)[]? imports = null,
+        int key = 42)
+    {
+        imports ??= [];
         var data = new List<byte>();
-        AddString(data, "Demo");
-        AddInt(data, 42);
+        AddString(data, name);
+        AddInt(data, key);
         data.Add(1);
         AddInt(data, 0);
+        foreach (var import in imports)
+        {
+            AddString(data, import.Name);
+            AddInt(data, import.Key);
+        }
         AddString(data, string.Empty);
         AddInt(data, 0);
         AddInt(data, 0);

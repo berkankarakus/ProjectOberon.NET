@@ -5,7 +5,7 @@ internal static partial class SdlUiTests
 {
     private static void ParsesUiOptions()
     {
-        var options = UiOptions.Parse(["--rom", "prom.mem", "--disk", "work.img", "--read-only", "--steps-per-frame", "200", "--scale", "2", "--no-flip-y", "--editor", "notes.txt", "--font", "Oberon10.Scn.Fnt", "--start-module", "Input", "--initialize", "--command", "Start"]);
+        var options = UiOptions.Parse(["--rom", "prom.mem", "--disk", "work.img", "--read-only", "--steps-per-frame", "200", "--scale", "2", "--no-flip-y", "--editor", "notes.txt", "--font", "Oberon10.Scn.Fnt", "--start-module", "Input", "--boot", "--command", "Start"]);
 
         TestAssertions.Equal("prom.mem", options.Rom);
         TestAssertions.Equal("work.img", options.Disk);
@@ -16,7 +16,8 @@ internal static partial class SdlUiTests
         TestAssertions.Equal("notes.txt", options.Editor);
         TestAssertions.Equal("Oberon10.Scn.Fnt", options.Font);
         TestAssertions.Equal("Input", options.StartModule);
-        TestAssertions.True(options.Initialize);
+        TestAssertions.False(options.Initialize);
+        TestAssertions.True(options.Boot);
         TestAssertions.Equal("Start", options.Command);
     }
 
@@ -31,6 +32,8 @@ internal static partial class SdlUiTests
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--font", "Oberon10.Scn.Fnt"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--start-module", "Input"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--initialize"]));
+        TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--boot"]));
+        TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--initialize", "--boot", "--start-module", "Input", "--disk", "work.img"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--command", "Start"]));
     }
 

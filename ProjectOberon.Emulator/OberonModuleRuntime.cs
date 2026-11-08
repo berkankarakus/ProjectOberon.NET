@@ -10,7 +10,7 @@ public sealed class OberonModuleRuntime
         Risc5Cpu cpu,
         OberonModuleLoader modules,
         uint allocationAddress = 0x1000,
-        uint moduleTableAddress = 0x100)
+        uint moduleTableAddress = 0x20)
     {
         _memory = memory ?? throw new ArgumentNullException(nameof(memory));
         _cpu = cpu ?? throw new ArgumentNullException(nameof(cpu));
@@ -60,13 +60,22 @@ public sealed class OberonModuleRuntime
 
         const uint returnAddress = Memory.RomBase;
         var savedProgramCounter = _cpu.PcByte;
-        var savedLink = _cpu.Register(15);
-        var savedModuleTable = _cpu.Register(12);
-        var savedStack = _cpu.Register(14);
+        var savedRegisters = new uint[16];
+        for (var index = 0; index < savedRegisters.Length; index++)
+        {
+            savedRegisters[index] = _cpu.Register(index);
+        }
+
+        var savedStack = savedRegisters[14];
         try
         {
             var initializerStack = savedStack == 0 ? AlignStack(_memory.RamSize) : savedStack;
             ValidateStack(initializerStack);
+            for (var index = 0; index < savedRegisters.Length; index++)
+            {
+                _cpu.SetRegister(index, 0);
+            }
+
             _cpu.SetRegister(12, ModuleTableAddress);
             _cpu.SetRegister(14, initializerStack);
             _cpu.SetRegister(15, returnAddress);
@@ -92,9 +101,11 @@ public sealed class OberonModuleRuntime
         }
         finally
         {
-            _cpu.SetRegister(12, savedModuleTable);
-            _cpu.SetRegister(14, savedStack);
-            _cpu.SetRegister(15, savedLink);
+            for (var index = 0; index < savedRegisters.Length; index++)
+            {
+                _cpu.SetRegister(index, savedRegisters[index]);
+            }
+
             _cpu.SetProgramCounter(savedProgramCounter);
         }
     }

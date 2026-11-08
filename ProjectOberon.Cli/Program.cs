@@ -16,16 +16,26 @@ try
     if (options.StartModule is not null)
     {
         var boot = OberonBootSession.Create(machine);
-        if (options.Initialize)
+        if (options.Boot)
         {
-            var descriptor = boot.Initialize(options.StartModule);
-            Console.WriteLine($"initialized module {options.StartModule} descriptor=0x{descriptor:x8}");
+            var image = boot.Boot(options.StartModule, options.Command);
+            Console.WriteLine($"booted module {image.Module.Name}"
+                + (options.Command is null ? string.Empty : $" command {options.Command}")
+                + $" at pc=0x{machine.Cpu.PcByte:x6}");
         }
+        else
+        {
+            if (options.Initialize)
+            {
+                var descriptor = boot.Initialize(options.StartModule);
+                Console.WriteLine($"initialized module {options.StartModule} descriptor=0x{descriptor:x8}");
+            }
 
-        var image = boot.Start(options.StartModule, options.Command);
-        Console.WriteLine($"started module {image.Module.Name}"
-            + (options.Command is null ? string.Empty : $" command {options.Command}")
-            + $" at pc=0x{machine.Cpu.PcByte:x6}");
+            var image = boot.Start(options.StartModule, options.Command);
+            Console.WriteLine($"started module {image.Module.Name}"
+                + (options.Command is null ? string.Empty : $" command {options.Command}")
+                + $" at pc=0x{machine.Cpu.PcByte:x6}");
+        }
     }
 
     var debugger = new MachineDebugger(machine);
