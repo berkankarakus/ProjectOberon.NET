@@ -532,6 +532,16 @@ static void OberonSymbolModule()
     graph.RegisterExternal(symbol);
     var module = graph.Load("A");
     True(module.Imports[0].IsExternal);
+
+    var boundMemory = new Memory(64 * 1024);
+    var boundLoader = new OberonModuleMemoryLoader(boundMemory, graph, 0x1000, 0x100);
+    boundLoader.BindExternal(new OberonExternalModuleBinding("Kernel", 0x3000, 0x4000, [0x20]));
+    var boundImage = boundLoader.Load("A");
+    var boundKernel = boundLoader.LoadedImages.Single(candidate => candidate.Module.Name == "Kernel");
+    Equal(0x3000u, boundKernel.DataAddress);
+    Equal(0x4000u, boundKernel.CodeAddress);
+    Equal(0x20u, boundMemory.Read32(boundKernel.EntryAddress));
+    Equal(boundKernel.DescriptorAddress, boundMemory.Read32(boundImage.ImportAddress));
 }
 
 static byte[] BuildRsc(

@@ -20,6 +20,11 @@ public sealed class OberonModuleRuntime
     public OberonModuleMemoryLoader MemoryLoader { get; }
     public uint ModuleTableAddress => MemoryLoader.ModuleTableAddress;
 
+    public void BindExternal(OberonExternalModuleBinding binding)
+    {
+        MemoryLoader.BindExternal(binding);
+    }
+
     public OberonModuleImage Start(string name, uint? stackPointer = null)
     {
         var image = MemoryLoader.Load(name);

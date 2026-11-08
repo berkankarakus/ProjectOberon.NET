@@ -59,8 +59,11 @@ the loader can register those symbols as external, host-owned modules.
 `OberonModuleMemoryLoader` materializes that module graph in emulator RAM,
 writes module descriptors and tables, and applies the `Modules.Mod` BL, data
 and type-descriptor fixup chains. The CPU boot path is not wired to invoke
-module bodies yet; the next integration step is initializing the module-table
-register and starting the loaded module entry point.
+the host loader yet; direct module startup is available through
+`OberonModuleRuntime` and the CLI’s `--start-module` option.
+`OberonModuleRuntime.BindExternal` can bind an external module to existing
+emulated data/code addresses and export offsets; it deliberately does not
+invent executable stubs for host-only C# implementations.
 
 `--trace N` prints the first `N` instructions with the program counter and
 selected registers, which is useful when learning the boot ROM and debugging

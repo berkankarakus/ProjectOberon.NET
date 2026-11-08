@@ -51,6 +51,12 @@ public sealed class OberonModuleImage
     }
 }
 
+public sealed record OberonExternalModuleBinding(
+    string Name,
+    uint DataAddress,
+    uint CodeAddress,
+    IReadOnlyList<uint> EntryOffsets);
+
 public sealed class OberonModuleMemoryLoader
 {
     private const uint DescriptorSize = 80;
@@ -60,6 +66,7 @@ public sealed class OberonModuleMemoryLoader
     private readonly Memory _memory;
     private readonly OberonModuleLoader _modules;
     private readonly Dictionary<string, OberonModuleImage> _images = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, OberonExternalModuleBinding> _externalBindings = new(StringComparer.Ordinal);
     private uint _nextAddress;
     private uint _rootDescriptorAddress;
 
@@ -81,18 +88,49 @@ public sealed class OberonModuleMemoryLoader
     public IReadOnlyCollection<OberonModuleImage> LoadedImages => _images.Values;
     public uint RootDescriptorAddress => _rootDescriptorAddress;
 
+    public void BindExternal(OberonExternalModuleBinding binding)
+    {
+        ArgumentNullException.ThrowIfNull(binding);
+        var module = _modules.Load(binding.Name);
+        if (!module.IsExternal)
+        {
+            throw new ArgumentException($"module is not external: {module.Name}", nameof(binding));
+        }
+
+        if (binding.EntryOffsets.Count != module.Definition.Entries.Count)
+        {
+            throw new ArgumentException("external entry count does not match the symbol module", nameof(binding));
+        }
+
+        ValidateAlignedAddress(binding.DataAddress, nameof(binding.DataAddress));
+        ValidateAlignedAddress(binding.CodeAddress, nameof(binding.CodeAddress));
+        if (_images.ContainsKey(module.Name))
+        {
+            throw new InvalidOperationException($"external module is already materialized: {module.Name}");
+        }
+
+        _externalBindings[module.Name] = binding;
+    }
+
     public OberonModuleImage Load(string name)
     {
         var module = _modules.Load(name);
-        if (module.IsExternal)
-        {
-            throw new OberonModuleLoadException(5,
-                $"external Oberon module requires a host memory binding: {module.Name}");
-        }
-
         if (_images.TryGetValue(module.Name, out var existing))
         {
             return existing;
+        }
+
+        if (module.IsExternal)
+        {
+            if (!_externalBindings.TryGetValue(module.Name, out var binding))
+            {
+                throw new OberonModuleLoadException(5,
+                    $"external Oberon module requires a host memory binding: {module.Name}");
+            }
+
+            var externalImage = AllocateExternal(module, binding);
+            _images.Add(module.Name, externalImage);
+            return externalImage;
         }
 
         var imports = new OberonModuleImage[module.Imports.Count];
@@ -103,6 +141,33 @@ public sealed class OberonModuleMemoryLoader
 
         var image = Allocate(module, imports);
         _images.Add(module.Name, image);
+        return image;
+    }
+
+    private OberonModuleImage AllocateExternal(
+        LoadedOberonModule module,
+        OberonExternalModuleBinding binding)
+    {
+        var descriptorAddress = _nextAddress;
+        var importAddress = descriptorAddress + DescriptorSize;
+        var commandAddress = importAddress;
+        var entryAddress = commandAddress;
+        var pointerAddress = entryAddress + checked((uint)binding.EntryOffsets.Count * 4);
+        var endAddress = pointerAddress + 4;
+        var allocationSize = Align(endAddress - descriptorAddress, 0x20);
+
+        EnsureRange(descriptorAddress, allocationSize);
+        EnsureRange(ModuleTableAddress + checked((uint)(module.Number + 1) * 4), 4);
+        WriteDescriptor(module, descriptorAddress, binding.DataAddress, binding.CodeAddress,
+            importAddress, commandAddress, entryAddress, pointerAddress, allocationSize);
+        WriteExternalEntries(entryAddress, binding.EntryOffsets);
+        _memory.Write32(ModuleTableAddress + checked((uint)module.Number * 4), binding.DataAddress);
+
+        var image = new OberonModuleImage(module, descriptorAddress, binding.DataAddress, binding.CodeAddress,
+            importAddress, commandAddress, entryAddress, pointerAddress, binding.CodeAddress, allocationSize);
+        _memory.Write32(descriptorAddress + 32, _rootDescriptorAddress);
+        _rootDescriptorAddress = descriptorAddress;
+        _nextAddress = descriptorAddress + allocationSize;
         return image;
     }
 
@@ -212,6 +277,14 @@ public sealed class OberonModuleMemoryLoader
         for (var index = 0; index < entries.Count; index++)
         {
             _memory.Write32(address + checked((uint)index * 4), unchecked((uint)entries[index]));
+        }
+    }
+
+    private void WriteExternalEntries(uint address, IReadOnlyList<uint> entries)
+    {
+        for (var index = 0; index < entries.Count; index++)
+        {
+            _memory.Write32(address + checked((uint)index * 4), entries[index]);
         }
     }
 
