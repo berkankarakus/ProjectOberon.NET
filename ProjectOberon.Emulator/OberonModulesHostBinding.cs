@@ -50,7 +50,7 @@ public static class OberonModulesHostBinding
             "Load" => context =>
             {
                 var name = context.ReadCString(context.Argument(0));
-                var outputAddress = context.Argument(1);
+                var outputAddress = context.Argument(2);
                 try
                 {
                     var image = state.Runtime.MemoryLoader.Load(name);

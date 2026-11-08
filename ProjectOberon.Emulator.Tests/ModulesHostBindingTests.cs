@@ -27,7 +27,8 @@ internal static class ModulesHostBindingTests
         machine.Cpu.SetRegister(15, 0x200);
 
         machine.Cpu.SetRegister(0, 0x600);
-        machine.Cpu.SetRegister(1, 0x800);
+        machine.Cpu.SetRegister(1, 4);
+        machine.Cpu.SetRegister(2, 0x800);
         machine.Cpu.SetProgramCounter(0x5020);
         machine.Step();
 
@@ -40,6 +41,7 @@ internal static class ModulesHostBindingTests
 
         machine.Cpu.SetRegister(0, descriptor);
         machine.Cpu.SetRegister(1, 0x700);
+        machine.Cpu.SetRegister(2, 5);
         machine.Cpu.SetProgramCounter(0x5024);
         machine.Step();
         var commandAddress = machine.Cpu.Register(0);
@@ -50,7 +52,8 @@ internal static class ModulesHostBindingTests
         TestAssertions.Equal(3ul, machine.Cpu.Steps);
 
         machine.Cpu.SetRegister(0, 0x600);
-        machine.Cpu.SetRegister(1, 0x800);
+        machine.Cpu.SetRegister(1, 4);
+        machine.Cpu.SetRegister(2, 0x800);
         machine.Cpu.SetProgramCounter(0x5020);
         machine.Step();
         TestAssertions.Equal(4ul, machine.Cpu.Steps);
@@ -76,7 +79,8 @@ internal static class ModulesHostBindingTests
         runtime.BindExternal(binding, machine.HostCalls);
         WriteCString(machine.Memory, 0x600, "Missing");
         machine.Cpu.SetRegister(0, 0x600);
-        machine.Cpu.SetRegister(1, 0x800);
+        machine.Cpu.SetRegister(1, 7);
+        machine.Cpu.SetRegister(2, 0x800);
         machine.Cpu.SetRegister(15, 0x200);
         machine.Cpu.SetProgramCounter(0x5020);
 

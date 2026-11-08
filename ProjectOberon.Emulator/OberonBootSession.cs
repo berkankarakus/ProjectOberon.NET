@@ -67,7 +67,8 @@ public sealed class OberonBootSession
 
         WriteCString(ModuleNameAddress, name);
         Machine.Cpu.SetRegister(0, ModuleNameAddress);
-        Machine.Cpu.SetRegister(1, DescriptorAddress);
+        Machine.Cpu.SetRegister(1, checked((uint)name.Length));
+        Machine.Cpu.SetRegister(2, DescriptorAddress);
         Machine.Cpu.SetRegister(15, Memory.RomBase);
         Machine.Cpu.SetProgramCounter(
             OberonCoreHostBinding.ModulesCodeAddress + checked((uint)load.Value * 4));

@@ -4,6 +4,18 @@ using ProjectOberon.Emulator;
 
 internal static class OberonBootSessionTests
 {
+    public static void BootConsumesKeyboardInput()
+    {
+        using var machine = new Machine();
+        machine.OpenDisk("RISC-work.img", writable: false);
+        var boot = OberonBootSession.Create(machine);
+        boot.Boot("Oberon");
+        machine.Memory.EnqueueKeyboard(0x1c);
+        machine.Run(3_000_000);
+        var status = machine.Memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.KeyboardStatus);
+        TestAssertions.Equal(0u, status & (1u << 28));
+    }
+
     public static void InitializesAndStartsModule()
     {
         var loader = new OberonModuleLoader(name => name == "Demo" ? BuildRsc() : null);

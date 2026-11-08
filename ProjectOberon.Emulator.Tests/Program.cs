@@ -23,6 +23,7 @@ var tests = new (string Name, Action Test)[]
     ("module initializer limits", ModulesHostBindingTests.LimitsNonReturningInitializer),
     ("Oberon boot session", OberonBootSessionTests.InitializesAndStartsModule),
     ("Oberon dependency boot", OberonBootSessionTests.BootsDependenciesBeforeRoot),
+    ("Oberon boot consumes keyboard", OberonBootSessionTests.BootConsumesKeyboardInput),
     ("core host binding composition", CoreHostBindingTests.BindsCoreExternalModules),
     ("runtime diagnostics", RuntimeDiagnosticsTests.FormatsMachineState),
     ("disassembler and breakpoint", DeviceTests.DisassemblerAndBreakpoint),
