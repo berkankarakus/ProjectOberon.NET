@@ -51,6 +51,9 @@ directory B-tree search, insertion/split, deletion/rebalancing and rename
 operations. The Kernel-backed `OberonFiles` path now persists headers, data
 pages and extension index pages, and rebuilds the sector allocation map when a
 disk is reopened.
+`OberonModuleLoader` ports the first `Modules.Mod` runtime layer: recursive
+RSC import loading, module caching, key-conflict and cycle detection, command
+lookup, and reference-counted freeing.
 
 `--trace N` prints the first `N` instructions with the program counter and
 selected registers, which is useful when learning the boot ROM and debugging

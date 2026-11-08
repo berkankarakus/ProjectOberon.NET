@@ -17,7 +17,8 @@ var tests = new (string Name, Action Test)[]
     ("Oberon kernel sectors", OberonKernelSectors),
     ("Oberon files and riders", OberonFilesAndRiders),
     ("Oberon file directory", OberonFileDirectoryBTree),
-    ("Oberon persistent files", OberonPersistentFiles)
+    ("Oberon persistent files", OberonPersistentFiles),
+    ("Oberon module loader", OberonModuleLoaderGraph)
 };
 
 foreach (var (name, test) in tests)
@@ -376,6 +377,94 @@ static void OberonPersistentFiles()
     {
         File.Delete(path);
     }
+}
+
+static void OberonModuleLoaderGraph()
+{
+    var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+    {
+        ["A.rsc"] = BuildRsc("A", 100, [("B", 200)], "Start"),
+        ["B.rsc"] = BuildRsc("B", 200, [], "Run")
+    };
+    var loader = new OberonModuleLoader(name => modules.TryGetValue($"{name}.rsc", out var data) ? data : null);
+    var module = loader.Load("A.rsc");
+    Equal("A", module.Name);
+    Equal(2, module.Number);
+    Equal("B", module.Imports[0].Name);
+    Equal("Start", module.FindCommand("Start")!.Name);
+    Equal(2, loader.LoadedModules.Count);
+    True(ReferenceEquals(module, loader.Load("A")));
+    False(loader.Free("B"));
+    True(loader.Free("A"));
+    True(loader.Free("B"));
+
+    var conflict = new OberonModuleLoader(name => name == "A" ? BuildRsc("A", 100, [("B", 201)], "Start") : modules["B.rsc"]);
+    try
+    {
+        conflict.Load("A");
+        throw new InvalidOperationException("expected module key conflict");
+    }
+    catch (OberonModuleLoadException error)
+    {
+        Equal(3, error.Code);
+    }
+    Equal(0, conflict.LoadedModules.Count);
+
+    var cycle = new OberonModuleLoader(name => name == "A"
+        ? BuildRsc("A", 100, [("B", 200)], "Start")
+        : BuildRsc("B", 200, [("A", 100)], "Run"));
+    try
+    {
+        cycle.Load("A");
+        throw new InvalidOperationException("expected module import cycle");
+    }
+    catch (OberonModuleLoadException error)
+    {
+        Equal(5, error.Code);
+    }
+    Equal(0, cycle.LoadedModules.Count);
+}
+
+static byte[] BuildRsc(string name, int key, (string Name, int Key)[] imports, string command)
+{
+    var data = new List<byte>();
+    AddString(data, name);
+    AddInt(data, key);
+    data.Add(1);
+    AddInt(data, 0);
+    foreach (var import in imports)
+    {
+        AddString(data, import.Name);
+        AddInt(data, import.Key);
+    }
+    AddString(data, string.Empty);
+    AddInt(data, 0);
+    AddInt(data, 0);
+    AddInt(data, 0);
+    AddInt(data, 1);
+    AddInt(data, unchecked((int)0xc700_0000u));
+    AddString(data, command);
+    AddInt(data, 0);
+    AddString(data, string.Empty);
+    AddInt(data, 0);
+    AddInt(data, -1);
+    AddInt(data, 0);
+    AddInt(data, 0);
+    AddInt(data, 0);
+    AddInt(data, 0);
+    data.Add((byte)'O');
+    return data.ToArray();
+}
+
+static void AddString(List<byte> data, string value)
+{
+    data.AddRange(System.Text.Encoding.ASCII.GetBytes(value));
+    data.Add(0);
+}
+
+static void AddInt(List<byte> data, int value)
+{
+    data.AddRange(BitConverter.GetBytes(value));
 }
 
 static uint Transfer(Memory memory, uint dataAddress, byte value)
