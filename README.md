@@ -83,10 +83,12 @@ recursive loading operations are kept in focused source files.
 `OberonSymbolModuleReader` reads `.smb` headers and exported symbol metadata;
 the loader can register those symbols as external, host-owned modules.
 `OberonModuleMemoryLoader` materializes that module graph in emulator RAM,
-writes module descriptors and tables, and applies the `Modules.Mod` BL, data
-and type-descriptor fixup chains. The CPU boot path is not wired to invoke
-the host loader yet; direct module startup is available through
-`OberonModuleRuntime` and the CLI’s `--start-module` option.
+and applies the `Modules.Mod` BL, data and type-descriptor fixup chains.
+`OberonCoreHostBinding` composes the host-backed `Kernel`, `Files` and
+`Modules` modules for the reference disk image; SMB procedure and variable
+values are preserved as sparse word-offset entry tables so imported RSC fixups
+resolve to the correct byte addresses. Direct module startup is available
+through `OberonModuleRuntime` and the CLI’s `--start-module` option.
 `OberonModuleRuntime.BindExternal` can bind an external module to existing
 emulated data/code addresses and export offsets; it deliberately does not
 invent executable stubs for host-only C# implementations.
@@ -286,10 +288,20 @@ dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
 The command must be present in the module's RSC command table.
 
 The reference `RISC-work.img` keeps `Kernel`, `Files` and `Modules` as
-kernel-linked modules and stores only their `.smb` symbol files. A direct
-`--start-module Oberon` run therefore requires host-backed bindings for those
-core modules; the CLI reports the missing binding instead of treating it as a
-normal RSC file.
+kernel-linked modules and stores only their `.smb` symbol files. The CLI loads
+those symbol files and installs the host-backed bindings before starting an
+ordinary RSC module. A read-only smoke run against the checked-in image is:
+
+```sh
+dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+  --disk RISC-work.img \
+  --read-only \
+  --start-module Oberon \
+  --steps 100000
+```
+
+The command should print `started module Oberon` and finish with the CPU step
+count; it does not modify the disk image.
 
 Runtime failures from the CLI and SDL frontend are printed with the exception
 type, message, CPU steps, PC, selected registers, flags and stack trace. This
