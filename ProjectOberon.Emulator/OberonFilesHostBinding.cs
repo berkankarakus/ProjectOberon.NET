@@ -44,6 +44,34 @@ public static class OberonFilesHostBinding
                 context.Cpu.SetRegister(0, state.Handle(file));
                 context.Return();
             },
+            "Register" => context =>
+            {
+                state.Files.Register(state.File(context.Argument(0)));
+                context.Return();
+            },
+            "Close" => context =>
+            {
+                state.Files.Close(state.File(context.Argument(0)));
+                context.Return();
+            },
+            "Purge" => context =>
+            {
+                state.Files.Purge(state.File(context.Argument(0)));
+                context.Return();
+            },
+            "Delete" => context =>
+            {
+                WriteResult(context, context.Argument(1), state.Files.Delete(context.ReadCString(context.Argument(0))));
+                context.Return();
+            },
+            "Rename" => context =>
+            {
+                var renamed = state.Files.Rename(
+                    context.ReadCString(context.Argument(0)),
+                    context.ReadCString(context.Argument(1)));
+                WriteResult(context, context.Argument(2), renamed);
+                context.Return();
+            },
             "Set" => context =>
             {
                 var file = state.File(context.Argument(1));
@@ -79,6 +107,47 @@ public static class OberonFilesHostBinding
                 state.SyncRider(context, context.Argument(0), rider);
                 context.Return();
             },
+            "ReadByte" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                rider.ReadByte(out var value);
+                context.Memory.Write8(context.Argument(1), value);
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
+            "ReadBytes" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                var bytes = new byte[checked((int)context.Argument(2))];
+                rider.ReadBytes(bytes);
+                context.WriteBytes(context.Argument(1), bytes);
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
+            "Read" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                rider.Read(out var value);
+                context.Memory.Write8(context.Argument(1), checked((byte)value));
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
+            "ReadNum" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                rider.ReadNum(out var value);
+                context.Memory.Write32(context.Argument(1), unchecked((uint)value));
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
+            "ReadSet" or "ReadReal" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                rider.ReadInt(out var value);
+                context.Memory.Write32(context.Argument(1), unchecked((uint)value));
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
             "ReadString" => context =>
             {
                 var rider = state.Rider(context.Argument(0));
@@ -86,8 +155,55 @@ public static class OberonFilesHostBinding
                 state.SyncRider(context, context.Argument(0), rider);
                 context.Return();
             },
+            "WriteByte" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                rider.WriteByte(checked((byte)context.Argument(1)));
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
+            "WriteBytes" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                rider.Write(context.ReadBytes(context.Argument(1), checked((int)context.Argument(2))));
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
+            "Write" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                rider.Write(checked((char)context.Argument(1)));
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
+            "WriteInt" or "WriteSet" or "WriteReal" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                rider.WriteInt(unchecked((int)context.Argument(1)));
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
+            "WriteString" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                rider.WriteString(context.ReadCString(context.Argument(1)));
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
+            "WriteNum" => context =>
+            {
+                var rider = state.Rider(context.Argument(0));
+                rider.WriteNum(unchecked((int)context.Argument(1)));
+                state.SyncRider(context, context.Argument(0), rider);
+                context.Return();
+            },
             _ => Unsupported(moduleName, procedureName)
         };
+    }
+
+    private static void WriteResult(OberonHostCallContext context, uint address, bool succeeded)
+    {
+        context.Memory.Write32(address, succeeded ? 0u : 2u);
     }
 
     private static Action<OberonHostCallContext> Unsupported(string moduleName, string procedureName)
