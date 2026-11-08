@@ -2,6 +2,10 @@ namespace ProjectOberon.Emulator;
 
 public static class OberonFilesHostBinding
 {
+    private const int RiderArgument = 0;
+    // The compiler places a Rider type descriptor in r1 for VAR Rider.
+    private const int FirstRiderPayloadArgument = 2;
+
     public static OberonExternalModuleBinding Create(
         OberonSymbolModule symbol,
         OberonFiles files,
@@ -67,22 +71,25 @@ public static class OberonFilesHostBinding
             },
             "Delete" => context =>
             {
-                WriteResult(context, context.Argument(1), state.Files.Delete(context.ReadCString(context.Argument(0))));
+                WriteResult(
+                    context,
+                    context.Argument(2),
+                    state.Files.Delete(context.ReadCString(context.Argument(0))));
                 context.Return();
             },
             "Rename" => context =>
             {
                 var renamed = state.Files.Rename(
                     context.ReadCString(context.Argument(0)),
-                    context.ReadCString(context.Argument(1)));
-                WriteResult(context, context.Argument(2), renamed);
+                    context.ReadCString(context.Argument(2)));
+                WriteResult(context, context.Argument(4), renamed);
                 context.Return();
             },
             "Set" => context =>
             {
-                var file = state.File(context.Argument(1));
-                var rider = file.Set(checked((int)context.Argument(2)));
-                state.SetRider(context, context.Argument(0), rider, file);
+                var file = state.File(context.Argument(FirstRiderPayloadArgument));
+                var rider = file.Set(checked((int)context.Argument(FirstRiderPayloadArgument + 1)));
+                state.SetRider(context, context.Argument(RiderArgument), rider, file);
                 context.Return();
             },
             "Length" => context =>
@@ -107,100 +114,107 @@ public static class OberonFilesHostBinding
             },
             "ReadInt" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
+                var rider = state.Rider(context.Argument(RiderArgument));
                 rider.ReadInt(out var value);
-                context.Memory.Write32(context.Argument(1), unchecked((uint)value));
-                state.SyncRider(context, context.Argument(0), rider);
+                context.Memory.Write32(context.Argument(FirstRiderPayloadArgument), unchecked((uint)value));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "ReadByte" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
+                var rider = state.Rider(context.Argument(RiderArgument));
                 rider.ReadByte(out var value);
-                context.Memory.Write8(context.Argument(1), value);
-                state.SyncRider(context, context.Argument(0), rider);
+                context.Memory.Write8(context.Argument(FirstRiderPayloadArgument), value);
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "ReadBytes" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
-                var bytes = new byte[checked((int)context.Argument(2))];
+                var rider = state.Rider(context.Argument(RiderArgument));
+                var bytes = new byte[checked((int)context.Argument(FirstRiderPayloadArgument + 2))];
                 rider.ReadBytes(bytes);
-                context.WriteBytes(context.Argument(1), bytes);
-                state.SyncRider(context, context.Argument(0), rider);
+                context.WriteBytes(context.Argument(FirstRiderPayloadArgument), bytes);
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "Read" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
+                var rider = state.Rider(context.Argument(RiderArgument));
                 rider.Read(out var value);
-                context.Memory.Write8(context.Argument(1), checked((byte)value));
-                state.SyncRider(context, context.Argument(0), rider);
+                context.Memory.Write8(context.Argument(FirstRiderPayloadArgument), checked((byte)value));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "ReadNum" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
+                var rider = state.Rider(context.Argument(RiderArgument));
                 rider.ReadNum(out var value);
-                context.Memory.Write32(context.Argument(1), unchecked((uint)value));
-                state.SyncRider(context, context.Argument(0), rider);
+                context.Memory.Write32(context.Argument(FirstRiderPayloadArgument), unchecked((uint)value));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "ReadSet" or "ReadReal" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
+                var rider = state.Rider(context.Argument(RiderArgument));
                 rider.ReadInt(out var value);
-                context.Memory.Write32(context.Argument(1), unchecked((uint)value));
-                state.SyncRider(context, context.Argument(0), rider);
+                context.Memory.Write32(context.Argument(FirstRiderPayloadArgument), unchecked((uint)value));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "ReadString" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
-                context.WriteCString(context.Argument(1), rider.ReadString());
-                state.SyncRider(context, context.Argument(0), rider);
+                var rider = state.Rider(context.Argument(RiderArgument));
+                context.WriteCString(
+                    context.Argument(FirstRiderPayloadArgument),
+                    rider.ReadString(),
+                    checked((int)context.Argument(FirstRiderPayloadArgument + 1)));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "WriteByte" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
-                rider.WriteByte(checked((byte)context.Argument(1)));
-                state.SyncRider(context, context.Argument(0), rider);
+                var rider = state.Rider(context.Argument(RiderArgument));
+                rider.WriteByte(checked((byte)context.Argument(FirstRiderPayloadArgument)));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "WriteBytes" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
-                rider.Write(context.ReadBytes(context.Argument(1), checked((int)context.Argument(2))));
-                state.SyncRider(context, context.Argument(0), rider);
+                var rider = state.Rider(context.Argument(RiderArgument));
+                rider.Write(context.ReadBytes(
+                    context.Argument(FirstRiderPayloadArgument),
+                    checked((int)context.Argument(FirstRiderPayloadArgument + 2))));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "Write" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
-                rider.Write(checked((char)context.Argument(1)));
-                state.SyncRider(context, context.Argument(0), rider);
+                var rider = state.Rider(context.Argument(RiderArgument));
+                rider.Write(checked((char)context.Argument(FirstRiderPayloadArgument)));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "WriteInt" or "WriteSet" or "WriteReal" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
-                rider.WriteInt(unchecked((int)context.Argument(1)));
-                state.SyncRider(context, context.Argument(0), rider);
+                var rider = state.Rider(context.Argument(RiderArgument));
+                rider.WriteInt(unchecked((int)context.Argument(FirstRiderPayloadArgument)));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "WriteString" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
-                rider.WriteString(context.ReadCString(context.Argument(1)));
-                state.SyncRider(context, context.Argument(0), rider);
+                var rider = state.Rider(context.Argument(RiderArgument));
+                rider.WriteString(context.ReadCString(
+                    context.Argument(FirstRiderPayloadArgument),
+                    checked((int)context.Argument(FirstRiderPayloadArgument + 1))));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             "WriteNum" => context =>
             {
-                var rider = state.Rider(context.Argument(0));
-                rider.WriteNum(unchecked((int)context.Argument(1)));
-                state.SyncRider(context, context.Argument(0), rider);
+                var rider = state.Rider(context.Argument(RiderArgument));
+                rider.WriteNum(unchecked((int)context.Argument(FirstRiderPayloadArgument)));
+                state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
             _ => Unsupported(moduleName, procedureName)

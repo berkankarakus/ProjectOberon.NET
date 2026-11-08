@@ -51,19 +51,23 @@ internal static class FilesHostBindingTests
             TestAssertions.True(fileHandle != 0);
 
             machine.Cpu.SetRegister(0, 0x600);
-            machine.Cpu.SetRegister(1, fileHandle);
-            machine.Cpu.SetRegister(2, 0);
+            machine.Cpu.SetRegister(1, 0xdeadbeef);
+            machine.Cpu.SetRegister(2, fileHandle);
+            machine.Cpu.SetRegister(3, 0);
             machine.Cpu.SetProgramCounter(0x5024);
             machine.Step();
 
             machine.Cpu.SetRegister(0, 0x600);
-            machine.Cpu.SetRegister(1, 0x700);
+            machine.Cpu.SetRegister(1, 0xdeadbeef);
+            machine.Cpu.SetRegister(2, 0x700);
             machine.Cpu.SetProgramCounter(0x5028);
             machine.Step();
             TestAssertions.Equal(0x01020304u, machine.Memory.Read32(0x700));
 
             machine.Cpu.SetRegister(0, 0x600);
-            machine.Cpu.SetRegister(1, 0x800);
+            machine.Cpu.SetRegister(1, 0xdeadbeef);
+            machine.Cpu.SetRegister(2, 0x800);
+            machine.Cpu.SetRegister(3, 256);
             machine.Cpu.SetProgramCounter(0x502c);
             machine.Step();
             TestAssertions.Equal("Demo", ReadCString(machine.Memory, 0x800));
@@ -147,17 +151,21 @@ internal static class FilesHostBindingTests
             TestAssertions.True(fileHandle != 0);
 
             machine.Cpu.SetRegister(0, 0x600);
-            machine.Cpu.SetRegister(1, fileHandle);
-            machine.Cpu.SetRegister(2, 0);
+            machine.Cpu.SetRegister(1, 0xdeadbeef);
+            machine.Cpu.SetRegister(2, fileHandle);
+            machine.Cpu.SetRegister(3, 0);
             machine.Cpu.SetProgramCounter(0x5024);
             machine.Step();
 
             machine.Cpu.SetRegister(0, 0x600);
-            machine.Cpu.SetRegister(1, 0x1122_3344);
+            machine.Cpu.SetRegister(1, 0xdeadbeef);
+            machine.Cpu.SetRegister(2, 0x1122_3344);
             machine.Cpu.SetProgramCounter(0x5028);
             machine.Step();
             machine.Cpu.SetRegister(0, 0x600);
-            machine.Cpu.SetRegister(1, 0x700);
+            machine.Cpu.SetRegister(1, 0xdeadbeef);
+            machine.Cpu.SetRegister(2, 0x700);
+            machine.Cpu.SetRegister(3, 256);
             machine.Cpu.SetProgramCounter(0x502c);
             machine.Step();
 
@@ -171,15 +179,18 @@ internal static class FilesHostBindingTests
             TestAssertions.Equal(10u, machine.Cpu.Register(0));
 
             machine.Cpu.SetRegister(0, 0x800);
-            machine.Cpu.SetRegister(1, 0x900);
-            machine.Cpu.SetRegister(2, 0xa00);
+            machine.Cpu.SetRegister(1, 8);
+            machine.Cpu.SetRegister(2, 0x900);
+            machine.Cpu.SetRegister(3, 12);
+            machine.Cpu.SetRegister(4, 0xa00);
             machine.Cpu.SetProgramCounter(0x5038);
             machine.Step();
             TestAssertions.Equal(0u, machine.Memory.Read32(0xa00));
             TestAssertions.True(files.Old("Renamed.rsc") is not null);
 
             machine.Cpu.SetRegister(0, 0x900);
-            machine.Cpu.SetRegister(1, 0xa04);
+            machine.Cpu.SetRegister(1, 8);
+            machine.Cpu.SetRegister(2, 0xa04);
             machine.Cpu.SetProgramCounter(0x503c);
             machine.Step();
             TestAssertions.Equal(0u, machine.Memory.Read32(0xa04));

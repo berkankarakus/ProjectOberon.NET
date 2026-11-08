@@ -14,6 +14,30 @@ public sealed class OberonFile
         _writable = writable;
     }
 
+    internal static OberonFile CreateTemporary()
+    {
+        return new OberonFile(string.Empty, ReadOnlySpan<byte>.Empty, writable: true, date: 0,
+            allowEmptyName: true);
+    }
+
+    private OberonFile(
+        string name,
+        ReadOnlySpan<byte> content,
+        bool writable,
+        int date,
+        bool allowEmptyName)
+    {
+        if (!allowEmptyName || name.Length != 0)
+        {
+            OberonFileNameRules.Validate(name);
+        }
+
+        Name = name;
+        Date = date;
+        _content = content.ToArray();
+        _writable = writable;
+    }
+
     public string Name { get; }
     public int Date { get; }
     public int Length

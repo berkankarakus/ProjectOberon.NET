@@ -18,12 +18,22 @@ public sealed class OberonFiles
 
     public OberonFile? Old(string name)
     {
+        if (name == string.Empty)
+        {
+            return null;
+        }
+
         ValidateName(name);
         return _backend.Old(name);
     }
 
     public OberonFile New(string name)
     {
+        if (name == string.Empty)
+        {
+            return OberonFile.CreateTemporary();
+        }
+
         ValidateName(name);
         return _backend.New(name);
     }
