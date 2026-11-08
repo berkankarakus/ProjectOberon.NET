@@ -10,6 +10,7 @@ public sealed class OberonKernel
     private readonly Memory _memory;
     private readonly DiskImage? _disk;
     private readonly bool[] _sectorMap = new bool[MapSize];
+    private readonly List<FreeBlock> _freeBlocks = [];
     private readonly uint _heapOrigin;
     private readonly uint _heapLimit;
     private uint _heapNext;
@@ -35,6 +36,7 @@ public sealed class OberonKernel
         _heapNext = _heapOrigin;
         AllocatedBytes = 0;
         _clock = 0;
+        _freeBlocks.Clear();
         InitSectorMap();
     }
 
@@ -104,6 +106,11 @@ public sealed class OberonKernel
             throw new InvalidDataException("Oberon heap object size must be a multiple of four and include its header");
         }
 
+        if (TryTakeFreeBlock((uint)size, out var reusedBlock))
+        {
+            return InitializeObject(reusedBlock, tagAddress, size);
+        }
+
         var end = checked(_heapNext + (uint)size);
         if (end > _heapLimit)
         {
@@ -112,6 +119,69 @@ public sealed class OberonKernel
 
         var block = _heapNext;
         _heapNext = end;
+        return InitializeObject(block, tagAddress, size);
+    }
+
+    public void Mark(uint rootListAddress)
+    {
+        var visited = new HashSet<uint>();
+        var rootListCursor = rootListAddress;
+        while (true)
+        {
+            var pointerAddress = _memory.Read32(rootListCursor);
+            if (pointerAddress == 0)
+            {
+                return;
+            }
+
+            MarkObject(_memory.Read32(pointerAddress), visited);
+            rootListCursor = checked(rootListCursor + 4);
+        }
+    }
+
+    public void Scan()
+    {
+        var freeBlocks = new List<FreeBlock>();
+        var liveBytes = 0;
+        var address = _heapOrigin;
+        while (address < _heapNext)
+        {
+            var mark = unchecked((int)_memory.Read32(address + 4));
+            var size = mark == -1
+                ? _memory.Read32(address)
+                : ObjectSize(_memory.Read32(address));
+            if (size < 8 || (size & 3) != 0 || size > _heapNext - address)
+            {
+                throw new InvalidDataException("invalid Oberon heap block");
+            }
+
+            if (mark == -1 || mark == 0)
+            {
+                freeBlocks.Add(new FreeBlock(address, size));
+            }
+            else
+            {
+                _memory.Write32(address + 4, 0);
+                liveBytes = checked(liveBytes + (int)size);
+            }
+
+            address += size;
+        }
+
+        _freeBlocks.Clear();
+        foreach (var block in Coalesce(freeBlocks))
+        {
+            _memory.Write32(block.Address, block.Size);
+            _memory.Write32(block.Address + 4, unchecked((uint)-1));
+            _freeBlocks.Add(block);
+        }
+
+        AllocatedBytes = liveBytes;
+    }
+
+    private uint InitializeObject(uint block, uint tagAddress, int size)
+    {
+        var end = checked(block + (uint)size);
         _memory.Write32(block, tagAddress);
         _memory.Write32(block + 4, 0);
         for (var address = block + 8; address < end; address += 4)
@@ -122,6 +192,115 @@ public sealed class OberonKernel
         AllocatedBytes = checked(AllocatedBytes + size);
         return block + 8;
     }
+
+    private void MarkObject(uint objectAddress, HashSet<uint> visited)
+    {
+        if (objectAddress < _heapOrigin + 8 || objectAddress >= _heapNext
+            || (objectAddress & 3) != 0)
+        {
+            return;
+        }
+
+        var blockAddress = objectAddress - 8;
+        if (!visited.Add(blockAddress) || _memory.Read32(blockAddress + 4) != 0)
+        {
+            return;
+        }
+
+        _memory.Write32(blockAddress + 4, 1);
+        var tagAddress = _memory.Read32(blockAddress);
+        var size = ObjectSize(tagAddress);
+        var offsetAddress = checked(tagAddress + 16);
+        while (true)
+        {
+            var offset = _memory.Read32(offsetAddress);
+            if (offset == unchecked((uint)-1))
+            {
+                return;
+            }
+
+            if (offset >= size - 8 || (offset & 3) != 0)
+            {
+                throw new InvalidDataException("invalid Oberon pointer offset");
+            }
+
+            MarkObject(_memory.Read32(objectAddress + offset), visited);
+            offsetAddress = checked(offsetAddress + 4);
+        }
+    }
+
+    private uint ObjectSize(uint tagAddress)
+    {
+        var size = _memory.Read32(tagAddress);
+        if (size < 8 || (size & 3) != 0)
+        {
+            throw new InvalidDataException("invalid Oberon object tag");
+        }
+
+        return size;
+    }
+
+    private bool TryTakeFreeBlock(uint size, out uint blockAddress)
+    {
+        for (var index = 0; index < _freeBlocks.Count; index++)
+        {
+            var block = _freeBlocks[index];
+            if (block.Size < size)
+            {
+                continue;
+            }
+
+            var remainder = block.Size - size;
+            if (remainder != 0 && remainder < 8)
+            {
+                continue;
+            }
+
+            _freeBlocks.RemoveAt(index);
+            if (remainder >= 8)
+            {
+                var remainderAddress = block.Address + size;
+                _memory.Write32(remainderAddress, remainder);
+                _memory.Write32(remainderAddress + 4, unchecked((uint)-1));
+                _freeBlocks.Add(new FreeBlock(remainderAddress, remainder));
+            }
+
+            blockAddress = block.Address;
+            return true;
+        }
+
+        blockAddress = 0;
+        return false;
+    }
+
+    private static IEnumerable<FreeBlock> Coalesce(IEnumerable<FreeBlock> blocks)
+    {
+        FreeBlock? pending = null;
+        foreach (var block in blocks.OrderBy(block => block.Address))
+        {
+            if (pending is not FreeBlock current)
+            {
+                pending = block;
+                continue;
+            }
+
+            if (current.Address + current.Size == block.Address)
+            {
+                pending = new FreeBlock(current.Address, current.Size + block.Size);
+                continue;
+            }
+
+            yield return current;
+            pending = block;
+        }
+
+        if (pending is FreeBlock last)
+        {
+            yield return last;
+        }
+    }
+
+    private readonly record struct FreeBlock(uint Address, uint Size);
 
     public byte[] GetSector(int address)
     {

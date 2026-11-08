@@ -76,6 +76,17 @@ public static class OberonKernelHostBinding
                 kernel.SyncModuleData(dataAddress);
                 context.Return();
             },
+            "Mark" => context =>
+            {
+                kernel.Mark(context.Argument(0));
+                context.Return();
+            },
+            "Scan" => context =>
+            {
+                kernel.Scan();
+                kernel.SyncModuleData(dataAddress);
+                context.Return();
+            },
             "GetSector" => context =>
             {
                 var data = kernel.GetSector(checked((int)context.Argument(0)));

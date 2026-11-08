@@ -14,6 +14,7 @@ var tests = new (string Name, Action Test)[]
     ("Kernel host binding", KernelHostBindingTests.DispatchesClockAndSectorMapServices),
     ("Kernel install host binding", KernelHostBindingTests.DispatchesInstallService),
     ("Kernel heap host binding", KernelHostBindingTests.DispatchesHeapAllocationService),
+    ("Kernel garbage collection host binding", KernelHostBindingTests.DispatchesGarbageCollectionServices),
     ("Kernel sector I/O host binding", KernelHostBindingTests.DispatchesSectorIoServices),
     ("Files host binding", FilesHostBindingTests.DispatchesReadServices),
     ("Files write host binding", FilesHostBindingTests.DispatchesWriteAndLifecycleServices),

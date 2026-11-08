@@ -112,6 +112,65 @@ internal static class KernelHostBindingTests
         TestAssertions.Equal(16, kernel.AllocatedBytes);
     }
 
+    public static void DispatchesGarbageCollectionServices()
+    {
+        using var machine = new Machine();
+        var kernel = new OberonKernel(machine.Memory);
+        var symbol = new OberonSymbolModule(
+            "Kernel",
+            1,
+            1,
+            [
+                new OberonSymbolExport("New", 1, 0x20),
+                new OberonSymbolExport("Mark", 1, 0x24),
+                new OberonSymbolExport("Scan", 1, 0x28)
+            ]);
+        var binding = OberonKernelHostBinding.Create(symbol, kernel, 0x3000, 0x4000);
+        var loader = new OberonModuleLoader(_ => null);
+        loader.RegisterExternal(symbol);
+        var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, loader);
+        runtime.BindExternal(binding, machine.HostCalls);
+        machine.Cpu.SetRegister(15, 0x200);
+
+        machine.Memory.Write32(0x2000, 16);
+        machine.Memory.Write32(0x2010, 0);
+        machine.Memory.Write32(0x2014, unchecked((uint)-1));
+
+        var root = Allocate(machine, 0x700, 0x2000);
+        var child = Allocate(machine, 0x704, 0x2000);
+        var orphan = Allocate(machine, 0x708, 0x2000);
+        machine.Memory.Write32(root, child);
+        machine.Memory.Write32(0x800, 0x900);
+        machine.Memory.Write32(0x804, 0);
+        machine.Memory.Write32(0x900, root);
+
+        machine.Cpu.SetRegister(0, 0x800);
+        machine.Cpu.SetProgramCounter(0x4024);
+        machine.Step();
+        TestAssertions.Equal(1u, machine.Memory.Read32(root - 4));
+        TestAssertions.Equal(1u, machine.Memory.Read32(child - 4));
+        TestAssertions.Equal(0u, machine.Memory.Read32(orphan - 4));
+
+        machine.Cpu.SetProgramCounter(0x4028);
+        machine.Step();
+        TestAssertions.Equal(32, kernel.AllocatedBytes);
+        TestAssertions.Equal(0u, machine.Memory.Read32(root - 4));
+        TestAssertions.Equal(unchecked((uint)-1), machine.Memory.Read32(orphan - 4));
+
+        var reused = Allocate(machine, 0x70c, 0x2000);
+        TestAssertions.Equal(orphan, reused);
+        TestAssertions.Equal(48, kernel.AllocatedBytes);
+    }
+
+    private static uint Allocate(Machine machine, uint resultAddress, uint tagAddress)
+    {
+        machine.Cpu.SetRegister(0, resultAddress);
+        machine.Cpu.SetRegister(1, tagAddress);
+        machine.Cpu.SetProgramCounter(0x4020);
+        machine.Step();
+        return machine.Memory.Read32(resultAddress);
+    }
+
     public static void DispatchesSectorIoServices()
     {
         var path = Path.Combine(Path.GetTempPath(), $"project-oberon-kernel-{Guid.NewGuid():N}.img");
