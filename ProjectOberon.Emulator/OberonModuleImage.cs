@@ -56,4 +56,5 @@ public sealed record OberonExternalModuleBinding(
     IReadOnlyList<uint> EntryOffsets)
 {
     public IReadOnlyList<Action<OberonHostCallContext>> EntryHandlers { get; init; } = [];
+    public IReadOnlyList<uint> HostCallOffsets { get; init; } = [];
 }

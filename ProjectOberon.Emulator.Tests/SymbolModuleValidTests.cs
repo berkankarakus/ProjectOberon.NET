@@ -21,6 +21,7 @@ internal static partial class SymbolModuleTests
         TestAssertions.Equal("heapOrg", module.Exports[0].Name);
         TestAssertions.Equal(2, module.Exports[0].Class);
         TestAssertions.Equal(3, module.Exports[0].Value);
+        TestAssertions.False(module.Exports[0].IsProcedure ?? false);
     }
 
     private static void ParsesTypeFixupsAndReexport()
@@ -78,6 +79,8 @@ internal static partial class SymbolModuleTests
 
         TestAssertions.Equal(2, module.Exports.Count);
         TestAssertions.Equal("Record", module.Exports[0].Name);
+        TestAssertions.False(module.Exports[0].IsProcedure ?? false);
+        TestAssertions.True(module.Exports[1].IsProcedure ?? false);
         TestAssertions.Equal("Procedure", module.Exports[1].Name);
     }
 }

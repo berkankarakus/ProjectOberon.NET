@@ -4,7 +4,12 @@ using System.Text;
 
 namespace ProjectOberon.Emulator;
 
-public sealed record OberonSymbolExport(string Name, int Class, int Value);
+public sealed record OberonSymbolExport(string Name, int Class, int Value)
+{
+    // Hand-built symbols historically treated class 1 exports as procedures.
+    // The reader overrides this for constants, whose type is not a procedure.
+    public bool? IsProcedure { get; init; }
+}
 
 public sealed record OberonSymbolModule(
     string Name,
@@ -38,9 +43,12 @@ public static class OberonSymbolModuleReader
             }
 
             var exportName = reader.ReadString();
-            SkipType(ref reader);
+            var isProcedure = SkipType(ref reader);
             var value = symbolClass is 1 or 2 ? reader.ReadNum() : 0;
-            exports.Add(new OberonSymbolExport(exportName, symbolClass, value));
+            exports.Add(new OberonSymbolExport(exportName, symbolClass, value)
+            {
+                IsProcedure = isProcedure
+            });
 
             if (symbolClass == 5)
             {
@@ -51,15 +59,16 @@ public static class OberonSymbolModuleReader
         return new OberonSymbolModule(name, key, version, exports);
     }
 
-    private static void SkipType(ref SymbolReader reader)
+    private static bool SkipType(ref SymbolReader reader)
     {
         var reference = reader.ReadSignedByte();
         if (reference < 0)
         {
-            return;
+            return false;
         }
 
         var form = reader.ReadSignedByte();
+        var isProcedure = form == 10;
         switch (form)
         {
             case 7:
@@ -101,6 +110,8 @@ public static class OberonSymbolModuleReader
             reader.ReadInt32();
             reader.ReadString();
         }
+
+        return isProcedure;
     }
 
     private static void SkipRecordFields(ref SymbolReader reader)

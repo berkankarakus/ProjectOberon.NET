@@ -31,14 +31,17 @@ public sealed class OberonModuleRuntime
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
         BindExternal(binding);
-        if (binding.EntryHandlers.Count != binding.EntryOffsets.Count)
+        var handlerOffsets = binding.HostCallOffsets.Count == 0
+            ? binding.EntryOffsets
+            : binding.HostCallOffsets;
+        if (binding.EntryHandlers.Count != handlerOffsets.Count)
         {
-            throw new ArgumentException("external handler count does not match the symbol module", nameof(binding));
+            throw new ArgumentException("external handler count does not match host-call offsets", nameof(binding));
         }
 
-        for (var index = 0; index < binding.EntryOffsets.Count; index++)
+        for (var index = 0; index < handlerOffsets.Count; index++)
         {
-            dispatcher.Register(binding.CodeAddress + binding.EntryOffsets[index], binding.EntryHandlers[index]);
+            dispatcher.Register(binding.CodeAddress + handlerOffsets[index], binding.EntryHandlers[index]);
         }
     }
 

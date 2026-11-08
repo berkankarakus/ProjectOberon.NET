@@ -4,6 +4,7 @@ public sealed partial class OberonModuleLoader
 {
     private readonly Func<string, byte[]?> _readModule;
     private readonly Dictionary<string, LoadedOberonModule> _loaded = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, OberonSymbolModule> _externalSymbols = new(StringComparer.Ordinal);
     private readonly HashSet<string> _loading = new(StringComparer.Ordinal);
     private int _nextNumber = 1;
 
@@ -41,6 +42,11 @@ public sealed partial class OberonModuleLoader
 
     public IReadOnlyCollection<LoadedOberonModule> LoadedModules => _loaded.Values;
 
+    public bool TryGetExternalSymbol(string name, out OberonSymbolModule symbol)
+    {
+        return _externalSymbols.TryGetValue(NormalizeName(name), out symbol!);
+    }
+
     public LoadedOberonModule RegisterExternal(OberonSymbolModule symbol)
     {
         ArgumentNullException.ThrowIfNull(symbol);
@@ -55,11 +61,13 @@ public sealed partial class OberonModuleLoader
             return existing;
         }
 
-        var entries = symbol.Exports.Select(export => export.Value).ToArray();
+        var entryCount = OberonSymbolBinding.EntryOffsets(symbol, 1).Count;
+        var entries = new int[entryCount];
         var definition = new RscModule(normalizedName, symbol.Key, symbol.Version, 0, [], 0, 0, 0,
             0, [], [], entries, [], 0, 0, 0, 0, (byte)'O');
         var module = new LoadedOberonModule(normalizedName, _nextNumber++, definition, [], true);
         _loaded.Add(normalizedName, module);
+        _externalSymbols[normalizedName] = symbol;
         return module;
     }
 

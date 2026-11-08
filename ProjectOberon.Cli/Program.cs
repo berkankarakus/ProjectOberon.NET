@@ -19,6 +19,8 @@ try
         var files = new OberonFiles(fileSystem);
         var moduleLoader = new OberonModuleLoader(files, ["Kernel", "Files", "Modules"]);
         var runtime = new OberonModuleRuntime(machine.Memory, machine.Cpu, moduleLoader);
+        OberonCoreHostBinding.Bind(moduleLoader, runtime,
+            new OberonKernel(machine.Memory, machine.Disk), files, machine.HostCalls);
         var image = options.Command is null
             ? runtime.Start(options.StartModule)
             : runtime.StartCommand(options.StartModule, options.Command);

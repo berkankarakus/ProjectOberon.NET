@@ -6,21 +6,26 @@ public static class OberonKernelHostBinding
         OberonSymbolModule symbol,
         OberonKernel kernel,
         uint dataAddress,
-        uint codeAddress)
+        uint codeAddress,
+        uint entryOffsetScale = 1)
     {
         ArgumentNullException.ThrowIfNull(symbol);
         ArgumentNullException.ThrowIfNull(kernel);
 
-        var handlers = symbol.Exports
+        var procedureExports = OberonSymbolBinding.Procedures(symbol);
+        var handlers = procedureExports
             .Select(export => CreateHandler(symbol.Name, export.Name, kernel))
             .ToArray();
         return new OberonExternalModuleBinding(
             symbol.Name,
             dataAddress,
             codeAddress,
-            symbol.Exports.Select(export => checked((uint)export.Value)).ToArray())
+            OberonSymbolBinding.EntryOffsets(symbol, entryOffsetScale))
         {
-            EntryHandlers = handlers
+            EntryHandlers = handlers,
+            HostCallOffsets = procedureExports
+                .Select(export => OberonSymbolBinding.ScaleOffset(export.Value, entryOffsetScale))
+                .ToArray()
         };
     }
 
