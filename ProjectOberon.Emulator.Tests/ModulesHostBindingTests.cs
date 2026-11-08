@@ -34,6 +34,9 @@ internal static class ModulesHostBindingTests
         var descriptor = machine.Memory.Read32(0x800);
         TestAssertions.True(descriptor != 0);
         TestAssertions.Equal(1, runtime.MemoryLoader.LoadedImages.Count);
+        TestAssertions.Equal(descriptor, machine.Memory.Read32(0x3008));
+        TestAssertions.Equal(runtime.ModuleTableAddress, machine.Memory.Read32(0x300c));
+        TestAssertions.True(machine.Memory.Read32(0x3010) > 0);
 
         machine.Cpu.SetRegister(0, descriptor);
         machine.Cpu.SetRegister(1, 0x700);

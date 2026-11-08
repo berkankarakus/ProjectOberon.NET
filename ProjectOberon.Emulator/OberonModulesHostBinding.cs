@@ -16,7 +16,8 @@ public static class OberonModulesHostBinding
         ArgumentNullException.ThrowIfNull(modules);
         ArgumentNullException.ThrowIfNull(dispatcher);
 
-        var state = new BindingState(runtime, modules, dispatcher);
+        var state = new BindingState(runtime, modules, dispatcher, dataAddress);
+        state.SyncModuleData();
         var procedureExports = OberonSymbolBinding.Procedures(symbol);
         var handlers = procedureExports
             .Select(export => CreateHandler(symbol.Name, export.Name, state))
@@ -41,12 +42,17 @@ public static class OberonModulesHostBinding
     {
         return procedureName switch
         {
-            "Init" => context => context.Return(),
+            "Init" => context =>
+            {
+                state.SyncModuleData();
+                context.Return();
+            },
             "Load" => context =>
             {
                 var image = state.Runtime.MemoryLoader.Load(context.ReadCString(context.Argument(0)));
                 state.Initialize(image);
                 context.Memory.Write32(context.Argument(1), image.DescriptorAddress);
+                state.SyncModuleData();
                 context.Return();
             },
             "ThisCommand" => context =>
@@ -54,6 +60,7 @@ public static class OberonModulesHostBinding
                 var image = state.Image(context.Argument(0));
                 var command = image?.FindCommandAddress(context.ReadCString(context.Argument(1))) ?? 0;
                 context.Cpu.SetRegister(0, command);
+                state.SyncModuleData();
                 context.Return();
             },
             "Free" => context =>
@@ -64,6 +71,7 @@ public static class OberonModulesHostBinding
                     state.Forget(name);
                 }
 
+                state.SyncModuleData();
                 context.Return();
             },
             _ => Unsupported(moduleName, procedureName)
@@ -79,20 +87,34 @@ public static class OberonModulesHostBinding
     private sealed class BindingState
     {
         private readonly HashSet<string> _initialized = new(StringComparer.Ordinal);
+        private readonly uint _dataAddress;
 
         public BindingState(
             OberonModuleRuntime runtime,
             OberonModuleLoader modules,
-            OberonHostCallDispatcher dispatcher)
+            OberonHostCallDispatcher dispatcher,
+            uint dataAddress)
         {
             Runtime = runtime;
             Modules = modules;
             Dispatcher = dispatcher;
+            _dataAddress = dataAddress;
         }
 
         public OberonModuleRuntime Runtime { get; }
         public OberonModuleLoader Modules { get; }
         public OberonHostCallDispatcher Dispatcher { get; }
+
+        public void SyncModuleData()
+        {
+            var memory = Runtime.Memory;
+            memory.Write32(_dataAddress + 8, Runtime.MemoryLoader.RootDescriptorAddress);
+            memory.Write32(_dataAddress + 12, Runtime.ModuleTableAddress);
+            memory.Write32(_dataAddress + 16, Runtime.MemoryLoader.NextAllocationAddress);
+            memory.Write32(_dataAddress + 20, 0);
+            WriteName(memory, _dataAddress + 24, string.Empty);
+            WriteName(memory, _dataAddress + 56, string.Empty);
+        }
 
         public void Initialize(OberonModuleImage image)
         {
@@ -140,6 +162,15 @@ public static class OberonModulesHostBinding
         {
             return Runtime.MemoryLoader.LoadedImages
                 .FirstOrDefault(image => image.Module.Name == name);
+        }
+
+        private static void WriteName(Memory memory, uint address, string value)
+        {
+            for (var index = 0; index < 32; index++)
+            {
+                var character = index < value.Length ? value[index] : '\0';
+                memory.Write8(address + checked((uint)index), checked((byte)character));
+            }
         }
     }
 }

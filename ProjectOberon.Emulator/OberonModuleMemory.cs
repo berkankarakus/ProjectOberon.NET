@@ -30,6 +30,7 @@ public sealed class OberonModuleMemoryLoader
     }
 
     public uint ModuleTableAddress { get; }
+    public uint NextAllocationAddress => _nextAddress;
     public IReadOnlyCollection<OberonModuleImage> LoadedImages => _images.Values;
     public uint RootDescriptorAddress => _rootDescriptorAddress;
 

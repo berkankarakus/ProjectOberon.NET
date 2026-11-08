@@ -18,6 +18,7 @@ public sealed class OberonModuleRuntime
     }
 
     public OberonModuleMemoryLoader MemoryLoader { get; }
+    internal Memory Memory => _memory;
     public uint ModuleTableAddress => MemoryLoader.ModuleTableAddress;
 
     public void BindExternal(OberonExternalModuleBinding binding)
