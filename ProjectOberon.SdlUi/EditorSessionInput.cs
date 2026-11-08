@@ -198,7 +198,8 @@ internal sealed partial class EditorSession
             originY,
             SurfaceWidth,
             ViewportHeight,
-            ScrollLine);
+            ScrollLine,
+            ScrollX);
         Editor.SetCursor(position, extendSelection);
         EnsureCursorVisible();
     }

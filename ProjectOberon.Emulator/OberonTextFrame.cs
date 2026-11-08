@@ -11,4 +11,6 @@ public sealed partial class OberonTextFrame
     public OberonText Text { get; }
 
     public OberonFont Font { get; }
+
+    public bool WrapLines { get; set; } = true;
 }

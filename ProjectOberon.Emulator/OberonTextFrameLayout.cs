@@ -29,7 +29,7 @@ public sealed partial class OberonTextFrame
             }
 
             var advance = Font.GetGlyph(character).Advance;
-            if (lineLength > 0 && lineWidth + advance > maximumWidth)
+            if (WrapLines && lineLength > 0 && lineWidth + advance > maximumWidth)
             {
                 lines.Add(new OberonTextLine(lineStart, lineLength, lineWidth, source[lineStart..index]));
                 lineStart = index;

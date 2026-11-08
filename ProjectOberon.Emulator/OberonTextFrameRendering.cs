@@ -10,7 +10,7 @@ public sealed partial class OberonTextFrame
         int color,
         int mode)
     {
-        return Render(display, x, y, maximumWidth, color, mode, viewportHeight: 0, scrollLine: 0);
+        return Render(display, x, y, maximumWidth, color, mode, viewportHeight: 0, scrollLine: 0, horizontalScroll: 0);
     }
 
     public int Render(
@@ -21,14 +21,21 @@ public sealed partial class OberonTextFrame
         int color,
         int mode,
         int viewportHeight,
-        int scrollLine)
+        int scrollLine,
+        int horizontalScroll = 0)
     {
         ArgumentNullException.ThrowIfNull(display);
         var lines = Layout(maximumWidth);
         var range = VisibleRange(lines, viewportHeight, scrollLine);
         for (var index = range.Start; index < range.End; index++)
         {
-            display.DrawText(Font, lines[index].Text, x, y + (index - range.Start) * Font.Height, color, mode);
+            display.DrawText(
+                Font,
+                lines[index].Text,
+                x - horizontalScroll,
+                y + (index - range.Start) * Font.Height,
+                color,
+                mode);
         }
 
         return y + (range.End - range.Start) * Font.Height;
@@ -43,7 +50,7 @@ public sealed partial class OberonTextFrame
         int maximumWidth)
     {
         RenderSelection(display, selectionStart, selectionEnd, originX, originY, maximumWidth,
-            viewportHeight: 0, scrollLine: 0);
+            viewportHeight: 0, scrollLine: 0, horizontalScroll: 0);
     }
 
     public void RenderSelection(
@@ -54,7 +61,8 @@ public sealed partial class OberonTextFrame
         int originY,
         int maximumWidth,
         int viewportHeight,
-        int scrollLine)
+        int scrollLine,
+        int horizontalScroll = 0)
     {
         ArgumentNullException.ThrowIfNull(display);
         ValidateSelection(selectionStart, selectionEnd);
@@ -76,7 +84,7 @@ public sealed partial class OberonTextFrame
                 continue;
             }
 
-            var x = originX + MeasurePrefix(line.Text, begin - line.Start);
+            var x = originX + MeasurePrefix(line.Text, begin - line.Start) - horizontalScroll;
             var y = originY + (lineIndex - range.Start) * Font.Height;
             for (var position = begin; position < end; position++)
             {
@@ -89,7 +97,7 @@ public sealed partial class OberonTextFrame
 
     public void RenderCaret(OberonDisplay display, int position, int originX, int originY, int maximumWidth)
     {
-        RenderCaret(display, position, originX, originY, maximumWidth, viewportHeight: 0, scrollLine: 0);
+        RenderCaret(display, position, originX, originY, maximumWidth, viewportHeight: 0, scrollLine: 0, horizontalScroll: 0);
     }
 
     public void RenderCaret(
@@ -99,10 +107,18 @@ public sealed partial class OberonTextFrame
         int originY,
         int maximumWidth,
         int viewportHeight,
-        int scrollLine)
+        int scrollLine,
+        int horizontalScroll = 0)
     {
         ArgumentNullException.ThrowIfNull(display);
-        var caret = GetCaretLocation(position, originX, originY, maximumWidth, viewportHeight, scrollLine);
+        var caret = GetCaretLocation(
+            position,
+            originX,
+            originY,
+            maximumWidth,
+            viewportHeight,
+            scrollLine,
+            horizontalScroll);
         if (viewportHeight > 0 &&
             (caret.Y < originY || caret.Y + Font.Height > originY + viewportHeight))
         {

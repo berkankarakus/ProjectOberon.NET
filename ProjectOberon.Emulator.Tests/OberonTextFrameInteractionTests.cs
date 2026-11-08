@@ -13,6 +13,7 @@ internal static partial class OberonTextFrameTests
         TestAssertions.Equal(2, frame.HitTest(15, 20, 10, 20, 100));
         TestAssertions.Equal(3, frame.HitTest(10, 28, 10, 20, 100));
         TestAssertions.Equal(5, frame.HitTest(100, 28, 10, 20, 100));
+        MapsHorizontalCoordinatesWithoutWrapping();
     }
 
     private static void ScrollsViewportAndMapsCoordinates()
@@ -32,5 +33,18 @@ internal static partial class OberonTextFrameTests
         TestAssertions.Equal(8, caret.Y);
         TestAssertions.Equal(2, caret.Line);
         TestAssertions.Equal(2, frame.HitTest(0, 0, 0, 0, 100, viewportHeight: 8, scrollLine: 1));
+    }
+
+    private static void MapsHorizontalCoordinatesWithoutWrapping()
+    {
+        var frame = new OberonTextFrame(new OberonText("AAAA"), CreateFont())
+        {
+            WrapLines = false
+        };
+
+        TestAssertions.Equal(1, frame.Layout(4).Count);
+        var caret = frame.GetCaretLocation(2, 10, 20, 4, 0, 0, horizontalScroll: 3);
+        TestAssertions.Equal(13, caret.X);
+        TestAssertions.Equal(1, frame.HitTest(10, 20, 10, 20, 4, 0, 0, horizontalScroll: 3));
     }
 }

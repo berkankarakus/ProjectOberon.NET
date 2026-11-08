@@ -17,19 +17,19 @@ internal sealed partial class EditorSession
         var originY = GetOriginY(lines.Count, flipY);
         _surfaceMemory.Clear();
         Editor.Frame.Render(_surfaceDisplay, OriginX, originY, SurfaceWidth, Display.White, Display.Replace,
-            ViewportHeight, ScrollLine);
+            ViewportHeight, ScrollLine, ScrollX);
         if (Editor.HasSelection)
         {
             Editor.Frame.RenderSelection(_surfaceDisplay, Editor.SelectionStart, Editor.SelectionEnd,
-                OriginX, originY, SurfaceWidth, ViewportHeight, ScrollLine);
+                OriginX, originY, SurfaceWidth, ViewportHeight, ScrollLine, ScrollX);
         }
 
         var caret = Editor.Frame.GetCaretLocation(Editor.Cursor, OriginX, originY, SurfaceWidth,
-            ViewportHeight, ScrollLine);
+            ViewportHeight, ScrollLine, ScrollX);
         if (caret.Y >= 0 && caret.Y + Editor.Frame.Font.Height <= Display.Height)
         {
             Editor.Frame.RenderCaret(_surfaceDisplay, Editor.Cursor, OriginX, originY, SurfaceWidth,
-                ViewportHeight, ScrollLine);
+                ViewportHeight, ScrollLine, ScrollX);
         }
 
         return UiLogic.UpdateFramebuffer(_surfaceMemory, pixels, flipY);

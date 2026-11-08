@@ -134,10 +134,10 @@ inserts characters, arrow/Home/End and Up/Down move the caret, Shift extends a s
 Ctrl-A selects all, Ctrl-C/Ctrl-X/Ctrl-V copy, cut and paste through the SDL
 clipboard, Backspace/Delete edit it, Ctrl-Z/Ctrl-Y undo and redo edits, the
 left mouse button places or drags the selection, and Ctrl-S saves.
-PageUp/PageDown scroll the text surface, and caret movement keeps the active line visible. The
-emulated machine continues running in the background, but editor mode displays
-the host text surface; word wrapping is width-based and horizontal scrolling
-is not implemented yet.
+PageUp/PageDown scroll the text surface, and caret movement keeps the active line visible. Long host
+lines use a horizontal viewport that follows the caret. The emulated machine
+continues running in the background, but editor mode displays the host text
+surface without wrapping long lines.
 
 The emulator library also contains a UI-independent viewer core based on
 Oberon `Viewers.Mod`. `OberonViewerSystem` models tracks and vertically split

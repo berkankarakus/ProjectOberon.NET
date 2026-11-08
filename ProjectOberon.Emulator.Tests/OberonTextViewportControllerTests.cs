@@ -7,6 +7,7 @@ internal static class OberonTextViewportControllerTests
     {
         KeepsTheCursorInsideTheVisibleLineRange();
         ClampsScrollChangesToViewportBounds();
+        KeepsTheCursorInsideTheHorizontalViewport();
     }
 
     private static void KeepsTheCursorInsideTheVisibleLineRange()
@@ -34,6 +35,24 @@ internal static class OberonTextViewportControllerTests
         TestAssertions.Equal(0, viewport.ScrollLine);
         viewport.ScrollBy(100, 0, 16);
         TestAssertions.Equal(0, viewport.ScrollLine);
+    }
+
+    private static void KeepsTheCursorInsideTheHorizontalViewport()
+    {
+        var frame = new OberonTextFrame(new OberonText("AAAA"), CreateFont())
+        {
+            WrapLines = false
+        };
+        var editor = new OberonTextEditor(frame);
+        var viewport = new OberonTextViewportController(editor);
+
+        editor.SetCursor(editor.Text.Length);
+        viewport.EnsureCursorVisible(maximumWidth: 4, viewportHeight: 16);
+
+        TestAssertions.Equal(8, viewport.ScrollX);
+        TestAssertions.Equal(8, viewport.GetMaximumScrollX(4));
+        viewport.ScrollHorizontally(-100, 4);
+        TestAssertions.Equal(0, viewport.ScrollX);
     }
 
     private static OberonFont CreateFont()

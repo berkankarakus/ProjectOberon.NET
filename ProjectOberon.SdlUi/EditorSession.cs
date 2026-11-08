@@ -40,6 +40,7 @@ internal sealed partial class EditorSession
     public OberonTextEditor Editor { get; }
     public bool IsDirty => Editor.Text.Changed;
     public int ScrollLine => _viewport.ScrollLine;
+    public int ScrollX => _viewport.ScrollX;
 
     public static EditorSession Load(string path, string fontPath)
     {
@@ -55,6 +56,7 @@ internal sealed partial class EditorSession
         var text = Encoding.Latin1.GetString(File.ReadAllBytes(path));
         var font = OberonFont.Load(fontPath);
         var frame = new OberonTextFrame(new OberonText(text), font);
+        frame.WrapLines = false;
         return new EditorSession(path, new OberonTextEditor(frame), clipboard);
     }
 
