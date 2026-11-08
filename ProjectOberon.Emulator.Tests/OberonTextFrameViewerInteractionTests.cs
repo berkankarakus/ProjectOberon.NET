@@ -40,4 +40,28 @@ internal static partial class OberonTextFrameViewerTests
         }));
         TestAssertions.Equal("BA", viewer.Editor.Text.GetText());
     }
+
+    private static void ConsumesFocusedKeyCommands()
+    {
+        var system = CreateSystem();
+        var viewer = new OberonTextFrameViewer(
+            system,
+            "editor",
+            new OberonTextFrame(new OberonText("AB"), CreateFont()),
+            menuHeight: 10,
+            x: 0,
+            y: 100);
+
+        viewer.SetCursor(2);
+        TestAssertions.True(viewer.Focus());
+        TestAssertions.True(system.DispatchKeyboard(new OberonInputMessage(OberonInputMessageKind.Consume)
+        {
+            KeyCode = OberonKeyCodes.Left
+        }));
+        TestAssertions.True(system.DispatchKeyboard(new OberonInputMessage(OberonInputMessageKind.Consume)
+        {
+            KeyCode = OberonKeyCodes.Backspace
+        }));
+        TestAssertions.Equal("B", viewer.Editor.Text.GetText());
+    }
 }

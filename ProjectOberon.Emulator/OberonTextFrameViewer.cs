@@ -173,6 +173,47 @@ public sealed class OberonTextFrameViewer
         {
             InsertText(input.Character.ToString());
         }
+        else
+        {
+            input.Handled = HandleKey(input);
+        }
+    }
+
+    private bool HandleKey(OberonInputMessage input)
+    {
+        var extendSelection = (input.Modifiers & 0x0003) != 0;
+        switch (input.KeyCode)
+        {
+            case OberonKeyCodes.Backspace:
+                Editor.Backspace();
+                return true;
+            case OberonKeyCodes.Delete:
+                Editor.Delete();
+                return true;
+            case OberonKeyCodes.Enter:
+                Editor.Insert("\r");
+                return true;
+            case OberonKeyCodes.Left:
+                Editor.MoveLeft(extendSelection);
+                return true;
+            case OberonKeyCodes.Right:
+                Editor.MoveRight(extendSelection);
+                return true;
+            case OberonKeyCodes.Up:
+                Editor.MoveUp(Viewer.Main.Width, extendSelection);
+                return true;
+            case OberonKeyCodes.Down:
+                Editor.MoveDown(Viewer.Main.Width, extendSelection);
+                return true;
+            case OberonKeyCodes.Home:
+                Editor.MoveHome(extendSelection);
+                return true;
+            case OberonKeyCodes.End:
+                Editor.MoveEnd(extendSelection);
+                return true;
+            default:
+                return false;
+        }
     }
 
     private bool IsInsideMainFrame(int x, int y)

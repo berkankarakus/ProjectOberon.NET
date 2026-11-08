@@ -70,39 +70,39 @@ internal sealed partial class EditorSession
 
         switch (key)
         {
-            case 8:
+            case OberonKeyCodes.Backspace:
                 Editor.Backspace();
                 EnsureCursorVisible();
                 return true;
-            case 127:
+            case OberonKeyCodes.Delete:
                 Editor.Delete();
                 EnsureCursorVisible();
                 return true;
-            case 13:
+            case OberonKeyCodes.Enter:
                 Editor.Insert("\r");
                 EnsureCursorVisible();
                 return true;
-            case 0x40000050:
+            case OberonKeyCodes.Left:
                 Editor.MoveLeft(extendSelection);
                 EnsureCursorVisible();
                 return true;
-            case 0x4000004f:
+            case OberonKeyCodes.Right:
                 Editor.MoveRight(extendSelection);
                 EnsureCursorVisible();
                 return true;
-            case 0x4000004a:
+            case OberonKeyCodes.Home:
                 Editor.MoveHome(extendSelection);
                 EnsureCursorVisible();
                 return true;
-            case 0x4000004d:
+            case OberonKeyCodes.End:
                 Editor.MoveEnd(extendSelection);
                 EnsureCursorVisible();
                 return true;
-            case 0x40000052:
+            case OberonKeyCodes.Up:
                 Editor.MoveUp(SurfaceWidth, extendSelection);
                 EnsureCursorVisible();
                 return true;
-            case 0x40000051:
+            case OberonKeyCodes.Down:
                 Editor.MoveDown(SurfaceWidth, extendSelection);
                 EnsureCursorVisible();
                 return true;

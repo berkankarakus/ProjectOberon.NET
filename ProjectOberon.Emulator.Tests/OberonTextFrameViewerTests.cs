@@ -6,5 +6,6 @@ internal static partial class OberonTextFrameViewerTests
         RoutesMainInputToTextSelection();
         ResizesAndKeepsCursorVisible();
         ConsumesFocusedCharacters();
+        ConsumesFocusedKeyCommands();
     }
 }
