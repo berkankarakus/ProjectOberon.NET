@@ -9,6 +9,7 @@ public sealed class OberonCompilerExpressionEmitter
     private readonly OberonCompilerCallEmitter _calls;
     private readonly OberonCompilerControlFlowEmitter _controlFlow;
     private readonly OberonCompilerAssignmentEmitter _assignments;
+    private readonly OberonCompilerFrameEmitter _frames;
     private readonly int _frameSize;
     private readonly OberonCompilerRegisterAllocator _registers = new();
 
@@ -20,6 +21,7 @@ public sealed class OberonCompilerExpressionEmitter
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
         _addresses = new OberonCompilerAddressEmitter(generator);
+        _frames = new OberonCompilerFrameEmitter(generator);
         _frameSize = frameSize;
         _calls = new OberonCompilerCallEmitter(
             generator,
@@ -115,8 +117,7 @@ public sealed class OberonCompilerExpressionEmitter
 
     private void EmitReturn()
     {
-        if (_frameSize == 0) _generator.EmitReturn();
-        else _generator.EmitProcedureReturn(_frameSize);
+        _frames.EmitReturn(_frameSize);
     }
 
     private int EmitName(OberonCompilerNameExpression name, int destination)

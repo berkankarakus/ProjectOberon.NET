@@ -3,6 +3,7 @@ namespace ProjectOberon.Emulator;
 public sealed class OberonCompilerModuleEmitter
 {
     private readonly OberonCompilerCodeGenerator _generator;
+    private readonly OberonCompilerFrameEmitter _frames;
     private readonly OberonCompilerExpressionEmitter _statements;
     private readonly Dictionary<OberonCompilerObject, OberonCompilerLabel> _procedureLabels = [];
 
@@ -10,6 +11,7 @@ public sealed class OberonCompilerModuleEmitter
     {
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
+        _frames = new OberonCompilerFrameEmitter(generator);
         _statements = new OberonCompilerExpressionEmitter(generator, procedureLabelResolver: ResolveProcedureLabel);
     }
 
@@ -27,15 +29,15 @@ public sealed class OberonCompilerModuleEmitter
         foreach (var procedure in allProcedures)
         {
             _generator.Bind(_procedureLabels[procedure.Symbol]);
-            _generator.EmitProcedurePrologue(procedure.FrameSize);
-            SaveParameters(procedure.Symbol);
+            _frames.EmitProcedurePrologue(procedure.FrameSize);
+            _frames.SaveParameters(procedure.Symbol);
             var procedureStatements = new OberonCompilerExpressionEmitter(
                 _generator,
                 procedure.FrameSize,
                 ResolveProcedureLabel);
             if (procedure.Body is not null) procedureStatements.EmitStatementSequence(procedure.Body);
             if (OberonCompilerControlFlowAnalyzer.CanCompleteNormally(procedure.Body))
-                _generator.EmitProcedureReturn(procedure.FrameSize);
+                _frames.EmitProcedureReturn(procedure.FrameSize);
         }
 
         if (module.Body is not null) _statements.EmitStatementSequence(module.Body);
@@ -52,33 +54,6 @@ public sealed class OberonCompilerModuleEmitter
         {
             yield return procedure;
             foreach (var nested in Flatten(procedure.NestedProcedures)) yield return nested;
-        }
-    }
-
-    private void SaveParameters(OberonCompilerObject procedure)
-    {
-        var register = 0;
-        foreach (var parameter in procedure.Type!.Parameters)
-        {
-            if (parameter.Type?.Form is (
-                OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean
-                or OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer))
-            {
-                _generator.EmitSaveParameter(register, checked((int)parameter.Value));
-                register++;
-                continue;
-            }
-
-            if (parameter.Type?.Form == OberonCompilerTypeForm.Array
-                && parameter.Type.Length < 0)
-            {
-                _generator.EmitSaveParameter(register, checked((int)parameter.Value));
-                _generator.EmitSaveParameter(register + 1, checked((int)parameter.Value + 4));
-                register += 2;
-                continue;
-            }
-
-            throw new NotSupportedException("aggregate parameter lowering is not implemented");
         }
     }
 
