@@ -69,6 +69,12 @@ public sealed class OberonCompilerParser
         Expect(OberonCompilerTokenKind.Period, ". expected after module");
 
         foreach (var diagnostic in _scanner.Diagnostics) _diagnostics.Add(diagnostic);
+        if (_diagnostics.Count == 0)
+        {
+            var semanticChecker = new OberonCompilerSemanticChecker(_symbols.BooleanType);
+            _diagnostics.AddRange(semanticChecker.Check(body, procedures));
+        }
+
         return new OberonCompilerModuleParseResult(
             moduleName,
             module,

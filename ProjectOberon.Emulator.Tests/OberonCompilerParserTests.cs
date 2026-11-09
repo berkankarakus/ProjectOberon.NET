@@ -11,6 +11,10 @@ internal static class OberonCompilerParserTests
         FoldsConstantExpressions();
         ReportsDeclarationErrors();
         ReportsUndefinedRuntimeNames();
+        ReportsAssignmentTypeErrors();
+        ReportsCallTypeErrors();
+        ReportsReturnTypeErrors();
+        ReportsConditionTypeErrors();
     }
 
     private static void ParsesModuleDeclarations()
@@ -70,6 +74,53 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Any(diagnostic =>
             diagnostic.Message.Contains("missing", StringComparison.Ordinal)));
+    }
+
+    private static void ReportsAssignmentTypeErrors()
+    {
+        const string source = "MODULE Broken; VAR value: INTEGER; flag: BOOLEAN; BEGIN value := flag; END Broken.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("cannot assign", StringComparison.Ordinal)));
+    }
+
+    private static void ReportsCallTypeErrors()
+    {
+        const string source = "MODULE Broken; VAR flag: BOOLEAN; PROCEDURE Takes(value: INTEGER; VAR target: INTEGER); BEGIN END Takes; BEGIN Takes(flag, 1); END Broken.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.Equal(1, result.Diagnostics.Count(diagnostic =>
+            diagnostic.Message.Contains("expects INTEGER", StringComparison.Ordinal)));
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("VAR argument", StringComparison.Ordinal)));
+    }
+
+    private static void ReportsReturnTypeErrors()
+    {
+        const string functionSource = "MODULE Broken; PROCEDURE Get(flag: BOOLEAN): INTEGER; BEGIN RETURN flag; END Get; END Broken.";
+        var functionResult = new OberonCompilerParser(functionSource).ParseModule();
+        TestAssertions.False(functionResult.Succeeded);
+        TestAssertions.True(functionResult.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("returns BOOLEAN", StringComparison.Ordinal)));
+
+        const string procedureSource = "MODULE Broken; PROCEDURE Put; BEGIN RETURN 1; END Put; END Broken.";
+        var procedureResult = new OberonCompilerParser(procedureSource).ParseModule();
+        TestAssertions.False(procedureResult.Succeeded);
+        TestAssertions.True(procedureResult.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("cannot return a value", StringComparison.Ordinal)));
+    }
+
+    private static void ReportsConditionTypeErrors()
+    {
+        const string source = "MODULE Broken; VAR value: INTEGER; BEGIN IF value THEN END; END Broken.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("IF condition must be BOOLEAN", StringComparison.Ordinal)));
     }
 
     private static void ParsesProcedureDeclarations()
@@ -145,14 +196,14 @@ internal static class OberonCompilerParserTests
         const string source = """
             MODULE Statements;
             VAR value: INTEGER; text: ARRAY 8 OF CHAR;
-            PROCEDURE Ping;
+            PROCEDURE Ping(first: INTEGER; second: INTEGER);
             BEGIN
             END Ping;
             BEGIN
               value := 1 + 2 * 3;
               text := "hello";
               Ping(value, value + 1);
-              RETURN value;
+              value := value + 1;
             END Statements.
             """;
 
@@ -176,7 +227,7 @@ internal static class OberonCompilerParserTests
         var call = (OberonCompilerCallStatement)body.Statements[2];
         TestAssertions.Equal("Ping", call.Procedure.Name);
         TestAssertions.Equal(2, call.Arguments.Count);
-        TestAssertions.True(body.Statements[3] is OberonCompilerReturnStatement);
+        TestAssertions.True(body.Statements[3] is OberonCompilerAssignmentStatement);
     }
 
     private static void ParsesControlFlowStatements()
