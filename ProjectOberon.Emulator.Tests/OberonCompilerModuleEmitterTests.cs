@@ -10,6 +10,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsFunctionReturnValue();
         EmitsOpenArrayParameterCall();
         EmitsNestedProcedureCall();
+        EmitsOpenArrayAndScalarParameterCall();
     }
 
     private static void EmitsParameterlessProcedureCall()
@@ -102,5 +103,17 @@ internal static class OberonCompilerModuleEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.Equal(2, instructions.Count(instruction => instruction.StartsWith("SUB r14, r14")));
         TestAssertions.Equal(2, instructions.Count(instruction => instruction.StartsWith("BTL ")));
+    }
+
+    private static void EmitsOpenArrayAndScalarParameterCall()
+    {
+        const string source = "MODULE Arrays; TYPE Values = ARRAY 3 OF INTEGER; VAR values: Values; PROCEDURE Consume(items: ARRAY OF INTEGER; count: INTEGER); BEGIN END Consume; BEGIN Consume(values, 3); END Arrays.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Contains("MOV r2, 0x0003"));
     }
 }

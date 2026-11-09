@@ -8,6 +8,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsModuleVariableLoads();
         EmitsControlFlow();
         EmitsRecordFieldLoadAndStore();
+        AllocatesScratchRegistersWithoutUsingDestinationPlusOne();
     }
 
     private static void EmitsArithmeticAssignment()
@@ -89,5 +90,25 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[5]));
         TestAssertions.Equal("ADD r1, r1, 0x0000", Risc5Disassembler.Format(generator.Code[6]));
         TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[7]));
+    }
+
+    private static void AllocatesScratchRegistersWithoutUsingDestinationPlusOne()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var expression = new OberonCompilerBinaryExpression(
+            OberonCompilerTokenKind.Plus,
+            new OberonCompilerIntegerLiteralExpression(
+                symbols.IntegerType,
+                2),
+            new OberonCompilerIntegerLiteralExpression(
+                symbols.IntegerType,
+                3));
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerExpressionEmitter(generator).EmitExpression(expression, destination: 12);
+
+        TestAssertions.Equal("MOV r12, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("MOV r0, 0x0003", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("ADD r12, r12, r0", Risc5Disassembler.Format(generator.Code[2]));
     }
 }

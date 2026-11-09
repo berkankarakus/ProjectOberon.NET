@@ -7,6 +7,7 @@ public sealed class OberonCompilerExpressionEmitter
     private readonly OberonCompilerCodeGenerator _generator;
     private readonly int _frameSize;
     private readonly Func<OberonCompilerObject, OberonCompilerLabel?>? _procedureLabelResolver;
+    private readonly OberonCompilerRegisterAllocator _registers = new();
 
     public OberonCompilerExpressionEmitter(
         OberonCompilerCodeGenerator generator,
@@ -22,7 +23,7 @@ public sealed class OberonCompilerExpressionEmitter
     public int EmitExpression(OberonCompilerExpression expression, int destination = 0)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        ValidateScratchRegister(destination);
+        OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination);
 
         switch (expression)
         {
@@ -194,17 +195,21 @@ public sealed class OberonCompilerExpressionEmitter
         for (var index = 0; index < parameters.Count; index++)
         {
             var parameter = parameters[index];
+            var register = parameters
+                .Take(index)
+                .Sum(ParameterRegisterCount);
+            using var preservedArguments = _registers.ReserveRange(0, register);
             if (IsScalar(parameter.Type))
             {
-                if (parameter.ReadOnly) EmitExpression(arguments[index], index);
-                else EmitAddress(arguments[index], index);
+                if (parameter.ReadOnly) EmitExpression(arguments[index], register);
+                else EmitAddress(arguments[index], register);
                 continue;
             }
 
             if (parameter.Type?.Form == OberonCompilerTypeForm.Array
                 && parameter.Type.Length < 0)
             {
-                EmitOpenArrayArgument(arguments[index], index);
+                EmitOpenArrayArgument(arguments[index], register);
                 continue;
             }
 
@@ -223,6 +228,7 @@ public sealed class OberonCompilerExpressionEmitter
             throw new InvalidOperationException($"'{name.Name}' is not an array");
         if (type.Length >= 0)
         {
+            OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination + 1);
             _generator.EmitMoveImmediate(destination + 1, type.Length);
             return;
         }
@@ -235,6 +241,7 @@ public sealed class OberonCompilerExpressionEmitter
 
     private void EmitAddress(OberonCompilerExpression expression, int destination)
     {
+        OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination);
         if (expression is OberonCompilerFieldExpression field)
         {
             EmitAddress(field.Receiver, destination);
@@ -318,9 +325,16 @@ public sealed class OberonCompilerExpressionEmitter
             case OberonCompilerTokenKind.Plus:
                 return destination;
             case OberonCompilerTokenKind.Minus:
-                ValidateScratchRegister(destination + 1);
-                _generator.EmitMoveImmediate(destination + 1, 0);
-                _generator.EmitRegister(AluOperation.Sub, destination, destination + 1, destination);
+                var temporary = _registers.AcquireTemporary(destination);
+                try
+                {
+                    _generator.EmitMoveImmediate(temporary, 0);
+                    _generator.EmitRegister(AluOperation.Sub, destination, temporary, destination);
+                }
+                finally
+                {
+                    _registers.ReleaseTemporary(temporary);
+                }
                 return destination;
             case OberonCompilerTokenKind.Not:
                 _generator.EmitImmediate(AluOperation.Xor, destination, destination, 1);
@@ -332,29 +346,40 @@ public sealed class OberonCompilerExpressionEmitter
 
     private int EmitBinary(OberonCompilerBinaryExpression binary, int destination)
     {
-        ValidateScratchRegister(destination + 1);
-        EmitExpression(binary.Left, destination);
-        EmitExpression(binary.Right, destination + 1);
-        if (IsRelation(binary.Operator)) return EmitComparison(binary, destination);
-
-        var operation = binary.Operator switch
+        var temporary = _registers.AcquireTemporary(destination);
+        using var protectedDestination = _registers.ReserveRange(destination, 1);
+        try
         {
-            OberonCompilerTokenKind.Plus => AluOperation.Add,
-            OberonCompilerTokenKind.Minus => AluOperation.Sub,
-            OberonCompilerTokenKind.Multiply => AluOperation.Mul,
-            OberonCompilerTokenKind.Divide => AluOperation.Div,
-            OberonCompilerTokenKind.And => AluOperation.And,
-            OberonCompilerTokenKind.Or => AluOperation.Ior,
-            _ => throw new NotSupportedException($"binary operator {binary.Operator} cannot be lowered yet")
-        };
-        _generator.EmitRegister(operation, destination, destination, destination + 1);
-        return destination;
+            EmitExpression(binary.Left, destination);
+            EmitExpression(binary.Right, temporary);
+            if (IsRelation(binary.Operator)) return EmitComparison(binary, destination, temporary);
+
+            var operation = binary.Operator switch
+            {
+                OberonCompilerTokenKind.Plus => AluOperation.Add,
+                OberonCompilerTokenKind.Minus => AluOperation.Sub,
+                OberonCompilerTokenKind.Multiply => AluOperation.Mul,
+                OberonCompilerTokenKind.Divide => AluOperation.Div,
+                OberonCompilerTokenKind.And => AluOperation.And,
+                OberonCompilerTokenKind.Or => AluOperation.Ior,
+                _ => throw new NotSupportedException($"binary operator {binary.Operator} cannot be lowered yet")
+            };
+            _generator.EmitRegister(operation, destination, destination, temporary);
+            return destination;
+        }
+        finally
+        {
+            _registers.ReleaseTemporary(temporary);
+        }
     }
 
-    private int EmitComparison(OberonCompilerBinaryExpression comparison, int destination)
+    private int EmitComparison(
+        OberonCompilerBinaryExpression comparison,
+        int destination,
+        int rightRegister)
     {
         var (condition, invert) = ComparisonBranch(comparison.Operator);
-        _generator.EmitRegister(AluOperation.Sub, destination, destination, destination + 1);
+        _generator.EmitRegister(AluOperation.Sub, destination, destination, rightRegister);
         var trueLabel = new OberonCompilerLabel();
         var end = new OberonCompilerLabel();
         _generator.EmitBranch(trueLabel, condition, link: false, invert: invert);
@@ -387,10 +412,6 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean or
         OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer;
 
-    private static void ValidateScratchRegister(int destination)
-    {
-        if (destination is < 0 or > 12)
-            throw new ArgumentOutOfRangeException(nameof(destination),
-                "expression registers must not overlap module base, stack pointer, or link register");
-    }
+    private static int ParameterRegisterCount(OberonCompilerObject parameter) =>
+        parameter.Type?.Form == OberonCompilerTypeForm.Array && parameter.Type.Length < 0 ? 2 : 1;
 }
