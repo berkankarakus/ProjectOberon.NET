@@ -7,6 +7,7 @@ internal static class OberonCompilerParserTests
         ParsesModuleDeclarations();
         ParsesProcedureDeclarations();
         ParsesModuleStatements();
+        ParsesControlFlowStatements();
         FoldsConstantExpressions();
         ReportsDeclarationErrors();
         ReportsUndefinedRuntimeNames();
@@ -171,6 +172,41 @@ internal static class OberonCompilerParserTests
         TestAssertions.Equal("Ping", call.Procedure.Name);
         TestAssertions.Equal(2, call.Arguments.Count);
         TestAssertions.True(body.Statements[3] is OberonCompilerReturnStatement);
+    }
+
+    private static void ParsesControlFlowStatements()
+    {
+        const string source = """
+            MODULE Flow;
+            VAR value: INTEGER;
+            BEGIN
+              IF value = 0 THEN
+                value := 1;
+              ELSIF value = 1 THEN
+                value := 2;
+              ELSE
+                value := 3;
+              END;
+              WHILE value < 4 DO
+                value := value + 1;
+              END;
+              REPEAT
+                value := value - 1;
+              UNTIL value = 0;
+            END Flow.
+            """;
+
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var body = result.Body!;
+        var ifStatement = (OberonCompilerIfStatement)body.Statements[0];
+        TestAssertions.Equal(2, ifStatement.Branches.Count);
+        TestAssertions.Equal(1, ifStatement.Branches[0].Body.Statements.Count);
+        TestAssertions.Equal(1, ifStatement.Branches[1].Body.Statements.Count);
+        TestAssertions.Equal(1, ifStatement.ElseBody!.Statements.Count);
+        TestAssertions.True(body.Statements[1] is OberonCompilerWhileStatement);
+        TestAssertions.True(body.Statements[2] is OberonCompilerRepeatStatement);
     }
 
     private static OberonCompilerObject? Find(OberonCompilerScope scope, string name) =>

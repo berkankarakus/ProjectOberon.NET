@@ -413,6 +413,10 @@ public sealed class OberonCompilerParser
 
     private OberonCompilerStatement? ParseStatement()
     {
+        if (_current.Kind == OberonCompilerTokenKind.If) return ParseIfStatement();
+        if (_current.Kind == OberonCompilerTokenKind.While) return ParseWhileStatement();
+        if (_current.Kind == OberonCompilerTokenKind.Repeat) return ParseRepeatStatement();
+
         if (_current.Kind == OberonCompilerTokenKind.Return)
         {
             Next();
@@ -445,6 +449,56 @@ public sealed class OberonCompilerParser
         if (symbol?.Class != OberonCompilerObjectClass.Procedure)
             AddDiagnostic($"procedure '{name}' is not defined");
         return new OberonCompilerCallStatement(reference, arguments);
+    }
+
+    private OberonCompilerIfStatement ParseIfStatement()
+    {
+        Next();
+        var branches = new List<OberonCompilerIfBranch>
+        {
+            ParseIfBranch()
+        };
+
+        while (_current.Kind == OberonCompilerTokenKind.Elsif)
+        {
+            Next();
+            branches.Add(ParseIfBranch());
+        }
+
+        OberonCompilerStatementSequence? elseBody = null;
+        if (_current.Kind == OberonCompilerTokenKind.Else)
+        {
+            Next();
+            elseBody = ParseStatementSequence();
+        }
+
+        Expect(OberonCompilerTokenKind.End, "END expected after IF");
+        return new OberonCompilerIfStatement(branches, elseBody);
+    }
+
+    private OberonCompilerIfBranch ParseIfBranch()
+    {
+        var condition = ParseRuntimeExpression();
+        Expect(OberonCompilerTokenKind.Then, "THEN expected after IF condition");
+        return new OberonCompilerIfBranch(condition, ParseStatementSequence());
+    }
+
+    private OberonCompilerWhileStatement ParseWhileStatement()
+    {
+        Next();
+        var condition = ParseRuntimeExpression();
+        Expect(OberonCompilerTokenKind.Do, "DO expected after WHILE condition");
+        var body = ParseStatementSequence();
+        Expect(OberonCompilerTokenKind.End, "END expected after WHILE");
+        return new OberonCompilerWhileStatement(condition, body);
+    }
+
+    private OberonCompilerRepeatStatement ParseRepeatStatement()
+    {
+        Next();
+        var body = ParseStatementSequence();
+        Expect(OberonCompilerTokenKind.Until, "UNTIL expected after REPEAT body");
+        return new OberonCompilerRepeatStatement(body, ParseRuntimeExpression());
     }
 
     private IReadOnlyList<OberonCompilerExpression> ParseArgumentList()

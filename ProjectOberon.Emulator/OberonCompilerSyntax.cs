@@ -43,5 +43,21 @@ public sealed record OberonCompilerCallStatement(
 public sealed record OberonCompilerReturnStatement(
     OberonCompilerExpression? Value) : OberonCompilerStatement;
 
+public sealed record OberonCompilerIfBranch(
+    OberonCompilerExpression Condition,
+    OberonCompilerStatementSequence Body);
+
+public sealed record OberonCompilerIfStatement(
+    IReadOnlyList<OberonCompilerIfBranch> Branches,
+    OberonCompilerStatementSequence? ElseBody) : OberonCompilerStatement;
+
+public sealed record OberonCompilerWhileStatement(
+    OberonCompilerExpression Condition,
+    OberonCompilerStatementSequence Body) : OberonCompilerStatement;
+
+public sealed record OberonCompilerRepeatStatement(
+    OberonCompilerStatementSequence Body,
+    OberonCompilerExpression Condition) : OberonCompilerStatement;
+
 public sealed record OberonCompilerStatementSequence(
     IReadOnlyList<OberonCompilerStatement> Statements);
