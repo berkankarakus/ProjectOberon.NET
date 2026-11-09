@@ -6,8 +6,8 @@ public sealed class OberonCompilerExpressionEmitter
 
     private readonly OberonCompilerCodeGenerator _generator;
     private readonly OberonCompilerAddressEmitter _addresses;
+    private readonly OberonCompilerCallEmitter _calls;
     private readonly int _frameSize;
-    private readonly Func<OberonCompilerObject, OberonCompilerLabel?>? _procedureLabelResolver;
     private readonly OberonCompilerRegisterAllocator _registers = new();
 
     public OberonCompilerExpressionEmitter(
@@ -19,7 +19,12 @@ public sealed class OberonCompilerExpressionEmitter
         _generator = generator;
         _addresses = new OberonCompilerAddressEmitter(generator);
         _frameSize = frameSize;
-        _procedureLabelResolver = procedureLabelResolver;
+        _calls = new OberonCompilerCallEmitter(
+            generator,
+            _addresses,
+            _registers,
+            EmitExpression,
+            procedureLabelResolver);
     }
 
     public int EmitExpression(OberonCompilerExpression expression, int destination = 0)
@@ -36,7 +41,7 @@ public sealed class OberonCompilerExpressionEmitter
             case OberonCompilerStringLiteralExpression:
                 throw new NotSupportedException("real and string lowering is not implemented");
             case OberonCompilerCallExpression call:
-                return EmitFunctionCall(call, destination);
+                return _calls.EmitFunctionCall(call, destination);
             case OberonCompilerFieldExpression field:
                 return EmitField(field, destination);
             case OberonCompilerNameExpression name:
@@ -108,7 +113,7 @@ public sealed class OberonCompilerExpressionEmitter
                 EmitRepeat(repeat);
                 break;
             case OberonCompilerCallStatement:
-                EmitCall((OberonCompilerCallStatement)statement);
+                _calls.EmitCall((OberonCompilerCallStatement)statement);
                 break;
             default:
                 throw new NotSupportedException($"unsupported statement: {statement.GetType().Name}");
@@ -156,89 +161,6 @@ public sealed class OberonCompilerExpressionEmitter
         _generator.EmitMoveImmediate(1, 0);
         _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
         _generator.EmitBranch(falseLabel, ConditionCode.Eq);
-    }
-
-    private void EmitCall(OberonCompilerCallStatement call)
-    {
-        var procedure = call.Procedure.Symbol ?? throw new InvalidOperationException(
-            $"procedure '{call.Procedure.Name}' is not defined");
-        EmitCallArguments(procedure, call.Arguments);
-        var target = ResolveProcedureLabel(procedure) ?? throw new InvalidOperationException(
-            $"procedure '{call.Procedure.Name}' has no code label");
-        _generator.EmitCall(target);
-    }
-
-    private int EmitFunctionCall(OberonCompilerCallExpression call, int destination)
-    {
-        var procedure = call.Procedure.Symbol ?? throw new InvalidOperationException(
-            $"function '{call.Procedure.Name}' is not defined");
-        if (procedure.Type?.Base?.Form == OberonCompilerTypeForm.None)
-            throw new InvalidOperationException($"'{call.Procedure.Name}' is a procedure, not a function");
-
-        EmitCallArguments(procedure, call.Arguments);
-        var target = ResolveProcedureLabel(procedure) ?? throw new InvalidOperationException(
-            $"function '{call.Procedure.Name}' has no code label");
-        _generator.EmitCall(target);
-        if (destination != 0) _generator.EmitRegister(AluOperation.Mov, destination, 0, 0);
-        return destination;
-    }
-
-    private OberonCompilerLabel? ResolveProcedureLabel(OberonCompilerObject procedure) =>
-        _procedureLabelResolver?.Invoke(procedure);
-
-    private void EmitCallArguments(
-        OberonCompilerObject procedure,
-        IReadOnlyList<OberonCompilerExpression> arguments)
-    {
-        var parameters = procedure.Type?.Parameters ?? [];
-        if (arguments.Count != parameters.Count)
-            throw new InvalidOperationException($"procedure '{procedure.Name}' expects {parameters.Count} arguments");
-
-        for (var index = 0; index < parameters.Count; index++)
-        {
-            var parameter = parameters[index];
-            var register = parameters
-                .Take(index)
-                .Sum(ParameterRegisterCount);
-            using var preservedArguments = _registers.ReserveRange(0, register);
-            if (IsScalar(parameter.Type))
-            {
-                if (parameter.ReadOnly) EmitExpression(arguments[index], register);
-                else _addresses.EmitAddress(arguments[index], register);
-                continue;
-            }
-
-            if (parameter.Type?.Form == OberonCompilerTypeForm.Array
-                && parameter.Type.Length < 0)
-            {
-                EmitOpenArrayArgument(arguments[index], register);
-                continue;
-            }
-
-            throw new NotSupportedException("record parameter lowering is not implemented");
-        }
-    }
-
-    private void EmitOpenArrayArgument(OberonCompilerExpression argument, int destination)
-    {
-        if (argument is not OberonCompilerNameExpression name || name.Symbol is null)
-            throw new NotSupportedException("open array arguments must be addressable names");
-
-        _addresses.EmitAddress(argument, destination);
-        var type = name.Symbol.Type;
-        if (type?.Form != OberonCompilerTypeForm.Array)
-            throw new InvalidOperationException($"'{name.Name}' is not an array");
-        if (type.Length >= 0)
-        {
-            OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination + 1);
-            _generator.EmitMoveImmediate(destination + 1, type.Length);
-            return;
-        }
-
-        if (name.Symbol.Class != OberonCompilerObjectClass.Parameter)
-            throw new NotSupportedException("open array length source is not available");
-        _generator.EmitLoad(destination + 1, OberonCompilerCodeGenerator.StackPointer,
-            checked((int)name.Symbol.Value + 4));
     }
 
     private int EmitField(OberonCompilerFieldExpression field, int destination)
@@ -378,6 +300,4 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean or
         OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer;
 
-    private static int ParameterRegisterCount(OberonCompilerObject parameter) =>
-        parameter.Type?.Form == OberonCompilerTypeForm.Array && parameter.Type.Length < 0 ? 2 : 1;
 }
