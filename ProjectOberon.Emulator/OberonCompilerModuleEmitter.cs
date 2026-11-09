@@ -4,7 +4,7 @@ public sealed class OberonCompilerModuleEmitter
 {
     private readonly OberonCompilerCodeGenerator _generator;
     private readonly OberonCompilerFrameEmitter _frames;
-    private readonly OberonCompilerExpressionEmitter _statements;
+    private readonly OberonCompilerStatementEmitter _statements;
     private readonly Dictionary<OberonCompilerObject, OberonCompilerLabel> _procedureLabels = [];
 
     public OberonCompilerModuleEmitter(OberonCompilerCodeGenerator generator)
@@ -12,7 +12,7 @@ public sealed class OberonCompilerModuleEmitter
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
         _frames = new OberonCompilerFrameEmitter(generator);
-        _statements = new OberonCompilerExpressionEmitter(generator, procedureLabelResolver: ResolveProcedureLabel);
+        _statements = new OberonCompilerStatementEmitter(generator, procedureLabelResolver: ResolveProcedureLabel);
     }
 
     public IReadOnlyList<uint> Emit(OberonCompilerModuleParseResult module)
@@ -31,7 +31,7 @@ public sealed class OberonCompilerModuleEmitter
             _generator.Bind(_procedureLabels[procedure.Symbol]);
             _frames.EmitProcedurePrologue(procedure.FrameSize);
             _frames.SaveParameters(procedure.Symbol);
-            var procedureStatements = new OberonCompilerExpressionEmitter(
+            var procedureStatements = new OberonCompilerStatementEmitter(
                 _generator,
                 procedure.FrameSize,
                 ResolveProcedureLabel);

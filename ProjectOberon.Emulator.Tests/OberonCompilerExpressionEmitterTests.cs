@@ -19,7 +19,7 @@ internal static class OberonCompilerExpressionEmitterTests
         var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
         var generator = new OberonCompilerCodeGenerator();
 
-        new OberonCompilerExpressionEmitter(generator).EmitAssignment(assignment);
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
 
         TestAssertions.Equal("MOV r0, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("MOV r1, 0x0003", Risc5Disassembler.Format(generator.Code[1]));
@@ -36,7 +36,7 @@ internal static class OberonCompilerExpressionEmitterTests
         var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
         var generator = new OberonCompilerCodeGenerator();
 
-        new OberonCompilerExpressionEmitter(generator).EmitAssignment(assignment);
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
 
         TestAssertions.Equal("LDR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("MOV r1, 0x0001", Risc5Disassembler.Format(generator.Code[1]));
@@ -66,7 +66,7 @@ internal static class OberonCompilerExpressionEmitterTests
         var result = new OberonCompilerParser(source).ParseModule();
         var generator = new OberonCompilerCodeGenerator();
 
-        new OberonCompilerExpressionEmitter(generator).EmitStatementSequence(result.Body!);
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
 
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
@@ -81,7 +81,7 @@ internal static class OberonCompilerExpressionEmitterTests
         var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
         var generator = new OberonCompilerCodeGenerator();
 
-        new OberonCompilerExpressionEmitter(generator).EmitAssignment(assignment);
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
 
         TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("ADD r0, r0, 0x0004", Risc5Disassembler.Format(generator.Code[1]));

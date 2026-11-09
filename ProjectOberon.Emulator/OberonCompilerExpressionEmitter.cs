@@ -6,37 +6,32 @@ public sealed class OberonCompilerExpressionEmitter
 
     private readonly OberonCompilerCodeGenerator _generator;
     private readonly OberonCompilerAddressEmitter _addresses;
-    private readonly OberonCompilerCallEmitter _calls;
-    private readonly OberonCompilerControlFlowEmitter _controlFlow;
-    private readonly OberonCompilerAssignmentEmitter _assignments;
-    private readonly OberonCompilerFrameEmitter _frames;
-    private readonly int _frameSize;
-    private readonly OberonCompilerRegisterAllocator _registers = new();
+    private readonly OberonCompilerRegisterAllocator _registers;
+    private readonly Func<OberonCompilerCallExpression, int, int>? _emitFunctionCall;
 
-    public OberonCompilerExpressionEmitter(
+    public OberonCompilerExpressionEmitter(OberonCompilerCodeGenerator generator)
+        : this(
+            generator,
+            new OberonCompilerAddressEmitter(generator),
+            new OberonCompilerRegisterAllocator(),
+            emitFunctionCall: null)
+    {
+    }
+
+    internal OberonCompilerExpressionEmitter(
         OberonCompilerCodeGenerator generator,
-        int frameSize = 0,
-        Func<OberonCompilerObject, OberonCompilerLabel?>? procedureLabelResolver = null)
+        OberonCompilerAddressEmitter addresses,
+        OberonCompilerRegisterAllocator registers,
+        Func<OberonCompilerCallExpression, int, int>? emitFunctionCall)
     {
         ArgumentNullException.ThrowIfNull(generator);
+        ArgumentNullException.ThrowIfNull(addresses);
+        ArgumentNullException.ThrowIfNull(registers);
+
         _generator = generator;
-        _addresses = new OberonCompilerAddressEmitter(generator);
-        _frames = new OberonCompilerFrameEmitter(generator);
-        _frameSize = frameSize;
-        _calls = new OberonCompilerCallEmitter(
-            generator,
-            _addresses,
-            _registers,
-            EmitExpression,
-            procedureLabelResolver);
-        _controlFlow = new OberonCompilerControlFlowEmitter(
-            generator,
-            EmitExpression,
-            EmitStatementSequence);
-        _assignments = new OberonCompilerAssignmentEmitter(
-            generator,
-            _addresses,
-            EmitExpression);
+        _addresses = addresses;
+        _registers = registers;
+        _emitFunctionCall = emitFunctionCall;
     }
 
     public int EmitExpression(OberonCompilerExpression expression, int destination = 0)
@@ -53,7 +48,9 @@ public sealed class OberonCompilerExpressionEmitter
             case OberonCompilerStringLiteralExpression:
                 throw new NotSupportedException("real and string lowering is not implemented");
             case OberonCompilerCallExpression call:
-                return _calls.EmitFunctionCall(call, destination);
+                if (_emitFunctionCall is null)
+                    throw new InvalidOperationException("function call emission requires a statement emitter");
+                return _emitFunctionCall(call, destination);
             case OberonCompilerFieldExpression field:
                 return EmitField(field, destination);
             case OberonCompilerNameExpression name:
@@ -67,45 +64,6 @@ public sealed class OberonCompilerExpressionEmitter
         }
     }
 
-    public void EmitAssignment(OberonCompilerAssignmentStatement assignment)
-    {
-        _assignments.EmitAssignment(assignment);
-    }
-
-    public void EmitStatementSequence(OberonCompilerStatementSequence sequence)
-    {
-        ArgumentNullException.ThrowIfNull(sequence);
-        foreach (var statement in sequence.Statements) EmitStatement(statement);
-    }
-
-    private void EmitStatement(OberonCompilerStatement statement)
-    {
-        switch (statement)
-        {
-            case OberonCompilerAssignmentStatement assignment:
-                _assignments.EmitAssignment(assignment);
-                break;
-            case OberonCompilerReturnStatement { Value: var value }:
-                if (value is not null) EmitExpression(value);
-                EmitReturn();
-                break;
-            case OberonCompilerIfStatement conditional:
-                _controlFlow.EmitIf(conditional);
-                break;
-            case OberonCompilerWhileStatement loop:
-                _controlFlow.EmitWhile(loop);
-                break;
-            case OberonCompilerRepeatStatement repeat:
-                _controlFlow.EmitRepeat(repeat);
-                break;
-            case OberonCompilerCallStatement:
-                _calls.EmitCall((OberonCompilerCallStatement)statement);
-                break;
-            default:
-                throw new NotSupportedException($"unsupported statement: {statement.GetType().Name}");
-        }
-    }
-
     private int EmitField(OberonCompilerFieldExpression field, int destination)
     {
         if (!IsScalar(field.Field.Type))
@@ -113,11 +71,6 @@ public sealed class OberonCompilerExpressionEmitter
         _addresses.EmitAddress(field, destination);
         _generator.EmitLoad(destination, destination, 0);
         return destination;
-    }
-
-    private void EmitReturn()
-    {
-        _frames.EmitReturn(_frameSize);
     }
 
     private int EmitName(OberonCompilerNameExpression name, int destination)
@@ -241,5 +194,4 @@ public sealed class OberonCompilerExpressionEmitter
     private static bool IsScalar(OberonCompilerType? type) => type?.Form is
         OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean or
         OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer;
-
 }
