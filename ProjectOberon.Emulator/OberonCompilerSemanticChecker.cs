@@ -26,6 +26,12 @@ public sealed class OberonCompilerSemanticChecker
     {
         var returnType = procedure.Symbol.Type?.Base;
         CheckStatements(procedure.Body, returnType, procedure.Symbol.Name);
+        if (returnType?.Form != OberonCompilerTypeForm.None
+            && OberonCompilerControlFlowAnalyzer.CanCompleteNormally(procedure.Body))
+        {
+            AddDiagnostic($"function '{procedure.Symbol.Name}' may complete without returning a value");
+        }
+
         foreach (var nested in procedure.NestedProcedures) CheckProcedure(nested);
     }
 

@@ -111,6 +111,18 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(procedureResult.Succeeded);
         TestAssertions.True(procedureResult.Diagnostics.Any(diagnostic =>
             diagnostic.Message.Contains("cannot return a value", StringComparison.Ordinal)));
+
+        const string partialFunctionSource = "MODULE Broken; PROCEDURE Maybe(flag: BOOLEAN): INTEGER; BEGIN IF flag THEN RETURN 1; END; END Maybe; END Broken.";
+        var partialFunctionResult = new OberonCompilerParser(partialFunctionSource).ParseModule();
+        TestAssertions.False(partialFunctionResult.Succeeded);
+        TestAssertions.True(partialFunctionResult.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("may complete without returning", StringComparison.Ordinal)));
+
+        const string completeFunctionSource = "MODULE Complete; PROCEDURE Get(flag: BOOLEAN): INTEGER; BEGIN IF flag THEN RETURN 1; ELSE RETURN 2; END; END Get; END Complete.";
+        var completeFunctionResult = new OberonCompilerParser(completeFunctionSource).ParseModule();
+        TestAssertions.True(completeFunctionResult.Succeeded);
+        TestAssertions.False(OberonCompilerControlFlowAnalyzer.CanCompleteNormally(
+            FindProcedure(completeFunctionResult.Procedures!, "Get").Body));
     }
 
     private static void ReportsConditionTypeErrors()

@@ -34,7 +34,8 @@ public sealed class OberonCompilerModuleEmitter
                 procedure.FrameSize,
                 ResolveProcedureLabel);
             if (procedure.Body is not null) procedureStatements.EmitStatementSequence(procedure.Body);
-            if (!EndsWithReturn(procedure.Body)) _generator.EmitProcedureReturn(procedure.FrameSize);
+            if (OberonCompilerControlFlowAnalyzer.CanCompleteNormally(procedure.Body))
+                _generator.EmitProcedureReturn(procedure.FrameSize);
         }
 
         if (module.Body is not null) _statements.EmitStatementSequence(module.Body);
@@ -81,6 +82,4 @@ public sealed class OberonCompilerModuleEmitter
         }
     }
 
-    private static bool EndsWithReturn(OberonCompilerStatementSequence? body) =>
-        body?.Statements.LastOrDefault() is OberonCompilerReturnStatement;
 }
