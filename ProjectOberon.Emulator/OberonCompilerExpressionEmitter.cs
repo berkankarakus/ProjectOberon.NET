@@ -44,11 +44,16 @@ public sealed class OberonCompilerExpressionEmitter
         var target = assignment.Target.Symbol;
         if (target?.Class is not (OberonCompilerObjectClass.Variable or OberonCompilerObjectClass.Parameter))
             throw new InvalidOperationException($"'{assignment.Target.Name}' is not a variable");
-        if (target.Class == OberonCompilerObjectClass.Parameter && !target.ReadOnly)
-            throw new NotSupportedException("VAR parameter stores are not implemented");
 
         EmitExpression(assignment.Value);
         var offset = checked((int)target.Value);
+        if (target.Class == OberonCompilerObjectClass.Parameter && !target.ReadOnly)
+        {
+            _generator.EmitLoad(1, OberonCompilerCodeGenerator.StackPointer, offset);
+            _generator.EmitStore(0, 1, 0);
+            return;
+        }
+
         var addressRegister = target.Level == 1 ? ModuleDataBase : OberonCompilerCodeGenerator.StackPointer;
         _generator.EmitStore(0, addressRegister, offset);
     }
@@ -141,14 +146,38 @@ public sealed class OberonCompilerExpressionEmitter
         for (var index = 0; index < parameters.Count; index++)
         {
             var parameter = parameters[index];
-            if (!parameter.ReadOnly || !IsScalar(parameter.Type))
-                throw new NotSupportedException("VAR and aggregate parameter lowering is not implemented");
-            EmitExpression(call.Arguments[index], index);
+            if (!IsScalar(parameter.Type))
+                throw new NotSupportedException("aggregate parameter lowering is not implemented");
+            if (parameter.ReadOnly) EmitExpression(call.Arguments[index], index);
+            else EmitAddress(call.Arguments[index], index);
         }
 
         var target = procedure.CodeLabel ?? throw new InvalidOperationException(
             $"procedure '{call.Procedure.Name}' has no code label");
         _generator.EmitCall(target);
+    }
+
+    private void EmitAddress(OberonCompilerExpression expression, int destination)
+    {
+        if (expression is not OberonCompilerNameExpression name || name.Symbol is null)
+            throw new NotSupportedException("VAR arguments must be addressable names");
+
+        var symbol = name.Symbol;
+        var offset = checked((int)symbol.Value);
+        switch (symbol.Class)
+        {
+            case OberonCompilerObjectClass.Variable:
+                var baseRegister = symbol.Level == 1
+                    ? ModuleDataBase
+                    : OberonCompilerCodeGenerator.StackPointer;
+                _generator.EmitImmediate(AluOperation.Add, destination, baseRegister, offset);
+                return;
+            case OberonCompilerObjectClass.Parameter when !symbol.ReadOnly:
+                _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer, offset);
+                return;
+            default:
+                throw new NotSupportedException($"'{name.Name}' cannot be passed by reference");
+        }
     }
 
     private void EmitReturn()
@@ -173,6 +202,11 @@ public sealed class OberonCompilerExpressionEmitter
             case OberonCompilerObjectClass.Parameter when symbol.ReadOnly:
                 _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer,
                     checked((int)symbol.Value));
+                return destination;
+            case OberonCompilerObjectClass.Parameter:
+                _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer,
+                    checked((int)symbol.Value));
+                _generator.EmitLoad(destination, destination, 0);
                 return destination;
             default:
                 throw new NotSupportedException($"symbol '{name.Name}' cannot be lowered yet");

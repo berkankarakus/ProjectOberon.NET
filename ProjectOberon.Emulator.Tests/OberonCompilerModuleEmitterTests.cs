@@ -6,7 +6,7 @@ internal static class OberonCompilerModuleEmitterTests
     {
         EmitsParameterlessProcedureCall();
         EmitsValueParameterCall();
-        RejectsVarParameterUntilAddressLoweringExists();
+        EmitsScalarVarParameterCall();
     }
 
     private static void EmitsParameterlessProcedureCall()
@@ -41,13 +41,20 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.True(Risc5Disassembler.Format(generator.Code[11]).StartsWith("BTL "));
     }
 
-    private static void RejectsVarParameterUntilAddressLoweringExists()
+    private static void EmitsScalarVarParameterCall()
     {
-        const string source = "MODULE Calls; PROCEDURE Ping(VAR value: INTEGER); BEGIN END Ping; BEGIN Ping(1); END Calls.";
+        const string source = "MODULE Calls; VAR result: INTEGER; PROCEDURE Ping(VAR value: INTEGER); BEGIN value := value + 1; END Ping; BEGIN Ping(result); END Calls.";
         var module = new OberonCompilerParser(source).ParseModule();
         var generator = new OberonCompilerCodeGenerator();
 
-        TestAssertions.Throws<NotSupportedException>(() =>
-            new OberonCompilerModuleEmitter(generator).Emit(module));
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        TestAssertions.Equal("STR r0, [r14, 4]", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("LDR r0, [r14, 4]", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("LDR r0, [r0, 0]", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("LDR r1, [r14, 4]", Risc5Disassembler.Format(generator.Code[7]));
+        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[8]));
+        TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[12]));
+        TestAssertions.True(Risc5Disassembler.Format(generator.Code[13]).StartsWith("BTL "));
     }
 }

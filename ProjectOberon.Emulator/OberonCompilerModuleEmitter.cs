@@ -41,10 +41,10 @@ public sealed class OberonCompilerModuleEmitter
         var register = 0;
         foreach (var parameter in procedure.Type!.Parameters)
         {
-            if (!parameter.ReadOnly || parameter.Type?.Form is not (
+            if (parameter.Type?.Form is not (
                 OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean
                 or OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer))
-                throw new NotSupportedException("VAR and aggregate parameter lowering is not implemented");
+                throw new NotSupportedException("aggregate parameter lowering is not implemented");
             _generator.EmitSaveParameter(register, checked((int)parameter.Value));
             register++;
         }
