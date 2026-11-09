@@ -2,9 +2,10 @@ namespace ProjectOberon.Emulator;
 
 public sealed class OberonCompilerExpressionEmitter
 {
-    public const int ModuleDataBase = 13;
+    public const int ModuleDataBase = OberonCompilerCallingConvention.ModuleDataBase;
 
     private readonly OberonCompilerCodeGenerator _generator;
+    private readonly OberonCompilerAddressEmitter _addresses;
     private readonly int _frameSize;
     private readonly Func<OberonCompilerObject, OberonCompilerLabel?>? _procedureLabelResolver;
     private readonly OberonCompilerRegisterAllocator _registers = new();
@@ -16,6 +17,7 @@ public sealed class OberonCompilerExpressionEmitter
     {
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
+        _addresses = new OberonCompilerAddressEmitter(generator);
         _frameSize = frameSize;
         _procedureLabelResolver = procedureLabelResolver;
     }
@@ -56,7 +58,7 @@ public sealed class OberonCompilerExpressionEmitter
         {
             if (!IsScalar(field.Field.Type))
                 throw new NotSupportedException("aggregate field stores are not implemented");
-            EmitAddress(field, 1);
+            _addresses.EmitAddress(field, 1);
             _generator.EmitStore(0, 1, 0);
             return;
         }
@@ -202,7 +204,7 @@ public sealed class OberonCompilerExpressionEmitter
             if (IsScalar(parameter.Type))
             {
                 if (parameter.ReadOnly) EmitExpression(arguments[index], register);
-                else EmitAddress(arguments[index], register);
+                else _addresses.EmitAddress(arguments[index], register);
                 continue;
             }
 
@@ -222,7 +224,7 @@ public sealed class OberonCompilerExpressionEmitter
         if (argument is not OberonCompilerNameExpression name || name.Symbol is null)
             throw new NotSupportedException("open array arguments must be addressable names");
 
-        EmitAddress(argument, destination);
+        _addresses.EmitAddress(argument, destination);
         var type = name.Symbol.Type;
         if (type?.Form != OberonCompilerTypeForm.Array)
             throw new InvalidOperationException($"'{name.Name}' is not an array");
@@ -239,47 +241,11 @@ public sealed class OberonCompilerExpressionEmitter
             checked((int)name.Symbol.Value + 4));
     }
 
-    private void EmitAddress(OberonCompilerExpression expression, int destination)
-    {
-        OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination);
-        if (expression is OberonCompilerFieldExpression field)
-        {
-            EmitAddress(field.Receiver, destination);
-            _generator.EmitImmediate(AluOperation.Add, destination, destination,
-                checked((int)field.Field.Value));
-            return;
-        }
-
-        if (expression is not OberonCompilerNameExpression name || name.Symbol is null)
-            throw new NotSupportedException("argument must be an addressable name");
-
-        var symbol = name.Symbol;
-        var offset = checked((int)symbol.Value);
-        switch (symbol.Class)
-        {
-            case OberonCompilerObjectClass.Variable:
-                var baseRegister = symbol.Level == 1
-                    ? ModuleDataBase
-                    : OberonCompilerCodeGenerator.StackPointer;
-                _generator.EmitImmediate(AluOperation.Add, destination, baseRegister, offset);
-                return;
-            case OberonCompilerObjectClass.Parameter when !symbol.ReadOnly:
-                _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer, offset);
-                return;
-            case OberonCompilerObjectClass.Parameter
-                when symbol.Type?.Form == OberonCompilerTypeForm.Array && symbol.Type.Length < 0:
-                _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer, offset);
-                return;
-            default:
-                throw new NotSupportedException($"'{name.Name}' cannot be passed by reference");
-        }
-    }
-
     private int EmitField(OberonCompilerFieldExpression field, int destination)
     {
         if (!IsScalar(field.Field.Type))
             throw new NotSupportedException("aggregate field loads are not implemented");
-        EmitAddress(field, destination);
+        _addresses.EmitAddress(field, destination);
         _generator.EmitLoad(destination, destination, 0);
         return destination;
     }
