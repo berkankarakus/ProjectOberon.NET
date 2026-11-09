@@ -153,10 +153,11 @@ public sealed class OberonCompilerParser
         try
         {
             _declarationSection = 0;
-            _dataOffset = 0;
             ParseFormalParameters(procedureType);
             Expect(OberonCompilerTokenKind.Semicolon, "; expected after procedure header");
+            _dataOffset = ParameterFrameSize(procedureType);
             ParseDeclarations();
+            procedure.FrameSize = Align(_dataOffset, 4);
             ParseProcedureDeclarations();
 
             if (_current.Kind == OberonCompilerTokenKind.Begin)
@@ -246,6 +247,9 @@ public sealed class OberonCompilerParser
         OberonCompilerTypeForm.Array when type.Length < 0 => 8,
         _ => 4
     };
+
+    private static int ParameterFrameSize(OberonCompilerType procedureType) =>
+        4 + procedureType.Parameters.Sum(parameter => ParameterSlotSize(parameter.Type!));
 
     private void ParseConstants()
     {

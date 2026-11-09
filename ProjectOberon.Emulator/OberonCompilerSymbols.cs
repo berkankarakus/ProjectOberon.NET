@@ -76,6 +76,7 @@ public sealed class OberonCompilerObject
     public string? OriginalName { get; internal set; }
     public int Key { get; internal set; }
     public OberonCompilerStatementSequence? Body { get; internal set; }
+    public int FrameSize { get; internal set; }
     internal OberonCompilerLabel? CodeLabel { get; set; }
     public IReadOnlyList<OberonCompilerObject> Members => _members;
 

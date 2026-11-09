@@ -25,11 +25,28 @@ public sealed class OberonCompilerModuleEmitter
         foreach (var procedure in procedures)
         {
             _generator.Bind(procedure.CodeLabel!);
-            if (procedure.Body is not null) _statements.EmitStatementSequence(procedure.Body);
-            _generator.EmitReturn();
+            _generator.EmitProcedurePrologue(procedure.FrameSize);
+            SaveValueParameters(procedure);
+            var procedureStatements = new OberonCompilerExpressionEmitter(_generator, procedure.FrameSize);
+            if (procedure.Body is not null) procedureStatements.EmitStatementSequence(procedure.Body);
+            _generator.EmitProcedureReturn(procedure.FrameSize);
         }
 
         if (module.Body is not null) _statements.EmitStatementSequence(module.Body);
         return _generator.Code;
+    }
+
+    private void SaveValueParameters(OberonCompilerObject procedure)
+    {
+        var register = 0;
+        foreach (var parameter in procedure.Type!.Parameters)
+        {
+            if (!parameter.ReadOnly || parameter.Type?.Form is not (
+                OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean
+                or OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer))
+                throw new NotSupportedException("VAR and aggregate parameter lowering is not implemented");
+            _generator.EmitSaveParameter(register, checked((int)parameter.Value));
+            register++;
+        }
     }
 }

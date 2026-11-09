@@ -5,11 +5,13 @@ public sealed class OberonCompilerExpressionEmitter
     public const int ModuleDataBase = 13;
 
     private readonly OberonCompilerCodeGenerator _generator;
+    private readonly int _frameSize;
 
-    public OberonCompilerExpressionEmitter(OberonCompilerCodeGenerator generator)
+    public OberonCompilerExpressionEmitter(OberonCompilerCodeGenerator generator, int frameSize = 0)
     {
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
+        _frameSize = frameSize;
     }
 
     public int EmitExpression(OberonCompilerExpression expression, int destination = 0)
@@ -39,13 +41,16 @@ public sealed class OberonCompilerExpressionEmitter
     public void EmitAssignment(OberonCompilerAssignmentStatement assignment)
     {
         ArgumentNullException.ThrowIfNull(assignment);
-        if (assignment.Target.Symbol?.Class != OberonCompilerObjectClass.Variable)
+        var target = assignment.Target.Symbol;
+        if (target?.Class is not (OberonCompilerObjectClass.Variable or OberonCompilerObjectClass.Parameter))
             throw new InvalidOperationException($"'{assignment.Target.Name}' is not a variable");
-        if (assignment.Target.Symbol.Level != 1)
-            throw new NotSupportedException("local and parameter stores are not implemented");
+        if (target.Class == OberonCompilerObjectClass.Parameter && !target.ReadOnly)
+            throw new NotSupportedException("VAR parameter stores are not implemented");
 
         EmitExpression(assignment.Value);
-        _generator.EmitStore(0, ModuleDataBase, checked((int)assignment.Target.Symbol.Value));
+        var offset = checked((int)target.Value);
+        var addressRegister = target.Level == 1 ? ModuleDataBase : OberonCompilerCodeGenerator.StackPointer;
+        _generator.EmitStore(0, addressRegister, offset);
     }
 
     public void EmitStatementSequence(OberonCompilerStatementSequence sequence)
@@ -63,7 +68,7 @@ public sealed class OberonCompilerExpressionEmitter
                 break;
             case OberonCompilerReturnStatement { Value: var value }:
                 if (value is not null) EmitExpression(value);
-                _generator.EmitReturn();
+                EmitReturn();
                 break;
             case OberonCompilerIfStatement conditional:
                 EmitIf(conditional);
@@ -127,11 +132,29 @@ public sealed class OberonCompilerExpressionEmitter
 
     private void EmitCall(OberonCompilerCallStatement call)
     {
-        if (call.Arguments.Count != 0)
-            throw new NotSupportedException("procedure parameter lowering is not implemented");
-        var target = call.Procedure.Symbol?.CodeLabel ?? throw new InvalidOperationException(
+        var procedure = call.Procedure.Symbol ?? throw new InvalidOperationException(
+            $"procedure '{call.Procedure.Name}' is not defined");
+        var parameters = procedure.Type?.Parameters ?? [];
+        if (call.Arguments.Count != parameters.Count)
+            throw new InvalidOperationException($"procedure '{call.Procedure.Name}' expects {parameters.Count} arguments");
+
+        for (var index = 0; index < parameters.Count; index++)
+        {
+            var parameter = parameters[index];
+            if (!parameter.ReadOnly || !IsScalar(parameter.Type))
+                throw new NotSupportedException("VAR and aggregate parameter lowering is not implemented");
+            EmitExpression(call.Arguments[index], index);
+        }
+
+        var target = procedure.CodeLabel ?? throw new InvalidOperationException(
             $"procedure '{call.Procedure.Name}' has no code label");
         _generator.EmitCall(target);
+    }
+
+    private void EmitReturn()
+    {
+        if (_frameSize == 0) _generator.EmitReturn();
+        else _generator.EmitProcedureReturn(_frameSize);
     }
 
     private int EmitName(OberonCompilerNameExpression name, int destination)
@@ -145,6 +168,11 @@ public sealed class OberonCompilerExpressionEmitter
                 return destination;
             case OberonCompilerObjectClass.Variable when symbol.Level == 1:
                 _generator.EmitLoad(destination, ModuleDataBase, checked((int)symbol.Value));
+                return destination;
+            case OberonCompilerObjectClass.Variable:
+            case OberonCompilerObjectClass.Parameter when symbol.ReadOnly:
+                _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer,
+                    checked((int)symbol.Value));
                 return destination;
             default:
                 throw new NotSupportedException($"symbol '{name.Name}' cannot be lowered yet");
@@ -223,6 +251,10 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerTokenKind.Equal or OberonCompilerTokenKind.NotEqual or
         OberonCompilerTokenKind.Less or OberonCompilerTokenKind.LessOrEqual or
         OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual;
+
+    private static bool IsScalar(OberonCompilerType? type) => type?.Form is
+        OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean or
+        OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer;
 
     private static void ValidateScratchRegister(int destination)
     {

@@ -134,6 +134,27 @@ public sealed class OberonCompilerCodeGenerator
         EmitBranch(target, ConditionCode.Always, link: true);
     }
 
+    public void EmitProcedurePrologue(int frameSize)
+    {
+        ValidateFrameSize(frameSize);
+        EmitImmediate(AluOperation.Sub, StackPointer, StackPointer, frameSize);
+        EmitStore(LinkRegister, StackPointer, 0);
+    }
+
+    public void EmitSaveParameter(int register, int offset)
+    {
+        ValidateRegister(register);
+        EmitStore(register, StackPointer, offset);
+    }
+
+    public void EmitProcedureReturn(int frameSize)
+    {
+        ValidateFrameSize(frameSize);
+        EmitLoad(LinkRegister, StackPointer, 0);
+        EmitImmediate(AluOperation.Add, StackPointer, StackPointer, frameSize);
+        EmitBranchRegister(LinkRegister);
+    }
+
     private void EmitMemory(int register, int addressRegister, int offset, bool store, bool byteValue)
     {
         ValidateRegister(register);
@@ -163,5 +184,12 @@ public sealed class OberonCompilerCodeGenerator
     private static void ValidateRegister(int register)
     {
         if (register is < 0 or > 15) throw new ArgumentOutOfRangeException(nameof(register));
+    }
+
+    private static void ValidateFrameSize(int frameSize)
+    {
+        if (frameSize is < 4 or > 0x7fff)
+            throw new ArgumentOutOfRangeException(nameof(frameSize),
+                "procedure frame size must fit a positive RISC5 immediate");
     }
 }
