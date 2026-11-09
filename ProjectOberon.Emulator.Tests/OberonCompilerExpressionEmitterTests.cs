@@ -7,6 +7,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsArithmeticAssignment();
         EmitsModuleVariableLoads();
         EmitsControlFlow();
+        EmitsRecordFieldLoadAndStore();
     }
 
     private static void EmitsArithmeticAssignment()
@@ -69,5 +70,24 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BLT ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
+    }
+
+    private static void EmitsRecordFieldLoadAndStore()
+    {
+        const string source = "MODULE Records; TYPE Point = RECORD x, y: INTEGER; END; VAR point: Point; BEGIN point.x := point.y + 1; END Records.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerExpressionEmitter(generator).EmitAssignment(assignment);
+
+        TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("ADD r0, r0, 0x0004", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("LDR r0, [r0, 0]", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("MOV r1, 0x0001", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[5]));
+        TestAssertions.Equal("ADD r1, r1, 0x0000", Risc5Disassembler.Format(generator.Code[6]));
+        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[7]));
     }
 }

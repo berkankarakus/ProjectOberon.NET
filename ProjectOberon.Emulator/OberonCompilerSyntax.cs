@@ -25,6 +25,10 @@ public sealed record OberonCompilerCallExpression(
     OberonCompilerNameExpression Procedure,
     IReadOnlyList<OberonCompilerExpression> Arguments) : OberonCompilerExpression;
 
+public sealed record OberonCompilerFieldExpression(
+    OberonCompilerExpression Receiver,
+    OberonCompilerObject Field) : OberonCompilerExpression;
+
 public sealed record OberonCompilerUnaryExpression(
     OberonCompilerTokenKind Operator,
     OberonCompilerExpression Operand) : OberonCompilerExpression;
@@ -37,7 +41,7 @@ public sealed record OberonCompilerBinaryExpression(
 public abstract record OberonCompilerStatement;
 
 public sealed record OberonCompilerAssignmentStatement(
-    OberonCompilerNameExpression Target,
+    OberonCompilerExpression Target,
     OberonCompilerExpression Value) : OberonCompilerStatement;
 
 public sealed record OberonCompilerCallStatement(

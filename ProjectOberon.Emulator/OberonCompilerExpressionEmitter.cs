@@ -29,6 +29,8 @@ public sealed class OberonCompilerExpressionEmitter
                 throw new NotSupportedException("real and string lowering is not implemented");
             case OberonCompilerCallExpression call:
                 return EmitFunctionCall(call, destination);
+            case OberonCompilerFieldExpression field:
+                return EmitField(field, destination);
             case OberonCompilerNameExpression name:
                 return EmitName(name, destination);
             case OberonCompilerUnaryExpression unary:
@@ -43,11 +45,22 @@ public sealed class OberonCompilerExpressionEmitter
     public void EmitAssignment(OberonCompilerAssignmentStatement assignment)
     {
         ArgumentNullException.ThrowIfNull(assignment);
-        var target = assignment.Target.Symbol;
-        if (target?.Class is not (OberonCompilerObjectClass.Variable or OberonCompilerObjectClass.Parameter))
-            throw new InvalidOperationException($"'{assignment.Target.Name}' is not a variable");
-
         EmitExpression(assignment.Value);
+        if (assignment.Target is OberonCompilerFieldExpression field)
+        {
+            if (!IsScalar(field.Field.Type))
+                throw new NotSupportedException("aggregate field stores are not implemented");
+            EmitAddress(field, 1);
+            _generator.EmitStore(0, 1, 0);
+            return;
+        }
+
+        if (assignment.Target is not OberonCompilerNameExpression name || name.Symbol is null)
+            throw new InvalidOperationException("assignment target is not addressable");
+        var target = name.Symbol;
+        if (target.Class is not (OberonCompilerObjectClass.Variable or OberonCompilerObjectClass.Parameter))
+            throw new InvalidOperationException($"'{name.Name}' is not a variable");
+
         var offset = checked((int)target.Value);
         if (target.Class == OberonCompilerObjectClass.Parameter && !target.ReadOnly)
         {
@@ -214,8 +227,16 @@ public sealed class OberonCompilerExpressionEmitter
 
     private void EmitAddress(OberonCompilerExpression expression, int destination)
     {
+        if (expression is OberonCompilerFieldExpression field)
+        {
+            EmitAddress(field.Receiver, destination);
+            _generator.EmitImmediate(AluOperation.Add, destination, destination,
+                checked((int)field.Field.Value));
+            return;
+        }
+
         if (expression is not OberonCompilerNameExpression name || name.Symbol is null)
-            throw new NotSupportedException("VAR arguments must be addressable names");
+            throw new NotSupportedException("argument must be an addressable name");
 
         var symbol = name.Symbol;
         var offset = checked((int)symbol.Value);
@@ -237,6 +258,15 @@ public sealed class OberonCompilerExpressionEmitter
             default:
                 throw new NotSupportedException($"'{name.Name}' cannot be passed by reference");
         }
+    }
+
+    private int EmitField(OberonCompilerFieldExpression field, int destination)
+    {
+        if (!IsScalar(field.Field.Type))
+            throw new NotSupportedException("aggregate field loads are not implemented");
+        EmitAddress(field, destination);
+        _generator.EmitLoad(destination, destination, 0);
+        return destination;
     }
 
     private void EmitReturn()

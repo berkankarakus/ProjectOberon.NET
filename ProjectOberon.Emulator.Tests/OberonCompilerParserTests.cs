@@ -158,7 +158,8 @@ internal static class OberonCompilerParserTests
         var body = result.Body!;
         TestAssertions.Equal(4, body.Statements.Count);
         var assignment = (OberonCompilerAssignmentStatement)body.Statements[0];
-        TestAssertions.Equal("value", assignment.Target.Name);
+        var target = (OberonCompilerNameExpression)assignment.Target;
+        TestAssertions.Equal("value", target.Name);
         var addition = (OberonCompilerBinaryExpression)assignment.Value;
         TestAssertions.Equal(OberonCompilerTokenKind.Plus, addition.Operator);
         var multiplication = (OberonCompilerBinaryExpression)addition.Right;

@@ -437,22 +437,29 @@ public sealed class OberonCompilerParser
             return null;
         }
 
-        var name = _current.Lexeme;
-        var symbol = _symbols.Lookup(name);
+        var token = _current;
         Next();
-        var reference = new OberonCompilerNameExpression(name, symbol);
+        var expression = ParseRuntimeNameOrCall(token);
         if (_current.Kind == OberonCompilerTokenKind.Becomes)
         {
             Next();
-            return new OberonCompilerAssignmentStatement(reference, ParseRuntimeExpression());
+            return new OberonCompilerAssignmentStatement(expression, ParseRuntimeExpression());
         }
 
-        var arguments = _current.Kind == OberonCompilerTokenKind.LeftParenthesis
-            ? ParseArgumentList()
-            : [];
-        if (symbol?.Class != OberonCompilerObjectClass.Procedure)
-            AddDiagnostic($"procedure '{name}' is not defined");
-        return new OberonCompilerCallStatement(reference, arguments);
+        if (expression is OberonCompilerCallExpression call)
+        {
+            ValidateProcedureCall(call.Procedure);
+            return new OberonCompilerCallStatement(call.Procedure, call.Arguments);
+        }
+
+        if (expression is OberonCompilerNameExpression name)
+        {
+            ValidateProcedureCall(name);
+            return new OberonCompilerCallStatement(name, []);
+        }
+
+        AddDiagnostic("procedure call expected");
+        return null;
     }
 
     private OberonCompilerIfStatement ParseIfStatement()
@@ -665,8 +672,57 @@ public sealed class OberonCompilerParser
     private OberonCompilerExpression ParseRuntimeNameOrCall(OberonCompilerToken token)
     {
         var reference = ResolveRuntimeName(token);
-        if (_current.Kind != OberonCompilerTokenKind.LeftParenthesis) return reference;
-        return new OberonCompilerCallExpression(reference, ParseArgumentList());
+        OberonCompilerExpression expression = reference;
+        if (_current.Kind == OberonCompilerTokenKind.LeftParenthesis)
+            expression = new OberonCompilerCallExpression(reference, ParseArgumentList());
+        return ParseSelectors(expression);
+    }
+
+    private OberonCompilerExpression ParseSelectors(OberonCompilerExpression expression)
+    {
+        while (_current.Kind == OberonCompilerTokenKind.Period)
+        {
+            Next();
+            if (_current.Kind != OberonCompilerTokenKind.Identifier)
+            {
+                AddDiagnostic("field identifier expected after .");
+                return expression;
+            }
+
+            var fieldName = _current.Lexeme;
+            Next();
+            var receiverType = ExpressionType(expression);
+            if (receiverType?.Form != OberonCompilerTypeForm.Record)
+            {
+                AddDiagnostic($"'{fieldName}' requires a record receiver");
+                continue;
+            }
+
+            var field = _symbols.LookupField(receiverType, fieldName);
+            if (field is null)
+            {
+                AddDiagnostic($"field '{fieldName}' is not defined");
+                continue;
+            }
+
+            expression = new OberonCompilerFieldExpression(expression, field);
+        }
+
+        return expression;
+    }
+
+    private OberonCompilerType? ExpressionType(OberonCompilerExpression expression) => expression switch
+    {
+        OberonCompilerNameExpression name => name.Symbol?.Type,
+        OberonCompilerCallExpression call => call.Procedure.Symbol?.Type?.Base,
+        OberonCompilerFieldExpression field => field.Field.Type,
+        _ => null
+    };
+
+    private void ValidateProcedureCall(OberonCompilerNameExpression procedure)
+    {
+        if (procedure.Symbol?.Class != OberonCompilerObjectClass.Procedure)
+            AddDiagnostic($"procedure '{procedure.Name}' is not defined");
     }
 
     private OberonCompilerNameExpression ResolveRuntimeName(OberonCompilerToken token)
