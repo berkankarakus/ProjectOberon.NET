@@ -1,0 +1,327 @@
+namespace ProjectOberon.Emulator;
+
+public enum OberonCompilerObjectClass
+{
+    Head,
+    Constant,
+    Variable,
+    Parameter,
+    Field,
+    Type,
+    Procedure,
+    Function,
+    Module
+}
+
+public enum OberonCompilerTypeForm
+{
+    Byte = 1,
+    Boolean,
+    Character,
+    Integer,
+    Real,
+    Set,
+    Pointer,
+    Nil,
+    None,
+    Procedure,
+    String,
+    Array,
+    Record
+}
+
+public sealed record OberonCompilerSymbolDiagnostic(string Message, string Name);
+
+public sealed class OberonCompilerType
+{
+    internal OberonCompilerType(OberonCompilerTypeForm form, int size)
+    {
+        Form = form;
+        Size = size;
+    }
+
+    public OberonCompilerTypeForm Form { get; }
+    public int Reference { get; internal set; }
+    public int ModuleNumber { get; internal set; }
+    public int ParameterCount { get; internal set; }
+    public int Length { get; internal set; }
+    public int Size { get; internal set; }
+    public OberonCompilerType? Base { get; internal set; }
+    public OberonCompilerObject? TypeObject { get; internal set; }
+    public IReadOnlyList<OberonCompilerObject> Fields => _fields;
+    public IReadOnlyList<OberonCompilerObject> Parameters => _parameters;
+
+    private readonly List<OberonCompilerObject> _fields = [];
+    private readonly List<OberonCompilerObject> _parameters = [];
+
+    internal void AddField(OberonCompilerObject field) => _fields.Add(field);
+    internal void AddParameter(OberonCompilerObject parameter) => _parameters.Add(parameter);
+}
+
+public sealed class OberonCompilerObject
+{
+    internal OberonCompilerObject(string name, OberonCompilerObjectClass @class)
+    {
+        Name = name;
+        Class = @class;
+    }
+
+    public string Name { get; }
+    public OberonCompilerObjectClass Class { get; }
+    public bool Exported { get; internal set; }
+    public bool ReadOnly { get; internal set; }
+    public int Level { get; internal set; }
+    public long Value { get; internal set; }
+    public OberonCompilerType? Type { get; internal set; }
+    public string? OriginalName { get; internal set; }
+    public int Key { get; internal set; }
+    public IReadOnlyList<OberonCompilerObject> Members => _members;
+
+    private readonly List<OberonCompilerObject> _members = [];
+    private readonly Dictionary<string, OberonCompilerObject> _memberMap = new(StringComparer.Ordinal);
+
+    public OberonCompilerObject? FindMember(string name) =>
+        _memberMap.TryGetValue(name, out var member) ? member : null;
+
+    internal bool AddMember(OberonCompilerObject member)
+    {
+        if (!_memberMap.TryAdd(member.Name, member)) return false;
+        _members.Add(member);
+        return true;
+    }
+}
+
+public sealed class OberonCompilerScope
+{
+    internal OberonCompilerScope(OberonCompilerScope? parent, int level)
+    {
+        Parent = parent;
+        Level = level;
+    }
+
+    public OberonCompilerScope? Parent { get; }
+    public int Level { get; }
+    public IReadOnlyList<OberonCompilerObject> Objects => _objects;
+
+    private readonly List<OberonCompilerObject> _objects = [];
+    private readonly Dictionary<string, OberonCompilerObject> _objectMap = new(StringComparer.Ordinal);
+
+    internal bool TryAdd(OberonCompilerObject obj)
+    {
+        if (!_objectMap.TryAdd(obj.Name, obj)) return false;
+        _objects.Add(obj);
+        return true;
+    }
+
+    internal OberonCompilerObject? FindLocal(string name) =>
+        _objectMap.TryGetValue(name, out var obj) ? obj : null;
+}
+
+public sealed class OberonCompilerSymbols
+{
+    private readonly List<OberonCompilerSymbolDiagnostic> _diagnostics = [];
+    private OberonCompilerScope _currentScope;
+
+    public OberonCompilerSymbols()
+    {
+        Universe = new OberonCompilerScope(parent: null, level: 0);
+        _currentScope = Universe;
+
+        ByteType = CreateType(OberonCompilerTypeForm.Byte, 1);
+        BooleanType = CreateType(OberonCompilerTypeForm.Boolean, 1);
+        CharacterType = CreateType(OberonCompilerTypeForm.Character, 1);
+        IntegerType = CreateType(OberonCompilerTypeForm.Integer, 4);
+        RealType = CreateType(OberonCompilerTypeForm.Real, 4);
+        SetType = CreateType(OberonCompilerTypeForm.Set, 4);
+        NilType = CreateType(OberonCompilerTypeForm.Nil, 4);
+        NoneType = CreateType(OberonCompilerTypeForm.None, 4);
+        StringType = CreateType(OberonCompilerTypeForm.String, 8);
+
+        EnterBuiltinType("SET", SetType);
+        EnterBuiltinType("BOOLEAN", BooleanType);
+        EnterBuiltinType("BYTE", ByteType);
+        EnterBuiltinType("CHAR", CharacterType);
+        EnterBuiltinType("LONGREAL", RealType);
+        EnterBuiltinType("REAL", RealType);
+        EnterBuiltinType("LONGINT", IntegerType);
+        EnterBuiltinType("INTEGER", IntegerType);
+
+        SystemModule = new OberonCompilerObject("SYSTEM", OberonCompilerObjectClass.Module)
+        {
+            OriginalName = "SYSTEM",
+            Type = NoneType,
+            ReadOnly = true
+        };
+        EnterSystemBuiltins();
+    }
+
+    public OberonCompilerScope Universe { get; }
+    public OberonCompilerScope CurrentScope => _currentScope;
+    public OberonCompilerObject SystemModule { get; }
+    public IReadOnlyList<OberonCompilerSymbolDiagnostic> Diagnostics => _diagnostics;
+
+    public OberonCompilerType ByteType { get; }
+    public OberonCompilerType BooleanType { get; }
+    public OberonCompilerType CharacterType { get; }
+    public OberonCompilerType IntegerType { get; }
+    public OberonCompilerType RealType { get; }
+    public OberonCompilerType SetType { get; }
+    public OberonCompilerType NilType { get; }
+    public OberonCompilerType NoneType { get; }
+    public OberonCompilerType StringType { get; }
+
+    public OberonCompilerType CreateType(OberonCompilerTypeForm form, int size) =>
+        new(form, size);
+
+    public OberonCompilerType CreatePointer(OberonCompilerType baseType) =>
+        new(OberonCompilerTypeForm.Pointer, 4) { Base = baseType };
+
+    public OberonCompilerType CreateArray(OberonCompilerType baseType, int length, int size) =>
+        new(OberonCompilerTypeForm.Array, size) { Base = baseType, Length = length };
+
+    public OberonCompilerType CreateRecord(OberonCompilerType? baseType = null, int extensionLevel = 0) =>
+        new(OberonCompilerTypeForm.Record, baseType?.Size ?? 0)
+        {
+            Base = baseType,
+            ParameterCount = extensionLevel
+        };
+
+    public OberonCompilerType CreateProcedure(OberonCompilerType resultType,
+        IEnumerable<OberonCompilerObject> parameters)
+    {
+        var type = new OberonCompilerType(OberonCompilerTypeForm.Procedure, 4)
+        {
+            Base = resultType
+        };
+        foreach (var parameter in parameters) type.AddParameter(parameter);
+        type.ParameterCount = type.Parameters.Count;
+        return type;
+    }
+
+    public OberonCompilerObject Declare(
+        string name,
+        OberonCompilerObjectClass @class,
+        OberonCompilerType? type = null,
+        long value = 0,
+        bool exported = false,
+        bool readOnly = false)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        var existing = _currentScope.FindLocal(name);
+        if (existing is not null)
+        {
+            AddDiagnostic("multiple definition", name);
+            return existing;
+        }
+
+        var obj = new OberonCompilerObject(name, @class)
+        {
+            Type = type,
+            Value = value,
+            Exported = exported,
+            ReadOnly = readOnly,
+            Level = _currentScope.Level
+        };
+        _currentScope.TryAdd(obj);
+        if (@class == OberonCompilerObjectClass.Type && type is not null) type.TypeObject = obj;
+        return obj;
+    }
+
+    public OberonCompilerObject DeclareField(
+        OberonCompilerType recordType,
+        string name,
+        OberonCompilerType fieldType,
+        int offset,
+        bool exported = false)
+    {
+        if (recordType.Form != OberonCompilerTypeForm.Record)
+            throw new ArgumentException("fields can only be declared on record types", nameof(recordType));
+
+        var existing = recordType.Fields.FirstOrDefault(field => field.Name == name);
+        if (existing is not null)
+        {
+            AddDiagnostic("multiple field definition", name);
+            return existing;
+        }
+
+        var field = new OberonCompilerObject(name, OberonCompilerObjectClass.Field)
+        {
+            Type = fieldType,
+            Value = offset,
+            Exported = exported
+        };
+        recordType.AddField(field);
+        return field;
+    }
+
+    public OberonCompilerObject? Lookup(string name)
+    {
+        for (var scope = _currentScope; scope is not null; scope = scope.Parent)
+        {
+            var result = scope.FindLocal(name);
+            if (result is not null) return result;
+        }
+
+        return null;
+    }
+
+    public OberonCompilerObject? LookupField(OberonCompilerType recordType, string name)
+    {
+        for (var type = recordType; type is not null; type = type.Base)
+        {
+            var field = type.Fields.FirstOrDefault(candidate => candidate.Name == name);
+            if (field is not null) return field;
+        }
+
+        return null;
+    }
+
+    public OberonCompilerObject OpenModule(string name, string originalName, int key)
+    {
+        var module = Declare(name, OberonCompilerObjectClass.Module, NoneType);
+        module.OriginalName = originalName;
+        module.Key = key;
+        module.ReadOnly = true;
+        return module;
+    }
+
+    public OberonCompilerScope OpenScope()
+    {
+        _currentScope = new OberonCompilerScope(_currentScope, _currentScope.Level + 1);
+        return _currentScope;
+    }
+
+    public void CloseScope()
+    {
+        if (_currentScope.Parent is null) throw new InvalidOperationException("cannot close the universe scope");
+        _currentScope = _currentScope.Parent;
+    }
+
+    public void AddDiagnostic(string message, string name) =>
+        _diagnostics.Add(new OberonCompilerSymbolDiagnostic(message, name));
+
+    private void EnterBuiltinType(string name, OberonCompilerType type) =>
+        Declare(name, OberonCompilerObjectClass.Type, type);
+
+    private void EnterSystemBuiltins()
+    {
+        EnterSystem("H", OberonCompilerObjectClass.Function, IntegerType, 201);
+        EnterSystem("COND", OberonCompilerObjectClass.Function, BooleanType, 191);
+        EnterSystem("SIZE", OberonCompilerObjectClass.Function, IntegerType, 181);
+        EnterSystem("ADR", OberonCompilerObjectClass.Function, IntegerType, 171);
+        EnterSystem("VAL", OberonCompilerObjectClass.Function, IntegerType, 162);
+        EnterSystem("REG", OberonCompilerObjectClass.Function, IntegerType, 151);
+        EnterSystem("BIT", OberonCompilerObjectClass.Function, BooleanType, 142);
+        EnterSystem("LDREG", OberonCompilerObjectClass.Procedure, NoneType, 142);
+        EnterSystem("LDPSR", OberonCompilerObjectClass.Procedure, NoneType, 131);
+        EnterSystem("COPY", OberonCompilerObjectClass.Procedure, NoneType, 123);
+        EnterSystem("PUT", OberonCompilerObjectClass.Procedure, NoneType, 112);
+        EnterSystem("GET", OberonCompilerObjectClass.Procedure, NoneType, 102);
+    }
+
+    private void EnterSystem(string name, OberonCompilerObjectClass @class, OberonCompilerType type, int value)
+    {
+        var member = new OberonCompilerObject(name, @class) { Type = type, Value = value };
+        SystemModule.AddMember(member);
+    }
+}
