@@ -2,9 +2,20 @@ namespace ProjectOberon.Emulator;
 
 public abstract record OberonCompilerExpression;
 
-public sealed record OberonCompilerLiteralExpression(
+public abstract record OberonCompilerLiteralExpression(
+    OberonCompilerType Type) : OberonCompilerExpression;
+
+public sealed record OberonCompilerIntegerLiteralExpression(
     OberonCompilerType Type,
-    long Value) : OberonCompilerExpression;
+    long Value) : OberonCompilerLiteralExpression(Type);
+
+public sealed record OberonCompilerRealLiteralExpression(
+    OberonCompilerType Type,
+    double Value) : OberonCompilerLiteralExpression(Type);
+
+public sealed record OberonCompilerStringLiteralExpression(
+    OberonCompilerType Type,
+    string Value) : OberonCompilerLiteralExpression(Type);
 
 public sealed record OberonCompilerNameExpression(
     string Name,

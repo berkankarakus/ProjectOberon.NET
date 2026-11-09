@@ -79,6 +79,8 @@ internal static class OberonCompilerParserTests
             PROCEDURE Add*(VAR left: INTEGER; right: INTEGER): INTEGER;
             VAR local: INTEGER;
             BEGIN
+              local := left + right;
+              RETURN local;
             END Add;
             PROCEDURE Shapes(VAR point: Point; values: ARRAY OF INTEGER; count: INTEGER);
             BEGIN
@@ -105,6 +107,9 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(add.Type.Parameters[0].ReadOnly);
         TestAssertions.Equal("right", add.Type.Parameters[1].Name);
         TestAssertions.True(add.Type.Parameters[1].ReadOnly);
+        TestAssertions.Equal(2, add.Body!.Statements.Count);
+        TestAssertions.True(add.Body.Statements[0] is OberonCompilerAssignmentStatement);
+        TestAssertions.True(add.Body.Statements[1] is OberonCompilerReturnStatement);
         var shapes = Find(scope, "Shapes")!.Type!;
         TestAssertions.Equal(3, shapes.ParameterCount);
         TestAssertions.Equal(4L, shapes.Parameters[0].Value);
@@ -134,12 +139,13 @@ internal static class OberonCompilerParserTests
     {
         const string source = """
             MODULE Statements;
-            VAR value: INTEGER;
+            VAR value: INTEGER; text: ARRAY 8 OF CHAR;
             PROCEDURE Ping;
             BEGIN
             END Ping;
             BEGIN
               value := 1 + 2 * 3;
+              text := "hello";
               Ping(value, value + 1);
               RETURN value;
             END Statements.
@@ -149,7 +155,7 @@ internal static class OberonCompilerParserTests
 
         TestAssertions.True(result.Succeeded);
         var body = result.Body!;
-        TestAssertions.Equal(3, body.Statements.Count);
+        TestAssertions.Equal(4, body.Statements.Count);
         var assignment = (OberonCompilerAssignmentStatement)body.Statements[0];
         TestAssertions.Equal("value", assignment.Target.Name);
         var addition = (OberonCompilerBinaryExpression)assignment.Value;
@@ -157,10 +163,14 @@ internal static class OberonCompilerParserTests
         var multiplication = (OberonCompilerBinaryExpression)addition.Right;
         TestAssertions.Equal(OberonCompilerTokenKind.Multiply, multiplication.Operator);
 
-        var call = (OberonCompilerCallStatement)body.Statements[1];
+        var textAssignment = (OberonCompilerAssignmentStatement)body.Statements[1];
+        TestAssertions.True(textAssignment.Value is OberonCompilerStringLiteralExpression literal
+            && literal.Value == "hello");
+
+        var call = (OberonCompilerCallStatement)body.Statements[2];
         TestAssertions.Equal("Ping", call.Procedure.Name);
         TestAssertions.Equal(2, call.Arguments.Count);
-        TestAssertions.True(body.Statements[2] is OberonCompilerReturnStatement);
+        TestAssertions.True(body.Statements[3] is OberonCompilerReturnStatement);
     }
 
     private static OberonCompilerObject? Find(OberonCompilerScope scope, string name) =>

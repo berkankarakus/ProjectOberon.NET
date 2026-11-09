@@ -141,7 +141,7 @@ public sealed class OberonCompilerParser
         }
 
         var procedureType = _symbols.CreateProcedure(_symbols.NoneType, []);
-        _symbols.Declare(
+        var procedure = _symbols.Declare(
             name,
             OberonCompilerObjectClass.Procedure,
             procedureType,
@@ -162,7 +162,7 @@ public sealed class OberonCompilerParser
             if (_current.Kind == OberonCompilerTokenKind.Begin)
             {
                 Next();
-                SkipStatementSequence();
+                procedure.Body = ParseStatementSequence();
             }
 
             Expect(OberonCompilerTokenKind.End, "END expected after procedure");
@@ -571,15 +571,17 @@ public sealed class OberonCompilerParser
         Next();
         return token.Kind switch
         {
-            OberonCompilerTokenKind.Integer => new OberonCompilerLiteralExpression(
+            OberonCompilerTokenKind.Integer => new OberonCompilerIntegerLiteralExpression(
                 _symbols.IntegerType, token.IntegerValue ?? 0),
-            OberonCompilerTokenKind.Character => new OberonCompilerLiteralExpression(
+            OberonCompilerTokenKind.Character => new OberonCompilerIntegerLiteralExpression(
                 _symbols.CharacterType, token.CharacterValue ?? 0),
-            OberonCompilerTokenKind.Real => new OberonCompilerLiteralExpression(
-                _symbols.RealType, BitConverter.SingleToInt32Bits((float)(token.RealValue ?? 0))),
-            OberonCompilerTokenKind.True => new OberonCompilerLiteralExpression(_symbols.BooleanType, 1),
-            OberonCompilerTokenKind.False => new OberonCompilerLiteralExpression(_symbols.BooleanType, 0),
-            OberonCompilerTokenKind.Nil => new OberonCompilerLiteralExpression(_symbols.NilType, 0),
+            OberonCompilerTokenKind.Real => new OberonCompilerRealLiteralExpression(
+                _symbols.RealType, token.RealValue ?? 0),
+            OberonCompilerTokenKind.True => new OberonCompilerIntegerLiteralExpression(_symbols.BooleanType, 1),
+            OberonCompilerTokenKind.False => new OberonCompilerIntegerLiteralExpression(_symbols.BooleanType, 0),
+            OberonCompilerTokenKind.Nil => new OberonCompilerIntegerLiteralExpression(_symbols.NilType, 0),
+            OberonCompilerTokenKind.String => new OberonCompilerStringLiteralExpression(
+                _symbols.StringType, token.StringValue ?? string.Empty),
             OberonCompilerTokenKind.Identifier => ResolveRuntimeName(token),
             _ => InvalidRuntimeExpression()
         };
@@ -620,7 +622,7 @@ public sealed class OberonCompilerParser
     private OberonCompilerExpression InvalidRuntimeExpression()
     {
         AddDiagnostic("expression expected");
-        return new OberonCompilerLiteralExpression(_symbols.IntegerType, 0);
+        return new OberonCompilerIntegerLiteralExpression(_symbols.IntegerType, 0);
     }
 
     private ConstantValue ResolveConstantValue(OberonCompilerToken token)
@@ -793,28 +795,6 @@ public sealed class OberonCompilerParser
             Next();
         }
         return names;
-    }
-
-    private void SkipStatementSequence()
-    {
-        var depth = 0;
-        while (_current.Kind != OberonCompilerTokenKind.EndOfText)
-        {
-            if (_current.Kind is OberonCompilerTokenKind.If
-                or OberonCompilerTokenKind.Case
-                or OberonCompilerTokenKind.While
-                or OberonCompilerTokenKind.Repeat
-                or OberonCompilerTokenKind.Begin)
-            {
-                depth++;
-            }
-            else if (_current.Kind == OberonCompilerTokenKind.End)
-            {
-                if (depth == 0) return;
-                depth--;
-            }
-            Next();
-        }
     }
 
     private void CheckDeclarationOrder(int section)
