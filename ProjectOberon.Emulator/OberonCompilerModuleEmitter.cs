@@ -26,7 +26,7 @@ public sealed class OberonCompilerModuleEmitter
         {
             _generator.Bind(procedure.CodeLabel!);
             _generator.EmitProcedurePrologue(procedure.FrameSize);
-            SaveValueParameters(procedure);
+            SaveParameters(procedure);
             var procedureStatements = new OberonCompilerExpressionEmitter(_generator, procedure.FrameSize);
             if (procedure.Body is not null) procedureStatements.EmitStatementSequence(procedure.Body);
             if (!EndsWithReturn(procedure.Body)) _generator.EmitProcedureReturn(procedure.FrameSize);
@@ -36,17 +36,30 @@ public sealed class OberonCompilerModuleEmitter
         return _generator.Code;
     }
 
-    private void SaveValueParameters(OberonCompilerObject procedure)
+    private void SaveParameters(OberonCompilerObject procedure)
     {
         var register = 0;
         foreach (var parameter in procedure.Type!.Parameters)
         {
-            if (parameter.Type?.Form is not (
+            if (parameter.Type?.Form is (
                 OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean
                 or OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer))
-                throw new NotSupportedException("aggregate parameter lowering is not implemented");
-            _generator.EmitSaveParameter(register, checked((int)parameter.Value));
-            register++;
+            {
+                _generator.EmitSaveParameter(register, checked((int)parameter.Value));
+                register++;
+                continue;
+            }
+
+            if (parameter.Type?.Form == OberonCompilerTypeForm.Array
+                && parameter.Type.Length < 0)
+            {
+                _generator.EmitSaveParameter(register, checked((int)parameter.Value));
+                _generator.EmitSaveParameter(register + 1, checked((int)parameter.Value + 4));
+                register += 2;
+                continue;
+            }
+
+            throw new NotSupportedException("aggregate parameter lowering is not implemented");
         }
     }
 

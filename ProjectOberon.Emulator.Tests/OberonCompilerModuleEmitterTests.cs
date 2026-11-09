@@ -8,6 +8,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsValueParameterCall();
         EmitsScalarVarParameterCall();
         EmitsFunctionReturnValue();
+        EmitsOpenArrayParameterCall();
     }
 
     private static void EmitsParameterlessProcedureCall()
@@ -71,5 +72,21 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.Equal("MOV r0, 0x0003", Risc5Disassembler.Format(generator.Code[9]));
         TestAssertions.True(Risc5Disassembler.Format(generator.Code[10]).StartsWith("BTL "));
         TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[11]));
+    }
+
+    private static void EmitsOpenArrayParameterCall()
+    {
+        const string source = "MODULE Arrays; TYPE Values = ARRAY 3 OF INTEGER; VAR values: Values; PROCEDURE Consume(items: ARRAY OF INTEGER); BEGIN END Consume; BEGIN Consume(values); END Arrays.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        TestAssertions.Equal("SUB r14, r14, 0x000c", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("STR r0, [r14, 4]", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("STR r1, [r14, 8]", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[7]));
+        TestAssertions.Equal("MOV r1, 0x0003", Risc5Disassembler.Format(generator.Code[8]));
+        TestAssertions.True(Risc5Disassembler.Format(generator.Code[9]).StartsWith("BTL "));
     }
 }

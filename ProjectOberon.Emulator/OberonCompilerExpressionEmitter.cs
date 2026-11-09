@@ -173,11 +173,43 @@ public sealed class OberonCompilerExpressionEmitter
         for (var index = 0; index < parameters.Count; index++)
         {
             var parameter = parameters[index];
-            if (!IsScalar(parameter.Type))
-                throw new NotSupportedException("aggregate parameter lowering is not implemented");
-            if (parameter.ReadOnly) EmitExpression(arguments[index], index);
-            else EmitAddress(arguments[index], index);
+            if (IsScalar(parameter.Type))
+            {
+                if (parameter.ReadOnly) EmitExpression(arguments[index], index);
+                else EmitAddress(arguments[index], index);
+                continue;
+            }
+
+            if (parameter.Type?.Form == OberonCompilerTypeForm.Array
+                && parameter.Type.Length < 0)
+            {
+                EmitOpenArrayArgument(arguments[index], index);
+                continue;
+            }
+
+            throw new NotSupportedException("record parameter lowering is not implemented");
         }
+    }
+
+    private void EmitOpenArrayArgument(OberonCompilerExpression argument, int destination)
+    {
+        if (argument is not OberonCompilerNameExpression name || name.Symbol is null)
+            throw new NotSupportedException("open array arguments must be addressable names");
+
+        EmitAddress(argument, destination);
+        var type = name.Symbol.Type;
+        if (type?.Form != OberonCompilerTypeForm.Array)
+            throw new InvalidOperationException($"'{name.Name}' is not an array");
+        if (type.Length >= 0)
+        {
+            _generator.EmitMoveImmediate(destination + 1, type.Length);
+            return;
+        }
+
+        if (name.Symbol.Class != OberonCompilerObjectClass.Parameter)
+            throw new NotSupportedException("open array length source is not available");
+        _generator.EmitLoad(destination + 1, OberonCompilerCodeGenerator.StackPointer,
+            checked((int)name.Symbol.Value + 4));
     }
 
     private void EmitAddress(OberonCompilerExpression expression, int destination)
@@ -196,6 +228,10 @@ public sealed class OberonCompilerExpressionEmitter
                 _generator.EmitImmediate(AluOperation.Add, destination, baseRegister, offset);
                 return;
             case OberonCompilerObjectClass.Parameter when !symbol.ReadOnly:
+                _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer, offset);
+                return;
+            case OberonCompilerObjectClass.Parameter
+                when symbol.Type?.Form == OberonCompilerTypeForm.Array && symbol.Type.Length < 0:
                 _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer, offset);
                 return;
             default:
