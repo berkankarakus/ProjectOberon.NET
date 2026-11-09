@@ -75,10 +75,14 @@ internal static class OberonCompilerParserTests
     {
         const string source = """
             MODULE Procedures;
+            TYPE Point = RECORD value: INTEGER; END;
             PROCEDURE Add*(VAR left: INTEGER; right: INTEGER): INTEGER;
             VAR local: INTEGER;
             BEGIN
             END Add;
+            PROCEDURE Shapes(VAR point: Point; values: ARRAY OF INTEGER; count: INTEGER);
+            BEGIN
+            END Shapes;
             PROCEDURE Outer;
               PROCEDURE Inner;
               BEGIN
@@ -101,6 +105,12 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(add.Type.Parameters[0].ReadOnly);
         TestAssertions.Equal("right", add.Type.Parameters[1].Name);
         TestAssertions.True(add.Type.Parameters[1].ReadOnly);
+        var shapes = Find(scope, "Shapes")!.Type!;
+        TestAssertions.Equal(3, shapes.ParameterCount);
+        TestAssertions.Equal(4L, shapes.Parameters[0].Value);
+        TestAssertions.Equal(12L, shapes.Parameters[1].Value);
+        TestAssertions.Equal(-1, shapes.Parameters[1].Type!.Length);
+        TestAssertions.Equal(20L, shapes.Parameters[2].Value);
         TestAssertions.Equal(OberonCompilerObjectClass.Procedure, Find(scope, "Outer")!.Class);
     }
 

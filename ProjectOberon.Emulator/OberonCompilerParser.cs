@@ -203,7 +203,7 @@ public sealed class OberonCompilerParser
 
             var names = ParseIdentifierList();
             Expect(OberonCompilerTokenKind.Colon, ": expected in parameter declaration");
-            var type = ParseType();
+            var type = ParseFormalType();
             foreach (var (name, _) in names)
             {
                 offset = Align(offset, 4);
@@ -214,7 +214,7 @@ public sealed class OberonCompilerParser
                     offset,
                     readOnly: !byReference);
                 procedureType.AddParameter(parameter);
-                offset += 4;
+                offset += ParameterSlotSize(type);
             }
 
             if (_current.Kind != OberonCompilerTokenKind.Semicolon) break;
@@ -229,6 +229,23 @@ public sealed class OberonCompilerParser
             procedureType.Base = ParseType();
         }
     }
+
+    private OberonCompilerType ParseFormalType()
+    {
+        if (_current.Kind != OberonCompilerTokenKind.Array) return ParseType();
+
+        Next();
+        Expect(OberonCompilerTokenKind.Of, "OF expected in open array parameter");
+        var baseType = ParseFormalType();
+        return _symbols.CreateArray(baseType, length: -1, size: 8);
+    }
+
+    private static int ParameterSlotSize(OberonCompilerType type) => type.Form switch
+    {
+        OberonCompilerTypeForm.Record => 8,
+        OberonCompilerTypeForm.Array when type.Length < 0 => 8,
+        _ => 4
+    };
 
     private void ParseConstants()
     {
