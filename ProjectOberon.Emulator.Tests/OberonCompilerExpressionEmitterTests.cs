@@ -6,6 +6,7 @@ internal static class OberonCompilerExpressionEmitterTests
     {
         EmitsArithmeticAssignment();
         EmitsModuleVariableLoads();
+        EmitsControlFlow();
     }
 
     private static void EmitsArithmeticAssignment()
@@ -38,5 +39,35 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("MOV r1, 0x0001", Risc5Disassembler.Format(generator.Code[1]));
         TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[2]));
         TestAssertions.Equal("STR r0, [r13, 4]", Risc5Disassembler.Format(generator.Code[3]));
+    }
+
+    private static void EmitsControlFlow()
+    {
+        const string source = """
+            MODULE Flow;
+            VAR value: INTEGER;
+            BEGIN
+              IF value # 0 THEN
+                value := 1;
+              ELSE
+                value := 2;
+              END;
+              WHILE value < 3 DO
+                value := value + 1;
+              END;
+              REPEAT
+                value := value - 1;
+              UNTIL value = 0;
+            END Flow.
+            """;
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerExpressionEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BLT ")));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
     }
 }

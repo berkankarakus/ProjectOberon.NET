@@ -78,10 +78,14 @@ public sealed class OberonCompilerCodeGenerator
     }
 
     public int EmitBranch(ConditionCode condition = ConditionCode.Always, bool link = false)
+        => EmitBranch(condition, link, invert: false);
+
+    public int EmitBranch(ConditionCode condition, bool link, bool invert)
     {
         var raw = InstructionBits.P | InstructionBits.Q | InstructionBits.U
             | ((uint)condition << 24)
             | (link ? InstructionBits.V : 0u);
+        if (invert) raw |= InstructionBits.Invert;
         _code.Add(raw);
         return ProgramCounter - 1;
     }
@@ -98,9 +102,16 @@ public sealed class OberonCompilerCodeGenerator
     }
 
     public int EmitBranch(OberonCompilerLabel label, ConditionCode condition = ConditionCode.Always, bool link = false)
+        => EmitBranch(label, condition, link, invert: false);
+
+    public int EmitBranch(
+        OberonCompilerLabel label,
+        ConditionCode condition,
+        bool link,
+        bool invert)
     {
         ArgumentNullException.ThrowIfNull(label);
-        var instruction = EmitBranch(condition, link);
+        var instruction = EmitBranch(condition, link, invert);
         if (label.Position is int position) PatchBranch(instruction, position);
         else label.Fixups.Add(instruction);
         return instruction;
