@@ -8,6 +8,7 @@ public sealed class OberonCompilerExpressionEmitter
     private readonly OberonCompilerAddressEmitter _addresses;
     private readonly OberonCompilerCallEmitter _calls;
     private readonly OberonCompilerControlFlowEmitter _controlFlow;
+    private readonly OberonCompilerAssignmentEmitter _assignments;
     private readonly int _frameSize;
     private readonly OberonCompilerRegisterAllocator _registers = new();
 
@@ -30,6 +31,10 @@ public sealed class OberonCompilerExpressionEmitter
             generator,
             EmitExpression,
             EmitStatementSequence);
+        _assignments = new OberonCompilerAssignmentEmitter(
+            generator,
+            _addresses,
+            EmitExpression);
     }
 
     public int EmitExpression(OberonCompilerExpression expression, int destination = 0)
@@ -62,33 +67,7 @@ public sealed class OberonCompilerExpressionEmitter
 
     public void EmitAssignment(OberonCompilerAssignmentStatement assignment)
     {
-        ArgumentNullException.ThrowIfNull(assignment);
-        EmitExpression(assignment.Value);
-        if (assignment.Target is OberonCompilerFieldExpression field)
-        {
-            if (!IsScalar(field.Field.Type))
-                throw new NotSupportedException("aggregate field stores are not implemented");
-            _addresses.EmitAddress(field, 1);
-            _generator.EmitStore(0, 1, 0);
-            return;
-        }
-
-        if (assignment.Target is not OberonCompilerNameExpression name || name.Symbol is null)
-            throw new InvalidOperationException("assignment target is not addressable");
-        var target = name.Symbol;
-        if (target.Class is not (OberonCompilerObjectClass.Variable or OberonCompilerObjectClass.Parameter))
-            throw new InvalidOperationException($"'{name.Name}' is not a variable");
-
-        var offset = checked((int)target.Value);
-        if (target.Class == OberonCompilerObjectClass.Parameter && !target.ReadOnly)
-        {
-            _generator.EmitLoad(1, OberonCompilerCodeGenerator.StackPointer, offset);
-            _generator.EmitStore(0, 1, 0);
-            return;
-        }
-
-        var addressRegister = target.Level == 1 ? ModuleDataBase : OberonCompilerCodeGenerator.StackPointer;
-        _generator.EmitStore(0, addressRegister, offset);
+        _assignments.EmitAssignment(assignment);
     }
 
     public void EmitStatementSequence(OberonCompilerStatementSequence sequence)
@@ -102,7 +81,7 @@ public sealed class OberonCompilerExpressionEmitter
         switch (statement)
         {
             case OberonCompilerAssignmentStatement assignment:
-                EmitAssignment(assignment);
+                _assignments.EmitAssignment(assignment);
                 break;
             case OberonCompilerReturnStatement { Value: var value }:
                 if (value is not null) EmitExpression(value);
