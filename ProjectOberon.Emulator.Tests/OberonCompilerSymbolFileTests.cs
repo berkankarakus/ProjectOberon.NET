@@ -1,0 +1,48 @@
+using ProjectOberon.Emulator;
+
+internal static class OberonCompilerSymbolFileTests
+{
+    public static void Run()
+    {
+        WritesFilesAcceptedByTheExistingReader();
+        RejectsUnexportedSymbols();
+    }
+
+    private static void WritesFilesAcceptedByTheExistingReader()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var record = symbols.CreateRecord();
+        symbols.DeclareField(record, "x", symbols.IntegerType, 0, exported: true);
+        var point = symbols.Declare("Point", OberonCompilerObjectClass.Type, record, exported: true);
+        var pointer = symbols.CreatePointer(record);
+        symbols.Declare("Origin", OberonCompilerObjectClass.Variable, pointer, value: 12, exported: true);
+        symbols.Declare("Answer", OberonCompilerObjectClass.Constant, symbols.IntegerType,
+            value: 42, exported: true);
+        var procedureType = symbols.CreateProcedure(symbols.NoneType, []);
+        symbols.Declare("Run", OberonCompilerObjectClass.Procedure, procedureType, exported: true);
+
+        var data = OberonCompilerSymbolFileWriter.Write("Demo", symbols.Universe.Objects
+            .Where(obj => obj.Exported)
+            .ToArray());
+        var module = OberonSymbolModuleReader.Parse(data);
+
+        TestAssertions.Equal("Demo", module.Name);
+        TestAssertions.True(module.Key != 0);
+        TestAssertions.Equal(4, module.Exports.Count);
+        TestAssertions.Equal("Point", module.Exports[0].Name);
+        TestAssertions.Equal("Origin", module.Exports[1].Name);
+        TestAssertions.Equal(12, module.Exports[1].Value);
+        TestAssertions.Equal("Answer", module.Exports[2].Name);
+        TestAssertions.Equal(42, module.Exports[2].Value);
+        TestAssertions.True(module.Exports[3].IsProcedure ?? false);
+        TestAssertions.Equal(0, data.Length % 4);
+    }
+
+    private static void RejectsUnexportedSymbols()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var local = symbols.Declare("local", OberonCompilerObjectClass.Variable, symbols.IntegerType);
+
+        TestAssertions.Throws<ArgumentException>(() => OberonCompilerSymbolFileWriter.Write("Demo", [local]));
+    }
+}
