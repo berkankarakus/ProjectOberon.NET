@@ -21,6 +21,10 @@ public sealed record OberonCompilerNameExpression(
     string Name,
     OberonCompilerObject? Symbol) : OberonCompilerExpression;
 
+public sealed record OberonCompilerCallExpression(
+    OberonCompilerNameExpression Procedure,
+    IReadOnlyList<OberonCompilerExpression> Arguments) : OberonCompilerExpression;
+
 public sealed record OberonCompilerUnaryExpression(
     OberonCompilerTokenKind Operator,
     OberonCompilerExpression Operand) : OberonCompilerExpression;

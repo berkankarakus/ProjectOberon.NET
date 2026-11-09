@@ -27,6 +27,8 @@ public sealed class OberonCompilerExpressionEmitter
             case OberonCompilerRealLiteralExpression:
             case OberonCompilerStringLiteralExpression:
                 throw new NotSupportedException("real and string lowering is not implemented");
+            case OberonCompilerCallExpression call:
+                return EmitFunctionCall(call, destination);
             case OberonCompilerNameExpression name:
                 return EmitName(name, destination);
             case OberonCompilerUnaryExpression unary:
@@ -139,22 +141,43 @@ public sealed class OberonCompilerExpressionEmitter
     {
         var procedure = call.Procedure.Symbol ?? throw new InvalidOperationException(
             $"procedure '{call.Procedure.Name}' is not defined");
+        EmitCallArguments(procedure, call.Arguments);
+        var target = procedure.CodeLabel ?? throw new InvalidOperationException(
+            $"procedure '{call.Procedure.Name}' has no code label");
+        _generator.EmitCall(target);
+    }
+
+    private int EmitFunctionCall(OberonCompilerCallExpression call, int destination)
+    {
+        var procedure = call.Procedure.Symbol ?? throw new InvalidOperationException(
+            $"function '{call.Procedure.Name}' is not defined");
+        if (procedure.Type?.Base?.Form == OberonCompilerTypeForm.None)
+            throw new InvalidOperationException($"'{call.Procedure.Name}' is a procedure, not a function");
+
+        EmitCallArguments(procedure, call.Arguments);
+        var target = procedure.CodeLabel ?? throw new InvalidOperationException(
+            $"function '{call.Procedure.Name}' has no code label");
+        _generator.EmitCall(target);
+        if (destination != 0) _generator.EmitRegister(AluOperation.Mov, destination, 0, 0);
+        return destination;
+    }
+
+    private void EmitCallArguments(
+        OberonCompilerObject procedure,
+        IReadOnlyList<OberonCompilerExpression> arguments)
+    {
         var parameters = procedure.Type?.Parameters ?? [];
-        if (call.Arguments.Count != parameters.Count)
-            throw new InvalidOperationException($"procedure '{call.Procedure.Name}' expects {parameters.Count} arguments");
+        if (arguments.Count != parameters.Count)
+            throw new InvalidOperationException($"procedure '{procedure.Name}' expects {parameters.Count} arguments");
 
         for (var index = 0; index < parameters.Count; index++)
         {
             var parameter = parameters[index];
             if (!IsScalar(parameter.Type))
                 throw new NotSupportedException("aggregate parameter lowering is not implemented");
-            if (parameter.ReadOnly) EmitExpression(call.Arguments[index], index);
-            else EmitAddress(call.Arguments[index], index);
+            if (parameter.ReadOnly) EmitExpression(arguments[index], index);
+            else EmitAddress(arguments[index], index);
         }
-
-        var target = procedure.CodeLabel ?? throw new InvalidOperationException(
-            $"procedure '{call.Procedure.Name}' has no code label");
-        _generator.EmitCall(target);
     }
 
     private void EmitAddress(OberonCompilerExpression expression, int destination)

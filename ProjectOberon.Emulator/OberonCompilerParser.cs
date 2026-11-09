@@ -640,7 +640,7 @@ public sealed class OberonCompilerParser
             OberonCompilerTokenKind.Nil => new OberonCompilerIntegerLiteralExpression(_symbols.NilType, 0),
             OberonCompilerTokenKind.String => new OberonCompilerStringLiteralExpression(
                 _symbols.StringType, token.StringValue ?? string.Empty),
-            OberonCompilerTokenKind.Identifier => ResolveRuntimeName(token),
+            OberonCompilerTokenKind.Identifier => ParseRuntimeNameOrCall(token),
             _ => InvalidRuntimeExpression()
         };
     }
@@ -662,7 +662,14 @@ public sealed class OberonCompilerParser
         return operation == OberonCompilerTokenKind.Minus ? value.Negate() : value;
     }
 
-    private OberonCompilerExpression ResolveRuntimeName(OberonCompilerToken token)
+    private OberonCompilerExpression ParseRuntimeNameOrCall(OberonCompilerToken token)
+    {
+        var reference = ResolveRuntimeName(token);
+        if (_current.Kind != OberonCompilerTokenKind.LeftParenthesis) return reference;
+        return new OberonCompilerCallExpression(reference, ParseArgumentList());
+    }
+
+    private OberonCompilerNameExpression ResolveRuntimeName(OberonCompilerToken token)
     {
         var symbol = _symbols.Lookup(token.Lexeme);
         if (symbol is null) AddDiagnostic($"identifier '{token.Lexeme}' is not defined");

@@ -7,6 +7,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsParameterlessProcedureCall();
         EmitsValueParameterCall();
         EmitsScalarVarParameterCall();
+        EmitsFunctionReturnValue();
     }
 
     private static void EmitsParameterlessProcedureCall()
@@ -56,5 +57,19 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[8]));
         TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[12]));
         TestAssertions.True(Risc5Disassembler.Format(generator.Code[13]).StartsWith("BTL "));
+    }
+
+    private static void EmitsFunctionReturnValue()
+    {
+        const string source = "MODULE Functions; VAR result: INTEGER; PROCEDURE Double(value: INTEGER): INTEGER; BEGIN RETURN value + value; END Double; BEGIN result := Double(3); END Functions.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[5]));
+        TestAssertions.Equal("MOV r0, 0x0003", Risc5Disassembler.Format(generator.Code[9]));
+        TestAssertions.True(Risc5Disassembler.Format(generator.Code[10]).StartsWith("BTL "));
+        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[11]));
     }
 }
