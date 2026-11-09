@@ -48,12 +48,7 @@ public sealed class OberonCompilerParser
         ParseImports();
         ParseDeclarations();
 
-        if (_current.Kind == OberonCompilerTokenKind.Procedure)
-        {
-            AddDiagnostic("procedure declarations are not implemented yet");
-            RecoverTo(OberonCompilerTokenKind.Begin, OberonCompilerTokenKind.End,
-                OberonCompilerTokenKind.EndOfText);
-        }
+        ParseProcedureDeclarations();
 
         if (_current.Kind == OberonCompilerTokenKind.Begin)
         {
@@ -118,6 +113,114 @@ public sealed class OberonCompilerParser
                 default:
                     return;
             }
+        }
+    }
+
+    private void ParseProcedureDeclarations()
+    {
+        while (_current.Kind == OberonCompilerTokenKind.Procedure)
+        {
+            ParseProcedureDeclaration();
+            Expect(OberonCompilerTokenKind.Semicolon, "; expected after procedure declaration");
+        }
+    }
+
+    private void ParseProcedureDeclaration()
+    {
+        Next();
+        var name = TryIdentifier(out var procedureName) ? procedureName : string.Empty;
+        var exported = TakeExportMarker();
+        if (name.Length == 0)
+        {
+            RecoverTo(OberonCompilerTokenKind.Semicolon,
+                OberonCompilerTokenKind.End,
+                OberonCompilerTokenKind.EndOfText);
+            return;
+        }
+
+        var procedureType = _symbols.CreateProcedure(_symbols.NoneType, []);
+        _symbols.Declare(
+            name,
+            OberonCompilerObjectClass.Procedure,
+            procedureType,
+            exported: exported);
+
+        _symbols.OpenScope();
+        ParseFormalParameters(procedureType);
+        Expect(OberonCompilerTokenKind.Semicolon, "; expected after procedure header");
+
+        var savedSection = _declarationSection;
+        var savedDataOffset = _dataOffset;
+        _declarationSection = 0;
+        _dataOffset = 0;
+        ParseDeclarations();
+        ParseProcedureDeclarations();
+
+        if (_current.Kind == OberonCompilerTokenKind.Begin)
+        {
+            Next();
+            SkipStatementSequence();
+        }
+
+        Expect(OberonCompilerTokenKind.End, "END expected after procedure");
+        if (_current.Kind == OberonCompilerTokenKind.Identifier)
+        {
+            if (name.Length != 0 && _current.Lexeme != name)
+                AddDiagnostic($"procedure name '{name}' expected");
+            Next();
+        }
+
+        _symbols.CloseScope();
+        _declarationSection = savedSection;
+        _dataOffset = savedDataOffset;
+    }
+
+    private void ParseFormalParameters(OberonCompilerType procedureType)
+    {
+        if (_current.Kind != OberonCompilerTokenKind.LeftParenthesis) return;
+        Next();
+        if (_current.Kind == OberonCompilerTokenKind.RightParenthesis)
+        {
+            Next();
+            return;
+        }
+
+        var offset = 4;
+        while (true)
+        {
+            var byReference = false;
+            if (_current.Kind == OberonCompilerTokenKind.Var)
+            {
+                byReference = true;
+                Next();
+            }
+
+            var names = ParseIdentifierList();
+            Expect(OberonCompilerTokenKind.Colon, ": expected in parameter declaration");
+            var type = ParseType();
+            foreach (var (name, _) in names)
+            {
+                offset = Align(offset, 4);
+                var parameter = _symbols.Declare(
+                    name,
+                    OberonCompilerObjectClass.Parameter,
+                    type,
+                    offset,
+                    readOnly: !byReference);
+                procedureType.AddParameter(parameter);
+                offset += 4;
+            }
+
+            if (_current.Kind != OberonCompilerTokenKind.Semicolon) break;
+            Next();
+        }
+
+        procedureType.ParameterCount = procedureType.Parameters.Count;
+        Expect(OberonCompilerTokenKind.RightParenthesis, ") expected after parameter list");
+        if (_current.Kind == OberonCompilerTokenKind.Colon)
+        {
+            Next();
+            procedureType.Base = ParseType();
         }
     }
 

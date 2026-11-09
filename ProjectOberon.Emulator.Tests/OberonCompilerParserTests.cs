@@ -5,6 +5,7 @@ internal static class OberonCompilerParserTests
     public static void Run()
     {
         ParsesModuleDeclarations();
+        ParsesProcedureDeclarations();
         FoldsConstantExpressions();
         ReportsDeclarationErrors();
     }
@@ -56,6 +57,39 @@ internal static class OberonCompilerParserTests
 
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Count > 0);
+    }
+
+    private static void ParsesProcedureDeclarations()
+    {
+        const string source = """
+            MODULE Procedures;
+            PROCEDURE Add*(VAR left: INTEGER; right: INTEGER): INTEGER;
+            VAR local: INTEGER;
+            BEGIN
+            END Add;
+            PROCEDURE Outer;
+              PROCEDURE Inner;
+              BEGIN
+              END Inner;
+            BEGIN
+            END Outer;
+            END Procedures.
+            """;
+
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var scope = result.ModuleScope!;
+        var add = Find(scope, "Add")!;
+        TestAssertions.Equal(OberonCompilerObjectClass.Procedure, add.Class);
+        TestAssertions.True(add.Exported);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, add.Type!.Base!.Form);
+        TestAssertions.Equal(2, add.Type.ParameterCount);
+        TestAssertions.Equal("left", add.Type.Parameters[0].Name);
+        TestAssertions.False(add.Type.Parameters[0].ReadOnly);
+        TestAssertions.Equal("right", add.Type.Parameters[1].Name);
+        TestAssertions.True(add.Type.Parameters[1].ReadOnly);
+        TestAssertions.Equal(OberonCompilerObjectClass.Procedure, Find(scope, "Outer")!.Class);
     }
 
     private static void FoldsConstantExpressions()
