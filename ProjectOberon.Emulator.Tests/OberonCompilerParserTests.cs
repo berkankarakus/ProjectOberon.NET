@@ -5,6 +5,7 @@ internal static class OberonCompilerParserTests
     public static void Run()
     {
         ParsesModuleDeclarations();
+        FoldsConstantExpressions();
         ReportsDeclarationErrors();
     }
 
@@ -55,6 +56,22 @@ internal static class OberonCompilerParserTests
 
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Count > 0);
+    }
+
+    private static void FoldsConstantExpressions()
+    {
+        const string source = "MODULE Expr; CONST a = 2 + 3 * 4; b = a DIV 5; c = ~FALSE; d = 1 < 2; r = 1.5 + 2.5; nr = -1.5; END Expr.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var scope = result.ModuleScope!;
+        TestAssertions.Equal(14L, Find(scope, "a")!.Value);
+        TestAssertions.Equal(2L, Find(scope, "b")!.Value);
+        TestAssertions.Equal(1L, Find(scope, "c")!.Value);
+        TestAssertions.Equal(1L, Find(scope, "d")!.Value);
+        TestAssertions.Equal(OberonCompilerTypeForm.Real, Find(scope, "r")!.Type!.Form);
+        TestAssertions.Equal(BitConverter.SingleToInt32Bits(4f), checked((int)Find(scope, "r")!.Value));
+        TestAssertions.Equal(BitConverter.SingleToInt32Bits(-1.5f), checked((int)Find(scope, "nr")!.Value));
     }
 
     private static OberonCompilerObject? Find(OberonCompilerScope scope, string name) =>

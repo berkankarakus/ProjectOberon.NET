@@ -130,7 +130,7 @@ public sealed class OberonCompilerParser
             Next();
             var exported = TakeExportMarker();
             Expect(OberonCompilerTokenKind.Equal, "= expected in constant declaration");
-            var value = ParseConstantValue();
+            var value = ParseConstantExpression();
             _symbols.Declare(name, OberonCompilerObjectClass.Constant, value.Type, value.Value, exported);
             Expect(OberonCompilerTokenKind.Semicolon, "; expected after constant declaration");
         }
@@ -244,46 +244,262 @@ public sealed class OberonCompilerParser
         return record;
     }
 
-    private (OberonCompilerType Type, long Value) ParseConstantValue()
+    private ConstantValue ParseConstantExpression() => ParseRelation();
+
+    private ConstantValue ParseRelation()
+    {
+        var left = ParseSimpleExpression();
+        if (!IsRelation(_current.Kind)) return left;
+
+        var operation = _current.Kind;
+        Next();
+        var right = ParseSimpleExpression();
+        if (!AreComparable(left, right))
+        {
+            AddDiagnostic("incompatible types in comparison");
+            return ConstantValue.Boolean(_symbols, false);
+        }
+
+        var comparison = Compare(left, right, operation);
+        return ConstantValue.Boolean(_symbols, comparison);
+    }
+
+    private ConstantValue ParseSimpleExpression()
     {
         var negative = false;
-        if (_current.Kind == OberonCompilerTokenKind.Minus)
+        var positive = false;
+        if (_current.Kind is OberonCompilerTokenKind.Minus or OberonCompilerTokenKind.Plus)
         {
-            negative = true;
+            negative = _current.Kind == OberonCompilerTokenKind.Minus;
+            positive = !negative;
             Next();
+        }
+
+        var value = ParseTerm();
+        if (negative || positive)
+        {
+            if (!value.IsNumeric)
+            {
+                AddDiagnostic("numeric expression expected");
+            }
+            else if (negative)
+            {
+                value = value.Negate();
+            }
+        }
+
+        while (_current.Kind is OberonCompilerTokenKind.Plus
+            or OberonCompilerTokenKind.Minus
+            or OberonCompilerTokenKind.Or)
+        {
+            var operation = _current.Kind;
+            Next();
+            var right = ParseTerm();
+            value = ApplyBinary(value, right, operation);
+        }
+
+        return value;
+    }
+
+    private ConstantValue ParseTerm()
+    {
+        var value = ParseFactor();
+        while (_current.Kind is OberonCompilerTokenKind.Multiply
+            or OberonCompilerTokenKind.RealDivide
+            or OberonCompilerTokenKind.Divide
+            or OberonCompilerTokenKind.Mod
+            or OberonCompilerTokenKind.And)
+        {
+            var operation = _current.Kind;
+            Next();
+            var right = ParseFactor();
+            value = ApplyBinary(value, right, operation);
+        }
+
+        return value;
+    }
+
+    private ConstantValue ParseFactor()
+    {
+        if (_current.Kind == OberonCompilerTokenKind.Not)
+        {
+            Next();
+            var value = ParseFactor();
+            if (value.Type.Form != OberonCompilerTypeForm.Boolean)
+            {
+                AddDiagnostic("boolean expression expected after ~");
+                return ConstantValue.Boolean(_symbols, false);
+            }
+            return ConstantValue.Boolean(_symbols, value.IntegerValue == 0);
+        }
+
+        if (_current.Kind == OberonCompilerTokenKind.LeftParenthesis)
+        {
+            Next();
+            var value = ParseConstantExpression();
+            Expect(OberonCompilerTokenKind.RightParenthesis, ") expected in expression");
+            return value;
         }
 
         var token = _current;
         Next();
-        var integerValue = token.IntegerValue ?? 0;
         return token.Kind switch
         {
-            OberonCompilerTokenKind.Integer => (_symbols.IntegerType,
-                negative ? -integerValue : integerValue),
-            OberonCompilerTokenKind.Character => (_symbols.CharacterType, token.CharacterValue!.Value),
-            OberonCompilerTokenKind.Real => (_symbols.RealType,
-                BitConverter.SingleToInt32Bits((float)(negative ? -token.RealValue!.Value : token.RealValue!.Value))),
-            OberonCompilerTokenKind.String => (_symbols.StringType, 0),
-            OberonCompilerTokenKind.True => (_symbols.BooleanType, 1),
-            OberonCompilerTokenKind.False => (_symbols.BooleanType, 0),
-            OberonCompilerTokenKind.Nil => (_symbols.NilType, 0),
-            OberonCompilerTokenKind.Identifier => ResolveConstant(token),
+            OberonCompilerTokenKind.Integer => ConstantValue.Integer(_symbols, token.IntegerValue ?? 0),
+            OberonCompilerTokenKind.Character => ConstantValue.Character(_symbols, token.CharacterValue ?? 0),
+            OberonCompilerTokenKind.Real => ConstantValue.Real(_symbols, token.RealValue ?? 0),
+            OberonCompilerTokenKind.True => ConstantValue.Boolean(_symbols, true),
+            OberonCompilerTokenKind.False => ConstantValue.Boolean(_symbols, false),
+            OberonCompilerTokenKind.Nil => new ConstantValue(_symbols.NilType, 0, 0),
+            OberonCompilerTokenKind.String => new ConstantValue(_symbols.StringType, 0, 0),
+            OberonCompilerTokenKind.Identifier => ResolveConstantValue(token),
             _ => InvalidConstant()
         };
     }
 
-    private (OberonCompilerType Type, long Value) ResolveConstant(OberonCompilerToken token)
+    private ConstantValue ResolveConstantValue(OberonCompilerToken token)
     {
         var obj = _symbols.Lookup(token.Lexeme);
-        if (obj?.Class == OberonCompilerObjectClass.Constant && obj.Type is not null) return (obj.Type, obj.Value);
-        AddDiagnostic($"constant '{token.Lexeme}' is not defined");
-        return (_symbols.IntegerType, 0);
+        if (obj?.Class != OberonCompilerObjectClass.Constant || obj.Type is null)
+        {
+            AddDiagnostic($"constant '{token.Lexeme}' is not defined");
+            return ConstantValue.Integer(_symbols, 0);
+        }
+
+        if (obj.Type.Form == OberonCompilerTypeForm.Real)
+            return ConstantValue.Real(_symbols, BitConverter.Int32BitsToSingle(checked((int)obj.Value)));
+        return new ConstantValue(obj.Type, obj.Value, obj.Value);
     }
 
-    private (OberonCompilerType Type, long Value) InvalidConstant()
+    private ConstantValue ApplyBinary(ConstantValue left, ConstantValue right, OberonCompilerTokenKind operation)
+    {
+        if (operation == OberonCompilerTokenKind.Or || operation == OberonCompilerTokenKind.And)
+        {
+            if (left.Type.Form != OberonCompilerTypeForm.Boolean || right.Type.Form != OberonCompilerTypeForm.Boolean)
+            {
+                AddDiagnostic("boolean operands expected");
+                return ConstantValue.Boolean(_symbols, false);
+            }
+
+            var result = operation == OberonCompilerTokenKind.Or
+                ? left.IntegerValue != 0 || right.IntegerValue != 0
+                : left.IntegerValue != 0 && right.IntegerValue != 0;
+            return ConstantValue.Boolean(_symbols, result);
+        }
+
+        if (!left.IsNumeric || !right.IsNumeric)
+        {
+            AddDiagnostic("numeric operands expected");
+            return ConstantValue.Integer(_symbols, 0);
+        }
+
+        var real = left.Type.Form == OberonCompilerTypeForm.Real || right.Type.Form == OberonCompilerTypeForm.Real;
+        if (operation == OberonCompilerTokenKind.Mod && real)
+        {
+            AddDiagnostic("MOD requires integer operands");
+            return ConstantValue.Integer(_symbols, 0);
+        }
+
+        if (operation == OberonCompilerTokenKind.Divide && real)
+        {
+            AddDiagnostic("DIV requires integer operands");
+            return ConstantValue.Integer(_symbols, 0);
+        }
+
+        if (operation == OberonCompilerTokenKind.RealDivide)
+        {
+            if (right.NumericValue == 0) AddDiagnostic("division by zero");
+            return ConstantValue.Real(_symbols, left.NumericValue / right.NumericValue);
+        }
+
+        if (real)
+        {
+            var result = operation switch
+            {
+                OberonCompilerTokenKind.Plus => left.NumericValue + right.NumericValue,
+                OberonCompilerTokenKind.Minus => left.NumericValue - right.NumericValue,
+                OberonCompilerTokenKind.Multiply => left.NumericValue * right.NumericValue,
+                _ => 0
+            };
+            return ConstantValue.Real(_symbols, result);
+        }
+
+        var integerResult = operation switch
+        {
+            OberonCompilerTokenKind.Plus => left.IntegerValue + right.IntegerValue,
+            OberonCompilerTokenKind.Minus => left.IntegerValue - right.IntegerValue,
+            OberonCompilerTokenKind.Multiply => left.IntegerValue * right.IntegerValue,
+            OberonCompilerTokenKind.Divide => right.IntegerValue == 0 ? 0 : left.IntegerValue / right.IntegerValue,
+            OberonCompilerTokenKind.Mod => right.IntegerValue == 0 ? 0 : left.IntegerValue % right.IntegerValue,
+            _ => 0
+        };
+        if (operation is OberonCompilerTokenKind.Divide or OberonCompilerTokenKind.Mod && right.IntegerValue == 0)
+            AddDiagnostic("division by zero");
+        return ConstantValue.Integer(_symbols, integerResult);
+    }
+
+    private bool AreComparable(ConstantValue left, ConstantValue right) =>
+        left.Type.Form == right.Type.Form || left.IsNumeric && right.IsNumeric;
+
+    private bool Compare(ConstantValue left, ConstantValue right, OberonCompilerTokenKind operation)
+    {
+        var result = left.Type.Form == OberonCompilerTypeForm.Real || right.Type.Form == OberonCompilerTypeForm.Real
+            ? (left.NumericValue, right.NumericValue)
+            : (left.IntegerValue, right.IntegerValue);
+        return operation switch
+        {
+            OberonCompilerTokenKind.Equal => result.Item1 == result.Item2,
+            OberonCompilerTokenKind.NotEqual => result.Item1 != result.Item2,
+            OberonCompilerTokenKind.Less => result.Item1 < result.Item2,
+            OberonCompilerTokenKind.LessOrEqual => result.Item1 <= result.Item2,
+            OberonCompilerTokenKind.Greater => result.Item1 > result.Item2,
+            OberonCompilerTokenKind.GreaterOrEqual => result.Item1 >= result.Item2,
+            _ => false
+        };
+    }
+
+    private static bool IsRelation(OberonCompilerTokenKind kind) => kind is
+        OberonCompilerTokenKind.Equal or OberonCompilerTokenKind.NotEqual or
+        OberonCompilerTokenKind.Less or OberonCompilerTokenKind.LessOrEqual or
+        OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual;
+
+    private ConstantValue InvalidConstant()
     {
         AddDiagnostic("constant value expected");
-        return (_symbols.IntegerType, 0);
+        return ConstantValue.Integer(_symbols, 0);
+    }
+
+    private readonly record struct ConstantValue(
+        OberonCompilerType Type,
+        long IntegerValue,
+        double NumericValue)
+    {
+        public long Value => IntegerValue;
+
+        public bool IsNumeric => Type.Form is OberonCompilerTypeForm.Byte
+            or OberonCompilerTypeForm.Character
+            or OberonCompilerTypeForm.Integer
+            or OberonCompilerTypeForm.Real;
+
+        public ConstantValue Negate() => Type.Form == OberonCompilerTypeForm.Real
+            ? this with
+            {
+                IntegerValue = BitConverter.SingleToInt32Bits((float)-NumericValue),
+                NumericValue = -NumericValue
+            }
+            : this with { IntegerValue = -IntegerValue, NumericValue = -NumericValue };
+
+        public static ConstantValue Integer(OberonCompilerSymbols symbols, long value) =>
+            new(symbols.IntegerType, value, value);
+
+        public static ConstantValue Character(OberonCompilerSymbols symbols, long value) =>
+            new(symbols.CharacterType, value, value);
+
+        public static ConstantValue Real(OberonCompilerSymbols symbols, double value) =>
+            new(symbols.RealType, BitConverter.SingleToInt32Bits((float)value), value);
+
+        public static ConstantValue Boolean(OberonCompilerSymbols symbols, bool value) =>
+            new(symbols.BooleanType, value ? 1 : 0, value ? 1 : 0);
     }
 
     private List<(string Name, bool Exported)> ParseIdentifierList()
