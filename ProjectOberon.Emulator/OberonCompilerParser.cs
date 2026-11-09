@@ -4,7 +4,8 @@ public sealed record OberonCompilerModuleParseResult(
     string? ModuleName,
     OberonCompilerObject? Module,
     OberonCompilerScope? ModuleScope,
-    IReadOnlyList<OberonCompilerDiagnostic> Diagnostics)
+    IReadOnlyList<OberonCompilerDiagnostic> Diagnostics,
+    OberonCompilerStatementSequence? Body = null)
 {
     public bool Succeeded => Diagnostics.Count == 0 && Module is not null;
 }
@@ -30,6 +31,7 @@ public sealed class OberonCompilerParser
         string? moduleName = null;
         OberonCompilerObject? module = null;
         OberonCompilerScope? moduleScope = null;
+        OberonCompilerStatementSequence? body = null;
 
         Expect(OberonCompilerTokenKind.Module, "MODULE expected");
         if (TryIdentifier(out var name))
@@ -53,7 +55,7 @@ public sealed class OberonCompilerParser
         if (_current.Kind == OberonCompilerTokenKind.Begin)
         {
             Next();
-            SkipStatementSequence();
+            body = ParseStatementSequence();
         }
 
         Expect(OberonCompilerTokenKind.End, "END expected");
@@ -66,7 +68,7 @@ public sealed class OberonCompilerParser
         Expect(OberonCompilerTokenKind.Period, ". expected after module");
 
         foreach (var diagnostic in _scanner.Diagnostics) _diagnostics.Add(diagnostic);
-        return new OberonCompilerModuleParseResult(moduleName, module, moduleScope, _diagnostics);
+        return new OberonCompilerModuleParseResult(moduleName, module, moduleScope, _diagnostics, body);
     }
 
     private void ParseImports()
@@ -348,6 +350,192 @@ public sealed class OberonCompilerParser
     }
 
     private ConstantValue ParseConstantExpression() => ParseRelation();
+
+    private OberonCompilerStatementSequence ParseStatementSequence()
+    {
+        var statements = new List<OberonCompilerStatement>();
+        while (_current.Kind is not (OberonCompilerTokenKind.End
+            or OberonCompilerTokenKind.Else
+            or OberonCompilerTokenKind.Elsif
+            or OberonCompilerTokenKind.Until
+            or OberonCompilerTokenKind.EndOfText))
+        {
+            if (_current.Kind == OberonCompilerTokenKind.Semicolon)
+            {
+                Next();
+                continue;
+            }
+
+            var statement = ParseStatement();
+            if (statement is not null) statements.Add(statement);
+            if (_current.Kind == OberonCompilerTokenKind.Semicolon)
+            {
+                Next();
+            }
+            else if (_current.Kind is not (OberonCompilerTokenKind.End
+                or OberonCompilerTokenKind.Else
+                or OberonCompilerTokenKind.Elsif
+                or OberonCompilerTokenKind.Until
+                or OberonCompilerTokenKind.EndOfText))
+            {
+                AddDiagnostic("; expected between statements");
+                RecoverTo(OberonCompilerTokenKind.Semicolon,
+                    OberonCompilerTokenKind.End,
+                    OberonCompilerTokenKind.EndOfText);
+                if (_current.Kind == OberonCompilerTokenKind.Semicolon) Next();
+            }
+        }
+
+        return new OberonCompilerStatementSequence(statements);
+    }
+
+    private OberonCompilerStatement? ParseStatement()
+    {
+        if (_current.Kind == OberonCompilerTokenKind.Return)
+        {
+            Next();
+            var value = _current.Kind == OberonCompilerTokenKind.Semicolon
+                ? null
+                : ParseRuntimeExpression();
+            return new OberonCompilerReturnStatement(value);
+        }
+
+        if (_current.Kind != OberonCompilerTokenKind.Identifier)
+        {
+            AddDiagnostic("statement expected");
+            Next();
+            return null;
+        }
+
+        var name = _current.Lexeme;
+        var symbol = _symbols.Lookup(name);
+        Next();
+        var reference = new OberonCompilerNameExpression(name, symbol);
+        if (_current.Kind == OberonCompilerTokenKind.Becomes)
+        {
+            Next();
+            return new OberonCompilerAssignmentStatement(reference, ParseRuntimeExpression());
+        }
+
+        var arguments = _current.Kind == OberonCompilerTokenKind.LeftParenthesis
+            ? ParseArgumentList()
+            : [];
+        if (symbol?.Class != OberonCompilerObjectClass.Procedure)
+            AddDiagnostic($"procedure '{name}' is not defined");
+        return new OberonCompilerCallStatement(reference, arguments);
+    }
+
+    private IReadOnlyList<OberonCompilerExpression> ParseArgumentList()
+    {
+        Next();
+        var arguments = new List<OberonCompilerExpression>();
+        while (_current.Kind != OberonCompilerTokenKind.RightParenthesis
+            && _current.Kind != OberonCompilerTokenKind.EndOfText)
+        {
+            arguments.Add(ParseRuntimeExpression());
+            if (_current.Kind != OberonCompilerTokenKind.Comma) break;
+            Next();
+        }
+
+        Expect(OberonCompilerTokenKind.RightParenthesis, ") expected after argument list");
+        return arguments;
+    }
+
+    private OberonCompilerExpression ParseRuntimeExpression() => ParseRuntimeRelation();
+
+    private OberonCompilerExpression ParseRuntimeRelation()
+    {
+        var expression = ParseRuntimeSimpleExpression();
+        if (!IsRelation(_current.Kind)) return expression;
+        var operation = _current.Kind;
+        Next();
+        return new OberonCompilerBinaryExpression(operation, expression, ParseRuntimeSimpleExpression());
+    }
+
+    private OberonCompilerExpression ParseRuntimeSimpleExpression()
+    {
+        OberonCompilerTokenKind? unary = null;
+        if (_current.Kind is OberonCompilerTokenKind.Plus or OberonCompilerTokenKind.Minus)
+        {
+            unary = _current.Kind;
+            Next();
+        }
+
+        var expression = ParseRuntimeTerm();
+        if (unary is not null)
+            expression = new OberonCompilerUnaryExpression(unary.Value, expression);
+
+        while (_current.Kind is OberonCompilerTokenKind.Plus
+            or OberonCompilerTokenKind.Minus
+            or OberonCompilerTokenKind.Or)
+        {
+            var operation = _current.Kind;
+            Next();
+            expression = new OberonCompilerBinaryExpression(operation, expression, ParseRuntimeTerm());
+        }
+
+        return expression;
+    }
+
+    private OberonCompilerExpression ParseRuntimeTerm()
+    {
+        var expression = ParseRuntimeFactor();
+        while (_current.Kind is OberonCompilerTokenKind.Multiply
+            or OberonCompilerTokenKind.RealDivide
+            or OberonCompilerTokenKind.Divide
+            or OberonCompilerTokenKind.Mod
+            or OberonCompilerTokenKind.And)
+        {
+            var operation = _current.Kind;
+            Next();
+            expression = new OberonCompilerBinaryExpression(operation, expression, ParseRuntimeFactor());
+        }
+
+        return expression;
+    }
+
+    private OberonCompilerExpression ParseRuntimeFactor()
+    {
+        if (_current.Kind == OberonCompilerTokenKind.Not)
+        {
+            Next();
+            return new OberonCompilerUnaryExpression(
+                OberonCompilerTokenKind.Not,
+                ParseRuntimeFactor());
+        }
+
+        if (_current.Kind == OberonCompilerTokenKind.LeftParenthesis)
+        {
+            Next();
+            var expression = ParseRuntimeExpression();
+            Expect(OberonCompilerTokenKind.RightParenthesis, ") expected in expression");
+            return expression;
+        }
+
+        var token = _current;
+        Next();
+        return token.Kind switch
+        {
+            OberonCompilerTokenKind.Integer => new OberonCompilerLiteralExpression(
+                _symbols.IntegerType, token.IntegerValue ?? 0),
+            OberonCompilerTokenKind.Character => new OberonCompilerLiteralExpression(
+                _symbols.CharacterType, token.CharacterValue ?? 0),
+            OberonCompilerTokenKind.Real => new OberonCompilerLiteralExpression(
+                _symbols.RealType, BitConverter.SingleToInt32Bits((float)(token.RealValue ?? 0))),
+            OberonCompilerTokenKind.True => new OberonCompilerLiteralExpression(_symbols.BooleanType, 1),
+            OberonCompilerTokenKind.False => new OberonCompilerLiteralExpression(_symbols.BooleanType, 0),
+            OberonCompilerTokenKind.Nil => new OberonCompilerLiteralExpression(_symbols.NilType, 0),
+            OberonCompilerTokenKind.Identifier => new OberonCompilerNameExpression(
+                token.Lexeme, _symbols.Lookup(token.Lexeme)),
+            _ => InvalidRuntimeExpression()
+        };
+    }
+
+    private OberonCompilerExpression InvalidRuntimeExpression()
+    {
+        AddDiagnostic("expression expected");
+        return new OberonCompilerLiteralExpression(_symbols.IntegerType, 0);
+    }
 
     private ConstantValue ParseRelation()
     {

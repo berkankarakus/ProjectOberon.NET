@@ -6,6 +6,7 @@ internal static class OberonCompilerParserTests
     {
         ParsesModuleDeclarations();
         ParsesProcedureDeclarations();
+        ParsesModuleStatements();
         FoldsConstantExpressions();
         ReportsDeclarationErrors();
     }
@@ -106,6 +107,39 @@ internal static class OberonCompilerParserTests
         TestAssertions.Equal(OberonCompilerTypeForm.Real, Find(scope, "r")!.Type!.Form);
         TestAssertions.Equal(BitConverter.SingleToInt32Bits(4f), checked((int)Find(scope, "r")!.Value));
         TestAssertions.Equal(BitConverter.SingleToInt32Bits(-1.5f), checked((int)Find(scope, "nr")!.Value));
+    }
+
+    private static void ParsesModuleStatements()
+    {
+        const string source = """
+            MODULE Statements;
+            VAR value: INTEGER;
+            PROCEDURE Ping;
+            BEGIN
+            END Ping;
+            BEGIN
+              value := 1 + 2 * 3;
+              Ping(value, value + 1);
+              RETURN value;
+            END Statements.
+            """;
+
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var body = result.Body!;
+        TestAssertions.Equal(3, body.Statements.Count);
+        var assignment = (OberonCompilerAssignmentStatement)body.Statements[0];
+        TestAssertions.Equal("value", assignment.Target.Name);
+        var addition = (OberonCompilerBinaryExpression)assignment.Value;
+        TestAssertions.Equal(OberonCompilerTokenKind.Plus, addition.Operator);
+        var multiplication = (OberonCompilerBinaryExpression)addition.Right;
+        TestAssertions.Equal(OberonCompilerTokenKind.Multiply, multiplication.Operator);
+
+        var call = (OberonCompilerCallStatement)body.Statements[1];
+        TestAssertions.Equal("Ping", call.Procedure.Name);
+        TestAssertions.Equal(2, call.Arguments.Count);
+        TestAssertions.True(body.Statements[2] is OberonCompilerReturnStatement);
     }
 
     private static OberonCompilerObject? Find(OberonCompilerScope scope, string name) =>
