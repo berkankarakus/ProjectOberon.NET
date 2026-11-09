@@ -40,6 +40,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon disk format", OberonDiskFormatTests.Run),
     ("Oberon file system", OberonFileSystemTests.Run),
     ("Oberon text model", OberonTextTests.Run),
+    ("Oberon compiler scanner", OberonCompilerScannerTests.Run),
     ("Oberon fonts", OberonFontTests.Run),
     ("Oberon text frames", OberonTextFrameTests.Run),
     ("Oberon viewers", OberonViewerTests.Run),
