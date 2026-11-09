@@ -9,6 +9,7 @@ internal static class OberonCompilerParserTests
         ParsesModuleStatements();
         FoldsConstantExpressions();
         ReportsDeclarationErrors();
+        ReportsUndefinedRuntimeNames();
     }
 
     private static void ParsesModuleDeclarations()
@@ -58,6 +59,16 @@ internal static class OberonCompilerParserTests
 
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Count > 0);
+    }
+
+    private static void ReportsUndefinedRuntimeNames()
+    {
+        const string source = "MODULE Broken; VAR value: INTEGER; BEGIN value := missing; END Broken.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("missing", StringComparison.Ordinal)));
     }
 
     private static void ParsesProcedureDeclarations()

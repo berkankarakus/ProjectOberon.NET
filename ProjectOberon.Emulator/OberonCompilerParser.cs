@@ -349,7 +349,8 @@ public sealed class OberonCompilerParser
         return record;
     }
 
-    private ConstantValue ParseConstantExpression() => ParseRelation();
+    private ConstantValue ParseConstantExpression() =>
+        ParseExpression(ParseConstantPrimary, ApplyConstantUnary, ApplyBinary);
 
     private OberonCompilerStatementSequence ParseStatementSequence()
     {
@@ -441,197 +442,92 @@ public sealed class OberonCompilerParser
         return arguments;
     }
 
-    private OberonCompilerExpression ParseRuntimeExpression() => ParseRuntimeRelation();
+    private OberonCompilerExpression ParseRuntimeExpression() =>
+        ParseExpression(
+            ParseRuntimePrimary,
+            static (operation, value) => new OberonCompilerUnaryExpression(operation, value),
+            static (operation, left, right) => new OberonCompilerBinaryExpression(operation, left, right));
 
-    private OberonCompilerExpression ParseRuntimeRelation()
+    private T ParseExpression<T>(
+        Func<T> parsePrimary,
+        Func<OberonCompilerTokenKind, T, T> applyUnary,
+        Func<OberonCompilerTokenKind, T, T, T> applyBinary)
     {
-        var expression = ParseRuntimeSimpleExpression();
-        if (!IsRelation(_current.Kind)) return expression;
-        var operation = _current.Kind;
-        Next();
-        return new OberonCompilerBinaryExpression(operation, expression, ParseRuntimeSimpleExpression());
-    }
-
-    private OberonCompilerExpression ParseRuntimeSimpleExpression()
-    {
-        OberonCompilerTokenKind? unary = null;
-        if (_current.Kind is OberonCompilerTokenKind.Plus or OberonCompilerTokenKind.Minus)
-        {
-            unary = _current.Kind;
-            Next();
-        }
-
-        var expression = ParseRuntimeTerm();
-        if (unary is not null)
-            expression = new OberonCompilerUnaryExpression(unary.Value, expression);
-
-        while (_current.Kind is OberonCompilerTokenKind.Plus
-            or OberonCompilerTokenKind.Minus
-            or OberonCompilerTokenKind.Or)
-        {
-            var operation = _current.Kind;
-            Next();
-            expression = new OberonCompilerBinaryExpression(operation, expression, ParseRuntimeTerm());
-        }
-
-        return expression;
-    }
-
-    private OberonCompilerExpression ParseRuntimeTerm()
-    {
-        var expression = ParseRuntimeFactor();
-        while (_current.Kind is OberonCompilerTokenKind.Multiply
-            or OberonCompilerTokenKind.RealDivide
-            or OberonCompilerTokenKind.Divide
-            or OberonCompilerTokenKind.Mod
-            or OberonCompilerTokenKind.And)
-        {
-            var operation = _current.Kind;
-            Next();
-            expression = new OberonCompilerBinaryExpression(operation, expression, ParseRuntimeFactor());
-        }
-
-        return expression;
-    }
-
-    private OberonCompilerExpression ParseRuntimeFactor()
-    {
-        if (_current.Kind == OberonCompilerTokenKind.Not)
-        {
-            Next();
-            return new OberonCompilerUnaryExpression(
-                OberonCompilerTokenKind.Not,
-                ParseRuntimeFactor());
-        }
-
-        if (_current.Kind == OberonCompilerTokenKind.LeftParenthesis)
-        {
-            Next();
-            var expression = ParseRuntimeExpression();
-            Expect(OberonCompilerTokenKind.RightParenthesis, ") expected in expression");
-            return expression;
-        }
-
-        var token = _current;
-        Next();
-        return token.Kind switch
-        {
-            OberonCompilerTokenKind.Integer => new OberonCompilerLiteralExpression(
-                _symbols.IntegerType, token.IntegerValue ?? 0),
-            OberonCompilerTokenKind.Character => new OberonCompilerLiteralExpression(
-                _symbols.CharacterType, token.CharacterValue ?? 0),
-            OberonCompilerTokenKind.Real => new OberonCompilerLiteralExpression(
-                _symbols.RealType, BitConverter.SingleToInt32Bits((float)(token.RealValue ?? 0))),
-            OberonCompilerTokenKind.True => new OberonCompilerLiteralExpression(_symbols.BooleanType, 1),
-            OberonCompilerTokenKind.False => new OberonCompilerLiteralExpression(_symbols.BooleanType, 0),
-            OberonCompilerTokenKind.Nil => new OberonCompilerLiteralExpression(_symbols.NilType, 0),
-            OberonCompilerTokenKind.Identifier => new OberonCompilerNameExpression(
-                token.Lexeme, _symbols.Lookup(token.Lexeme)),
-            _ => InvalidRuntimeExpression()
-        };
-    }
-
-    private OberonCompilerExpression InvalidRuntimeExpression()
-    {
-        AddDiagnostic("expression expected");
-        return new OberonCompilerLiteralExpression(_symbols.IntegerType, 0);
-    }
-
-    private ConstantValue ParseRelation()
-    {
-        var left = ParseSimpleExpression();
+        var left = ParseSimpleExpression(parsePrimary, applyUnary, applyBinary);
         if (!IsRelation(_current.Kind)) return left;
 
         var operation = _current.Kind;
         Next();
-        var right = ParseSimpleExpression();
-        if (!AreComparable(left, right))
-        {
-            AddDiagnostic("incompatible types in comparison");
-            return ConstantValue.Boolean(_symbols, false);
-        }
-
-        var comparison = Compare(left, right, operation);
-        return ConstantValue.Boolean(_symbols, comparison);
+        var right = ParseSimpleExpression(parsePrimary, applyUnary, applyBinary);
+        return applyBinary(operation, left, right);
     }
 
-    private ConstantValue ParseSimpleExpression()
+    private T ParseSimpleExpression<T>(
+        Func<T> parsePrimary,
+        Func<OberonCompilerTokenKind, T, T> applyUnary,
+        Func<OberonCompilerTokenKind, T, T, T> applyBinary)
     {
-        var negative = false;
-        var positive = false;
-        if (_current.Kind is OberonCompilerTokenKind.Minus or OberonCompilerTokenKind.Plus)
-        {
-            negative = _current.Kind == OberonCompilerTokenKind.Minus;
-            positive = !negative;
-            Next();
-        }
+        var unary = _current.Kind is OberonCompilerTokenKind.Plus or OberonCompilerTokenKind.Minus
+            ? _current.Kind
+            : (OberonCompilerTokenKind?)null;
+        if (unary is not null) Next();
 
-        var value = ParseTerm();
-        if (negative || positive)
-        {
-            if (!value.IsNumeric)
-            {
-                AddDiagnostic("numeric expression expected");
-            }
-            else if (negative)
-            {
-                value = value.Negate();
-            }
-        }
+        var expression = ParseTerm(parsePrimary, applyUnary, applyBinary);
+        if (unary is not null) expression = applyUnary(unary.Value, expression);
 
-        while (_current.Kind is OberonCompilerTokenKind.Plus
-            or OberonCompilerTokenKind.Minus
-            or OberonCompilerTokenKind.Or)
+        while (IsSimpleOperator(_current.Kind))
         {
             var operation = _current.Kind;
             Next();
-            var right = ParseTerm();
-            value = ApplyBinary(value, right, operation);
+            expression = applyBinary(operation, expression,
+                ParseTerm(parsePrimary, applyUnary, applyBinary));
         }
 
-        return value;
+        return expression;
     }
 
-    private ConstantValue ParseTerm()
+    private T ParseTerm<T>(
+        Func<T> parsePrimary,
+        Func<OberonCompilerTokenKind, T, T> applyUnary,
+        Func<OberonCompilerTokenKind, T, T, T> applyBinary)
     {
-        var value = ParseFactor();
-        while (_current.Kind is OberonCompilerTokenKind.Multiply
-            or OberonCompilerTokenKind.RealDivide
-            or OberonCompilerTokenKind.Divide
-            or OberonCompilerTokenKind.Mod
-            or OberonCompilerTokenKind.And)
+        var expression = ParseFactor(parsePrimary, applyUnary, applyBinary);
+        while (IsTermOperator(_current.Kind))
         {
             var operation = _current.Kind;
             Next();
-            var right = ParseFactor();
-            value = ApplyBinary(value, right, operation);
+            expression = applyBinary(operation, expression,
+                ParseFactor(parsePrimary, applyUnary, applyBinary));
         }
 
-        return value;
+        return expression;
     }
 
-    private ConstantValue ParseFactor()
+    private T ParseFactor<T>(
+        Func<T> parsePrimary,
+        Func<OberonCompilerTokenKind, T, T> applyUnary,
+        Func<OberonCompilerTokenKind, T, T, T> applyBinary)
     {
         if (_current.Kind == OberonCompilerTokenKind.Not)
         {
             Next();
-            var value = ParseFactor();
-            if (value.Type.Form != OberonCompilerTypeForm.Boolean)
-            {
-                AddDiagnostic("boolean expression expected after ~");
-                return ConstantValue.Boolean(_symbols, false);
-            }
-            return ConstantValue.Boolean(_symbols, value.IntegerValue == 0);
+            return applyUnary(OberonCompilerTokenKind.Not,
+                ParseFactor(parsePrimary, applyUnary, applyBinary));
         }
 
         if (_current.Kind == OberonCompilerTokenKind.LeftParenthesis)
         {
             Next();
-            var value = ParseConstantExpression();
+            var expression = ParseExpression(parsePrimary, applyUnary, applyBinary);
             Expect(OberonCompilerTokenKind.RightParenthesis, ") expected in expression");
-            return value;
+            return expression;
         }
 
+        return parsePrimary();
+    }
+
+    private ConstantValue ParseConstantPrimary()
+    {
         var token = _current;
         Next();
         return token.Kind switch
@@ -648,6 +544,64 @@ public sealed class OberonCompilerParser
         };
     }
 
+    private OberonCompilerExpression ParseRuntimePrimary()
+    {
+        var token = _current;
+        Next();
+        return token.Kind switch
+        {
+            OberonCompilerTokenKind.Integer => new OberonCompilerLiteralExpression(
+                _symbols.IntegerType, token.IntegerValue ?? 0),
+            OberonCompilerTokenKind.Character => new OberonCompilerLiteralExpression(
+                _symbols.CharacterType, token.CharacterValue ?? 0),
+            OberonCompilerTokenKind.Real => new OberonCompilerLiteralExpression(
+                _symbols.RealType, BitConverter.SingleToInt32Bits((float)(token.RealValue ?? 0))),
+            OberonCompilerTokenKind.True => new OberonCompilerLiteralExpression(_symbols.BooleanType, 1),
+            OberonCompilerTokenKind.False => new OberonCompilerLiteralExpression(_symbols.BooleanType, 0),
+            OberonCompilerTokenKind.Nil => new OberonCompilerLiteralExpression(_symbols.NilType, 0),
+            OberonCompilerTokenKind.Identifier => ResolveRuntimeName(token),
+            _ => InvalidRuntimeExpression()
+        };
+    }
+
+    private ConstantValue ApplyConstantUnary(OberonCompilerTokenKind operation, ConstantValue value)
+    {
+        if (operation == OberonCompilerTokenKind.Not)
+        {
+            if (value.Type.Form != OberonCompilerTypeForm.Boolean)
+            {
+                AddDiagnostic("boolean expression expected after ~");
+                return ConstantValue.Boolean(_symbols, false);
+            }
+
+            return ConstantValue.Boolean(_symbols, value.IntegerValue == 0);
+        }
+
+        if (!value.IsNumeric) AddDiagnostic("numeric expression expected");
+        return operation == OberonCompilerTokenKind.Minus ? value.Negate() : value;
+    }
+
+    private OberonCompilerExpression ResolveRuntimeName(OberonCompilerToken token)
+    {
+        var symbol = _symbols.Lookup(token.Lexeme);
+        if (symbol is null) AddDiagnostic($"identifier '{token.Lexeme}' is not defined");
+        return new OberonCompilerNameExpression(token.Lexeme, symbol);
+    }
+
+    private static bool IsSimpleOperator(OberonCompilerTokenKind kind) => kind is
+        OberonCompilerTokenKind.Plus or OberonCompilerTokenKind.Minus or OberonCompilerTokenKind.Or;
+
+    private static bool IsTermOperator(OberonCompilerTokenKind kind) => kind is
+        OberonCompilerTokenKind.Multiply or OberonCompilerTokenKind.RealDivide or
+        OberonCompilerTokenKind.Divide or OberonCompilerTokenKind.Mod or
+        OberonCompilerTokenKind.And;
+
+    private OberonCompilerExpression InvalidRuntimeExpression()
+    {
+        AddDiagnostic("expression expected");
+        return new OberonCompilerLiteralExpression(_symbols.IntegerType, 0);
+    }
+
     private ConstantValue ResolveConstantValue(OberonCompilerToken token)
     {
         var obj = _symbols.Lookup(token.Lexeme);
@@ -662,8 +616,22 @@ public sealed class OberonCompilerParser
         return new ConstantValue(obj.Type, obj.Value, obj.Value);
     }
 
-    private ConstantValue ApplyBinary(ConstantValue left, ConstantValue right, OberonCompilerTokenKind operation)
+    private ConstantValue ApplyBinary(
+        OberonCompilerTokenKind operation,
+        ConstantValue left,
+        ConstantValue right)
     {
+        if (IsRelation(operation))
+        {
+            if (!AreComparable(left, right))
+            {
+                AddDiagnostic("incompatible types in comparison");
+                return ConstantValue.Boolean(_symbols, false);
+            }
+
+            return ConstantValue.Boolean(_symbols, Compare(left, right, operation));
+        }
+
         if (operation == OberonCompilerTokenKind.Or || operation == OberonCompilerTokenKind.And)
         {
             if (left.Type.Form != OberonCompilerTypeForm.Boolean || right.Type.Form != OberonCompilerTypeForm.Boolean)
