@@ -148,33 +148,37 @@ public sealed class OberonCompilerParser
             exported: exported);
 
         _symbols.OpenScope();
-        ParseFormalParameters(procedureType);
-        Expect(OberonCompilerTokenKind.Semicolon, "; expected after procedure header");
-
         var savedSection = _declarationSection;
         var savedDataOffset = _dataOffset;
-        _declarationSection = 0;
-        _dataOffset = 0;
-        ParseDeclarations();
-        ParseProcedureDeclarations();
-
-        if (_current.Kind == OberonCompilerTokenKind.Begin)
+        try
         {
-            Next();
-            SkipStatementSequence();
-        }
+            _declarationSection = 0;
+            _dataOffset = 0;
+            ParseFormalParameters(procedureType);
+            Expect(OberonCompilerTokenKind.Semicolon, "; expected after procedure header");
+            ParseDeclarations();
+            ParseProcedureDeclarations();
 
-        Expect(OberonCompilerTokenKind.End, "END expected after procedure");
-        if (_current.Kind == OberonCompilerTokenKind.Identifier)
+            if (_current.Kind == OberonCompilerTokenKind.Begin)
+            {
+                Next();
+                SkipStatementSequence();
+            }
+
+            Expect(OberonCompilerTokenKind.End, "END expected after procedure");
+            if (_current.Kind == OberonCompilerTokenKind.Identifier)
+            {
+                if (name.Length != 0 && _current.Lexeme != name)
+                    AddDiagnostic($"procedure name '{name}' expected");
+                Next();
+            }
+        }
+        finally
         {
-            if (name.Length != 0 && _current.Lexeme != name)
-                AddDiagnostic($"procedure name '{name}' expected");
-            Next();
+            _symbols.CloseScope();
+            _declarationSection = savedSection;
+            _dataOffset = savedDataOffset;
         }
-
-        _symbols.CloseScope();
-        _declarationSection = savedSection;
-        _dataOffset = savedDataOffset;
     }
 
     private void ParseFormalParameters(OberonCompilerType procedureType)
