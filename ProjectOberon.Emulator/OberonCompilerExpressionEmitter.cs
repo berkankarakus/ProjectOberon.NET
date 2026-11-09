@@ -6,12 +6,17 @@ public sealed class OberonCompilerExpressionEmitter
 
     private readonly OberonCompilerCodeGenerator _generator;
     private readonly int _frameSize;
+    private readonly Func<OberonCompilerObject, OberonCompilerLabel?>? _procedureLabelResolver;
 
-    public OberonCompilerExpressionEmitter(OberonCompilerCodeGenerator generator, int frameSize = 0)
+    public OberonCompilerExpressionEmitter(
+        OberonCompilerCodeGenerator generator,
+        int frameSize = 0,
+        Func<OberonCompilerObject, OberonCompilerLabel?>? procedureLabelResolver = null)
     {
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
         _frameSize = frameSize;
+        _procedureLabelResolver = procedureLabelResolver;
     }
 
     public int EmitExpression(OberonCompilerExpression expression, int destination = 0)
@@ -155,7 +160,7 @@ public sealed class OberonCompilerExpressionEmitter
         var procedure = call.Procedure.Symbol ?? throw new InvalidOperationException(
             $"procedure '{call.Procedure.Name}' is not defined");
         EmitCallArguments(procedure, call.Arguments);
-        var target = procedure.CodeLabel ?? throw new InvalidOperationException(
+        var target = ResolveProcedureLabel(procedure) ?? throw new InvalidOperationException(
             $"procedure '{call.Procedure.Name}' has no code label");
         _generator.EmitCall(target);
     }
@@ -168,12 +173,15 @@ public sealed class OberonCompilerExpressionEmitter
             throw new InvalidOperationException($"'{call.Procedure.Name}' is a procedure, not a function");
 
         EmitCallArguments(procedure, call.Arguments);
-        var target = procedure.CodeLabel ?? throw new InvalidOperationException(
+        var target = ResolveProcedureLabel(procedure) ?? throw new InvalidOperationException(
             $"function '{call.Procedure.Name}' has no code label");
         _generator.EmitCall(target);
         if (destination != 0) _generator.EmitRegister(AluOperation.Mov, destination, 0, 0);
         return destination;
     }
+
+    private OberonCompilerLabel? ResolveProcedureLabel(OberonCompilerObject procedure) =>
+        _procedureLabelResolver?.Invoke(procedure);
 
     private void EmitCallArguments(
         OberonCompilerObject procedure,

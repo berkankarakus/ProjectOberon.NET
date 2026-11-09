@@ -108,9 +108,10 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(add.Type.Parameters[0].ReadOnly);
         TestAssertions.Equal("right", add.Type.Parameters[1].Name);
         TestAssertions.True(add.Type.Parameters[1].ReadOnly);
-        TestAssertions.Equal(2, add.Body!.Statements.Count);
-        TestAssertions.True(add.Body.Statements[0] is OberonCompilerAssignmentStatement);
-        TestAssertions.True(add.Body.Statements[1] is OberonCompilerReturnStatement);
+        var addDefinition = FindProcedure(result.Procedures!, "Add");
+        TestAssertions.Equal(2, addDefinition.Body!.Statements.Count);
+        TestAssertions.True(addDefinition.Body.Statements[0] is OberonCompilerAssignmentStatement);
+        TestAssertions.True(addDefinition.Body.Statements[1] is OberonCompilerReturnStatement);
         var shapes = Find(scope, "Shapes")!.Type!;
         TestAssertions.Equal(3, shapes.ParameterCount);
         TestAssertions.Equal(4L, shapes.Parameters[0].Value);
@@ -118,6 +119,9 @@ internal static class OberonCompilerParserTests
         TestAssertions.Equal(-1, shapes.Parameters[1].Type!.Length);
         TestAssertions.Equal(20L, shapes.Parameters[2].Value);
         TestAssertions.Equal(OberonCompilerObjectClass.Procedure, Find(scope, "Outer")!.Class);
+        var outerDefinition = FindProcedure(result.Procedures!, "Outer");
+        TestAssertions.Equal(1, outerDefinition.NestedProcedures.Count);
+        TestAssertions.Equal("Inner", outerDefinition.NestedProcedures[0].Symbol.Name);
     }
 
     private static void FoldsConstantExpressions()
@@ -212,4 +216,9 @@ internal static class OberonCompilerParserTests
 
     private static OberonCompilerObject? Find(OberonCompilerScope scope, string name) =>
         scope.Objects.FirstOrDefault(candidate => candidate.Name == name);
+
+    private static OberonCompilerProcedureDefinition FindProcedure(
+        IReadOnlyList<OberonCompilerProcedureDefinition> procedures,
+        string name) =>
+        procedures.Single(procedure => procedure.Symbol.Name == name);
 }

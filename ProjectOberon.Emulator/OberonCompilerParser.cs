@@ -5,7 +5,8 @@ public sealed record OberonCompilerModuleParseResult(
     OberonCompilerObject? Module,
     OberonCompilerScope? ModuleScope,
     IReadOnlyList<OberonCompilerDiagnostic> Diagnostics,
-    OberonCompilerStatementSequence? Body = null)
+    OberonCompilerStatementSequence? Body = null,
+    IReadOnlyList<OberonCompilerProcedureDefinition>? Procedures = null)
 {
     public bool Succeeded => Diagnostics.Count == 0 && Module is not null;
 }
@@ -50,7 +51,7 @@ public sealed class OberonCompilerParser
         ParseImports();
         ParseDeclarations();
 
-        ParseProcedureDeclarations();
+        var procedures = ParseProcedureDeclarations();
 
         if (_current.Kind == OberonCompilerTokenKind.Begin)
         {
@@ -68,7 +69,13 @@ public sealed class OberonCompilerParser
         Expect(OberonCompilerTokenKind.Period, ". expected after module");
 
         foreach (var diagnostic in _scanner.Diagnostics) _diagnostics.Add(diagnostic);
-        return new OberonCompilerModuleParseResult(moduleName, module, moduleScope, _diagnostics, body);
+        return new OberonCompilerModuleParseResult(
+            moduleName,
+            module,
+            moduleScope,
+            _diagnostics,
+            body,
+            procedures);
     }
 
     private void ParseImports()
@@ -118,16 +125,20 @@ public sealed class OberonCompilerParser
         }
     }
 
-    private void ParseProcedureDeclarations()
+    private IReadOnlyList<OberonCompilerProcedureDefinition> ParseProcedureDeclarations()
     {
+        var procedures = new List<OberonCompilerProcedureDefinition>();
         while (_current.Kind == OberonCompilerTokenKind.Procedure)
         {
-            ParseProcedureDeclaration();
+            var procedure = ParseProcedureDeclaration();
+            if (procedure is not null) procedures.Add(procedure);
             Expect(OberonCompilerTokenKind.Semicolon, "; expected after procedure declaration");
         }
+
+        return procedures;
     }
 
-    private void ParseProcedureDeclaration()
+    private OberonCompilerProcedureDefinition? ParseProcedureDeclaration()
     {
         Next();
         var name = TryIdentifier(out var procedureName) ? procedureName : string.Empty;
@@ -137,7 +148,7 @@ public sealed class OberonCompilerParser
             RecoverTo(OberonCompilerTokenKind.Semicolon,
                 OberonCompilerTokenKind.End,
                 OberonCompilerTokenKind.EndOfText);
-            return;
+            return null;
         }
 
         var procedureType = _symbols.CreateProcedure(_symbols.NoneType, []);
@@ -157,13 +168,14 @@ public sealed class OberonCompilerParser
             Expect(OberonCompilerTokenKind.Semicolon, "; expected after procedure header");
             _dataOffset = ParameterFrameSize(procedureType);
             ParseDeclarations();
-            procedure.FrameSize = Align(_dataOffset, 4);
-            ParseProcedureDeclarations();
+            var frameSize = Align(_dataOffset, 4);
+            var nestedProcedures = ParseProcedureDeclarations();
+            OberonCompilerStatementSequence? body = null;
 
             if (_current.Kind == OberonCompilerTokenKind.Begin)
             {
                 Next();
-                procedure.Body = ParseStatementSequence();
+                body = ParseStatementSequence();
             }
 
             Expect(OberonCompilerTokenKind.End, "END expected after procedure");
@@ -173,6 +185,12 @@ public sealed class OberonCompilerParser
                     AddDiagnostic($"procedure name '{name}' expected");
                 Next();
             }
+
+            return new OberonCompilerProcedureDefinition(
+                procedure,
+                frameSize,
+                body,
+                nestedProcedures);
         }
         finally
         {

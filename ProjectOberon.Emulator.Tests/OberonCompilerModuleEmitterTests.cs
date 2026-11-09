@@ -9,6 +9,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsScalarVarParameterCall();
         EmitsFunctionReturnValue();
         EmitsOpenArrayParameterCall();
+        EmitsNestedProcedureCall();
     }
 
     private static void EmitsParameterlessProcedureCall()
@@ -88,5 +89,18 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[7]));
         TestAssertions.Equal("MOV r1, 0x0003", Risc5Disassembler.Format(generator.Code[8]));
         TestAssertions.True(Risc5Disassembler.Format(generator.Code[9]).StartsWith("BTL "));
+    }
+
+    private static void EmitsNestedProcedureCall()
+    {
+        const string source = "MODULE Nested; PROCEDURE Outer; PROCEDURE Inner; BEGIN END Inner; BEGIN Inner; END Outer; BEGIN Outer; END Nested.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal(2, instructions.Count(instruction => instruction.StartsWith("SUB r14, r14")));
+        TestAssertions.Equal(2, instructions.Count(instruction => instruction.StartsWith("BTL ")));
     }
 }
