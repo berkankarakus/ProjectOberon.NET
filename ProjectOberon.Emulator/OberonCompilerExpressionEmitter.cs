@@ -7,6 +7,7 @@ public sealed class OberonCompilerExpressionEmitter
     private readonly OberonCompilerCodeGenerator _generator;
     private readonly OberonCompilerAddressEmitter _addresses;
     private readonly OberonCompilerCallEmitter _calls;
+    private readonly OberonCompilerControlFlowEmitter _controlFlow;
     private readonly int _frameSize;
     private readonly OberonCompilerRegisterAllocator _registers = new();
 
@@ -25,6 +26,10 @@ public sealed class OberonCompilerExpressionEmitter
             _registers,
             EmitExpression,
             procedureLabelResolver);
+        _controlFlow = new OberonCompilerControlFlowEmitter(
+            generator,
+            EmitExpression,
+            EmitStatementSequence);
     }
 
     public int EmitExpression(OberonCompilerExpression expression, int destination = 0)
@@ -104,13 +109,13 @@ public sealed class OberonCompilerExpressionEmitter
                 EmitReturn();
                 break;
             case OberonCompilerIfStatement conditional:
-                EmitIf(conditional);
+                _controlFlow.EmitIf(conditional);
                 break;
             case OberonCompilerWhileStatement loop:
-                EmitWhile(loop);
+                _controlFlow.EmitWhile(loop);
                 break;
             case OberonCompilerRepeatStatement repeat:
-                EmitRepeat(repeat);
+                _controlFlow.EmitRepeat(repeat);
                 break;
             case OberonCompilerCallStatement:
                 _calls.EmitCall((OberonCompilerCallStatement)statement);
@@ -118,49 +123,6 @@ public sealed class OberonCompilerExpressionEmitter
             default:
                 throw new NotSupportedException($"unsupported statement: {statement.GetType().Name}");
         }
-    }
-
-    private void EmitIf(OberonCompilerIfStatement conditional)
-    {
-        var end = new OberonCompilerLabel();
-        foreach (var branch in conditional.Branches)
-        {
-            var next = new OberonCompilerLabel();
-            EmitBranchIfFalse(branch.Condition, next);
-            EmitStatementSequence(branch.Body);
-            _generator.EmitBranch(end);
-            _generator.Bind(next);
-        }
-
-        if (conditional.ElseBody is not null) EmitStatementSequence(conditional.ElseBody);
-        _generator.Bind(end);
-    }
-
-    private void EmitWhile(OberonCompilerWhileStatement loop)
-    {
-        var start = new OberonCompilerLabel();
-        var end = new OberonCompilerLabel();
-        _generator.Bind(start);
-        EmitBranchIfFalse(loop.Condition, end);
-        EmitStatementSequence(loop.Body);
-        _generator.EmitBranch(start);
-        _generator.Bind(end);
-    }
-
-    private void EmitRepeat(OberonCompilerRepeatStatement repeat)
-    {
-        var start = new OberonCompilerLabel();
-        _generator.Bind(start);
-        EmitStatementSequence(repeat.Body);
-        EmitBranchIfFalse(repeat.Condition, start);
-    }
-
-    private void EmitBranchIfFalse(OberonCompilerExpression condition, OberonCompilerLabel falseLabel)
-    {
-        EmitExpression(condition);
-        _generator.EmitMoveImmediate(1, 0);
-        _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
-        _generator.EmitBranch(falseLabel, ConditionCode.Eq);
     }
 
     private int EmitField(OberonCompilerFieldExpression field, int destination)
