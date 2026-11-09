@@ -75,7 +75,8 @@ public sealed class OberonCompilerExpressionEmitter
                 EmitRepeat(repeat);
                 break;
             case OberonCompilerCallStatement:
-                throw new NotSupportedException("procedure call lowering is not implemented");
+                EmitCall((OberonCompilerCallStatement)statement);
+                break;
             default:
                 throw new NotSupportedException($"unsupported statement: {statement.GetType().Name}");
         }
@@ -122,6 +123,15 @@ public sealed class OberonCompilerExpressionEmitter
         _generator.EmitMoveImmediate(1, 0);
         _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
         _generator.EmitBranch(falseLabel, ConditionCode.Eq);
+    }
+
+    private void EmitCall(OberonCompilerCallStatement call)
+    {
+        if (call.Arguments.Count != 0)
+            throw new NotSupportedException("procedure parameter lowering is not implemented");
+        var target = call.Procedure.Symbol?.CodeLabel ?? throw new InvalidOperationException(
+            $"procedure '{call.Procedure.Name}' has no code label");
+        _generator.EmitCall(target);
     }
 
     private int EmitName(OberonCompilerNameExpression name, int destination)

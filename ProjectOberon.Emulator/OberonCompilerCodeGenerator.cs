@@ -128,6 +128,12 @@ public sealed class OberonCompilerCodeGenerator
 
     public void EmitReturn() => EmitBranchRegister(LinkRegister);
 
+    public void EmitCall(OberonCompilerLabel target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        EmitBranch(target, ConditionCode.Always, link: true);
+    }
+
     private void EmitMemory(int register, int addressRegister, int offset, bool store, bool byteValue)
     {
         ValidateRegister(register);
