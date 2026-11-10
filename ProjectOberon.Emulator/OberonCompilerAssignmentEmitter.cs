@@ -27,6 +27,13 @@ public sealed class OberonCompilerAssignmentEmitter
     public void EmitAssignment(OberonCompilerAssignmentStatement assignment)
     {
         ArgumentNullException.ThrowIfNull(assignment);
+        var targetType = ExpressionType(assignment.Target);
+        if (OberonCompilerTypeRules.IsAggregate(targetType))
+        {
+            EmitAggregateCopy(assignment.Target, assignment.Value, targetType!.Size);
+            return;
+        }
+
         _emitExpression(assignment.Value, 0);
         if (assignment.Target is OberonCompilerFieldExpression field)
         {
@@ -65,5 +72,38 @@ public sealed class OberonCompilerAssignmentEmitter
         var addressRegister = _addresses.EmitStorageBase(target, 1);
         _generator.EmitStore(0, addressRegister, offset, OberonCompilerTypeRules.IsByteSized(target.Type));
     }
+
+    private void EmitAggregateCopy(
+        OberonCompilerExpression target,
+        OberonCompilerExpression source,
+        int size)
+    {
+        _addresses.EmitAddress(source, 1);
+        using var protectedSource = _registers.ReserveRange(1, 1);
+        _addresses.EmitAddress(target, 2);
+
+        var offset = 0;
+        while (offset + 4 <= size)
+        {
+            _generator.EmitLoad(0, 1, offset);
+            _generator.EmitStore(0, 2, offset);
+            offset += 4;
+        }
+
+        while (offset < size)
+        {
+            _generator.EmitLoad(0, 1, offset, byteValue: true);
+            _generator.EmitStore(0, 2, offset, byteValue: true);
+            offset++;
+        }
+    }
+
+    private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression) => expression switch
+    {
+        OberonCompilerNameExpression name => name.Symbol?.Type,
+        OberonCompilerFieldExpression field => field.Field.Type,
+        OberonCompilerIndexExpression index => index.ElementType,
+        _ => null
+    };
 
 }

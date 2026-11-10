@@ -9,6 +9,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsPackedByteLoadsAndStores();
         EmitsControlFlow();
         EmitsRecordFieldLoadAndStore();
+        EmitsAggregateRecordCopy();
         AllocatesScratchRegistersWithoutUsingDestinationPlusOne();
         EmitsFieldAddressThroughDedicatedEmitter();
         EmitsArrayIndexLoadAndStore();
@@ -127,6 +128,23 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("MOV r11, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("MOV r0, 0x0003", Risc5Disassembler.Format(generator.Code[1]));
         TestAssertions.Equal("ADD r11, r11, r0", Risc5Disassembler.Format(generator.Code[2]));
+    }
+
+    private static void EmitsAggregateRecordCopy()
+    {
+        const string source = "MODULE Records; TYPE Pair = RECORD left, right: INTEGER; END; VAR source, target: Pair; BEGIN target := source; END Records.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
+
+        TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("ADD r2, r13, 0x0008", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("LDR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("STR r0, [r2, 0]", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("LDR r0, [r1, 4]", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("STR r0, [r2, 4]", Risc5Disassembler.Format(generator.Code[5]));
     }
 
     private static void EmitsFieldAddressThroughDedicatedEmitter()

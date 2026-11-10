@@ -9,4 +9,7 @@ internal static class OberonCompilerTypeRules
     public static bool IsByteSized(OberonCompilerType? type) => type?.Form is
         OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean
         or OberonCompilerTypeForm.Character;
+
+    public static bool IsAggregate(OberonCompilerType? type) => type?.Form is
+        OberonCompilerTypeForm.Array or OberonCompilerTypeForm.Record;
 }
