@@ -129,6 +129,7 @@ public sealed class OberonCompilerSemanticChecker
         OberonCompilerCallExpression call => CheckCall(call.Procedure, call.Arguments, valueRequired: true),
         OberonCompilerFieldExpression field => CheckField(field),
         OberonCompilerIndexExpression index => CheckIndex(index),
+        OberonCompilerDereferenceExpression dereference => CheckDereference(dereference),
         OberonCompilerUnaryExpression unary => CheckUnary(unary),
         OberonCompilerBinaryExpression binary => CheckBinary(binary),
         _ => null
@@ -151,6 +152,14 @@ public sealed class OberonCompilerSemanticChecker
         if (indexType?.Form != OberonCompilerTypeForm.Integer)
             AddDiagnostic("array index must be INTEGER");
         return index.ElementType;
+    }
+
+    private OberonCompilerType? CheckDereference(OberonCompilerDereferenceExpression dereference)
+    {
+        var receiverType = CheckExpression(dereference.Receiver);
+        if (receiverType?.Form != OberonCompilerTypeForm.Pointer)
+            AddDiagnostic("pointer dereference requires a POINTER receiver");
+        return dereference.ElementType;
     }
 
     private OberonCompilerType? CheckUnary(OberonCompilerUnaryExpression unary)
@@ -270,6 +279,7 @@ public sealed class OberonCompilerSemanticChecker
         OberonCompilerNameExpression { Symbol.Class: OberonCompilerObjectClass.Parameter } => true,
         OberonCompilerFieldExpression => true,
         OberonCompilerIndexExpression index => IsAddressable(index.Receiver),
+        OberonCompilerDereferenceExpression => true,
         _ => false
     };
 
@@ -293,6 +303,7 @@ public sealed class OberonCompilerSemanticChecker
             Symbol.Type: { } type
         } when OberonCompilerTypeRules.IsAggregate(type) => true,
         OberonCompilerFieldExpression => true,
+        OberonCompilerDereferenceExpression => true,
         OberonCompilerIndexExpression index => IsAddressable(index.Receiver),
         _ => false
     };

@@ -31,6 +31,14 @@ public sealed class OberonCompilerAddressEmitter
             return;
         }
 
+        if (expression is OberonCompilerDereferenceExpression dereference)
+        {
+            if (_emitExpression is null)
+                throw new InvalidOperationException("pointer dereference lowering requires an expression emitter");
+            _emitExpression(dereference.Receiver, destination);
+            return;
+        }
+
         if (expression is OberonCompilerFieldExpression field)
         {
             EmitAddress(field.Receiver, destination);

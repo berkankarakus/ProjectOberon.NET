@@ -34,6 +34,10 @@ public sealed record OberonCompilerIndexExpression(
     OberonCompilerExpression Index,
     OberonCompilerType ElementType) : OberonCompilerExpression;
 
+public sealed record OberonCompilerDereferenceExpression(
+    OberonCompilerExpression Receiver,
+    OberonCompilerType ElementType) : OberonCompilerExpression;
+
 public sealed record OberonCompilerUnaryExpression(
     OberonCompilerTokenKind Operator,
     OberonCompilerExpression Operand) : OberonCompilerExpression;

@@ -9,6 +9,7 @@ internal static class OberonCompilerParserTests
         ParsesNestedProcedureCapture();
         AcceptsIndexedVarArguments();
         AcceptsPointerValuesAndNil();
+        ParsesPointerDereference();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
         ParsesControlFlowStatements();
@@ -279,6 +280,19 @@ internal static class OberonCompilerParserTests
 
         TestAssertions.True(result.Succeeded);
         TestAssertions.Equal(0, result.Diagnostics.Count);
+    }
+
+    private static void ParsesPointerDereference()
+    {
+        const string source = "MODULE Pointers; TYPE Node = RECORD value: INTEGER; END; IntRef = POINTER TO Node; VAR pointer: IntRef; BEGIN pointer^.value := 1; END Pointers.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        TestAssertions.True(assignment.Target is OberonCompilerFieldExpression
+        {
+            Receiver: OberonCompilerDereferenceExpression
+        });
     }
 
     private static void ParsesControlFlowStatements()

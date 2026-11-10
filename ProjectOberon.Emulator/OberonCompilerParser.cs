@@ -707,8 +707,24 @@ public sealed class OberonCompilerParser
 
     private OberonCompilerExpression ParseSelectors(OberonCompilerExpression expression)
     {
-        while (_current.Kind is OberonCompilerTokenKind.Period or OberonCompilerTokenKind.LeftBracket)
+        while (_current.Kind is OberonCompilerTokenKind.Period
+            or OberonCompilerTokenKind.LeftBracket
+            or OberonCompilerTokenKind.Arrow)
         {
+            if (_current.Kind == OberonCompilerTokenKind.Arrow)
+            {
+                Next();
+                var pointerType = ExpressionType(expression);
+                if (pointerType?.Form != OberonCompilerTypeForm.Pointer || pointerType.Base is null)
+                {
+                    AddDiagnostic("pointer dereference requires a POINTER receiver");
+                    continue;
+                }
+
+                expression = new OberonCompilerDereferenceExpression(expression, pointerType.Base);
+                continue;
+            }
+
             if (_current.Kind == OberonCompilerTokenKind.LeftBracket)
             {
                 Next();
@@ -760,6 +776,7 @@ public sealed class OberonCompilerParser
         OberonCompilerCallExpression call => call.Procedure.Symbol?.Type?.Base,
         OberonCompilerFieldExpression field => field.Field.Type,
         OberonCompilerIndexExpression index => index.ElementType,
+        OberonCompilerDereferenceExpression dereference => dereference.ElementType,
         _ => null
     };
 

@@ -57,6 +57,8 @@ public sealed class OberonCompilerExpressionEmitter
                 return EmitField(field, destination);
             case OberonCompilerIndexExpression index:
                 return EmitIndex(index, destination);
+            case OberonCompilerDereferenceExpression dereference:
+                return EmitDereference(dereference, destination);
             case OberonCompilerNameExpression name:
                 return EmitName(name, destination);
             case OberonCompilerUnaryExpression unary:
@@ -83,6 +85,16 @@ public sealed class OberonCompilerExpressionEmitter
             throw new NotSupportedException("aggregate array element loads are not implemented");
         _addresses.EmitAddress(index, destination);
         _generator.EmitLoad(destination, destination, 0, OberonCompilerTypeRules.IsByteSized(index.ElementType));
+        return destination;
+    }
+
+    private int EmitDereference(OberonCompilerDereferenceExpression dereference, int destination)
+    {
+        if (!OberonCompilerTypeRules.IsScalar(dereference.ElementType))
+            throw new NotSupportedException("aggregate pointer dereference loads are not implemented");
+        _addresses.EmitAddress(dereference, destination);
+        _generator.EmitLoad(destination, destination, 0,
+            OberonCompilerTypeRules.IsByteSized(dereference.ElementType));
         return destination;
     }
 
@@ -233,6 +245,7 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerCallExpression call => call.Procedure.Symbol?.Type?.Base,
         OberonCompilerFieldExpression field => field.Field.Type,
         OberonCompilerIndexExpression index => index.ElementType,
+        OberonCompilerDereferenceExpression dereference => dereference.ElementType,
         OberonCompilerUnaryExpression unary => ExpressionType(unary.Operand),
         OberonCompilerBinaryExpression binary => ExpressionType(binary.Left),
         _ => null
