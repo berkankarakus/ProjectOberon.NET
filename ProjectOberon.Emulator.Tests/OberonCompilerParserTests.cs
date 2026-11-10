@@ -12,6 +12,7 @@ internal static class OberonCompilerParserTests
         ParsesPointerDereference();
         ParsesForStatements();
         ParsesCaseStatements();
+        ParsesCaseLabelRanges();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
         ParsesControlFlowStatements();
@@ -316,6 +317,17 @@ internal static class OberonCompilerParserTests
         TestAssertions.Equal(2, conditional.Arms.Count);
         TestAssertions.Equal(2, conditional.Arms[1].Labels.Count);
         TestAssertions.True(conditional.ElseBody is not null);
+    }
+
+    private static void ParsesCaseLabelRanges()
+    {
+        const string source = "MODULE Cases; VAR value, result: INTEGER; BEGIN CASE value OF 1..3: result := 1 ELSE result := 0 END; END Cases.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var conditional = (OberonCompilerCaseStatement)result.Body!.Statements[0];
+        TestAssertions.Equal(1L, conditional.Arms[0].Labels[0].Start);
+        TestAssertions.Equal(3L, conditional.Arms[0].Labels[0].End);
     }
 
     private static void ParsesControlFlowStatements()

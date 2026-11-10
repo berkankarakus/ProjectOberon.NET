@@ -579,30 +579,22 @@ public sealed class OberonCompilerParser
             or OberonCompilerTokenKind.End
             or OberonCompilerTokenKind.EndOfText))
         {
-            var labels = new List<long>();
+            var labels = new List<OberonCompilerCaseLabel>();
             while (true)
             {
-                var label = ParseConstantExpression();
-                if (label.Type.Form is OberonCompilerTypeForm.Byte
-                    or OberonCompilerTypeForm.Character
-                    or OberonCompilerTypeForm.Integer)
+                var start = ParseCaseLabelValue();
+                var end = start;
+                if (_current.Kind == OberonCompilerTokenKind.Range)
                 {
-                    labels.Add(label.IntegerValue);
+                    Next();
+                    end = ParseCaseLabelValue();
+                    if (start > end) AddDiagnostic("CASE label range must be ascending");
                 }
-                else
-                {
-                    AddDiagnostic("CASE labels must be integer constants");
-                }
+
+                labels.Add(new OberonCompilerCaseLabel(start, end));
 
                 if (_current.Kind != OberonCompilerTokenKind.Comma) break;
                 Next();
-            }
-
-            if (_current.Kind == OberonCompilerTokenKind.Range)
-            {
-                AddDiagnostic("CASE label ranges are not supported yet");
-                Next();
-                _ = ParseConstantExpression();
             }
 
             Expect(OberonCompilerTokenKind.Colon, ": expected after CASE labels");
@@ -620,6 +612,20 @@ public sealed class OberonCompilerParser
 
         Expect(OberonCompilerTokenKind.End, "END expected after CASE statement");
         return new OberonCompilerCaseStatement(selector, arms, elseBody);
+    }
+
+    private long ParseCaseLabelValue()
+    {
+        var label = ParseConstantExpression();
+        if (label.Type.Form is OberonCompilerTypeForm.Byte
+            or OberonCompilerTypeForm.Character
+            or OberonCompilerTypeForm.Integer)
+        {
+            return label.IntegerValue;
+        }
+
+        AddDiagnostic("CASE labels must be integer constants");
+        return 0;
     }
 
     private IReadOnlyList<OberonCompilerExpression> ParseArgumentList()

@@ -107,9 +107,22 @@ public sealed class OberonCompilerControlFlowEmitter
         {
             foreach (var label in conditional.Arms[armIndex].Labels)
             {
-                _generator.EmitMoveImmediate(1, checked((int)label));
+                if (label.Start == label.End)
+                {
+                    _generator.EmitMoveImmediate(1, checked((int)label.Start));
+                    _generator.EmitRegister(AluOperation.Sub, 2, 0, 1);
+                    _generator.EmitBranch(armLabels[armIndex], ConditionCode.Eq);
+                    continue;
+                }
+
+                var nextLabel = new OberonCompilerLabel();
+                _generator.EmitMoveImmediate(1, checked((int)label.Start));
                 _generator.EmitRegister(AluOperation.Sub, 2, 0, 1);
-                _generator.EmitBranch(armLabels[armIndex], ConditionCode.Eq);
+                _generator.EmitBranch(nextLabel, ConditionCode.Lt);
+                _generator.EmitMoveImmediate(1, checked((int)label.End));
+                _generator.EmitRegister(AluOperation.Sub, 2, 0, 1);
+                _generator.EmitBranch(armLabels[armIndex], ConditionCode.Le);
+                _generator.Bind(nextLabel);
             }
         }
 

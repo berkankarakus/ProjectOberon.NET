@@ -83,8 +83,10 @@ public sealed record OberonCompilerForStatement(
     OberonCompilerExpression Step,
     OberonCompilerStatementSequence Body) : OberonCompilerStatement;
 
+public sealed record OberonCompilerCaseLabel(long Start, long End);
+
 public sealed record OberonCompilerCaseArm(
-    IReadOnlyList<long> Labels,
+    IReadOnlyList<OberonCompilerCaseLabel> Labels,
     OberonCompilerStatementSequence Body);
 
 public sealed record OberonCompilerCaseStatement(
