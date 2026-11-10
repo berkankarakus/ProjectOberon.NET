@@ -5,6 +5,7 @@ public interface IOberonCompilerInstructionWriter
     void EmitRegister(AluOperation operation, int destination, int left, int right, bool carry = false);
     void EmitImmediate(AluOperation operation, int destination, int left, int immediate);
     void EmitMoveImmediate(int destination, int value);
+    void EmitMoveFromHigh(int destination);
     void EmitLoad(int destination, int addressRegister, int offset, bool byteValue = false);
     void EmitStore(int source, int addressRegister, int offset, bool byteValue = false);
     int EmitBranch(ConditionCode condition = ConditionCode.Always, bool link = false);

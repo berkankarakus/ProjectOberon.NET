@@ -167,6 +167,14 @@ public sealed class OberonCompilerExpressionEmitter
             EmitExpression(binary.Left, destination);
             EmitExpression(binary.Right, temporary);
             if (IsRelation(binary.Operator)) return EmitComparison(binary, destination, temporary);
+            if (binary.Operator == OberonCompilerTokenKind.Mod)
+            {
+                if (IsReal(binary))
+                    throw new NotSupportedException("MOD requires integer operands");
+                _generator.EmitRegister(AluOperation.Div, destination, destination, temporary);
+                _generator.EmitMoveFromHigh(destination);
+                return destination;
+            }
 
             var operation = IsReal(binary)
                 ? binary.Operator switch

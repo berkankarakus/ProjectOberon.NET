@@ -7,6 +7,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsArithmeticAssignment();
         EmitsModuleVariableLoads();
         EmitsPackedByteLoadsAndStores();
+        EmitsIntegerRemainder();
         EmitsRealArithmetic();
         EmitsRealComparisons();
         EmitsPointerValues();
@@ -115,6 +116,22 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("FML r1, r1, r2", Risc5Disassembler.Format(generator.Code[3]));
         TestAssertions.Equal("FAD r0, r0, r1", Risc5Disassembler.Format(generator.Code[4]));
         TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[5]));
+    }
+
+    private static void EmitsIntegerRemainder()
+    {
+        const string source = "MODULE Arithmetic; VAR result: INTEGER; BEGIN result := 17 MOD 5; END Arithmetic.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
+
+        TestAssertions.Equal("MOV r0, 0x0011", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("MOV r1, 0x0005", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("DIV r0, r0, r1", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("MOV r0, H", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[4]));
     }
 
     private static void EmitsRealComparisons()
@@ -351,6 +368,8 @@ internal static class OberonCompilerExpressionEmitterTests
 
         public void EmitMoveImmediate(int destination, int value) =>
             Calls.Add($"MOV r{destination}, 0x{value:x4}");
+
+        public void EmitMoveFromHigh(int destination) => Calls.Add($"MOV r{destination}, H");
 
         public void EmitImmediate(AluOperation operation, int destination, int left, int immediate) =>
             throw new NotSupportedException();

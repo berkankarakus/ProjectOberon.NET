@@ -57,6 +57,14 @@ public sealed class OberonCompilerCodeGenerator : IOberonCompilerInstructionWrit
         if (lower != 0) EmitImmediate(AluOperation.Ior, destination, destination, lower);
     }
 
+    public void EmitMoveFromHigh(int destination)
+    {
+        ValidateRegister(destination);
+        _code.Add(InstructionBits.U
+            | ((uint)destination << 24)
+            | ((uint)AluOperation.Mov << 16));
+    }
+
     public void EmitUpperMove(int destination, int upper16)
     {
         ValidateRegister(destination);
