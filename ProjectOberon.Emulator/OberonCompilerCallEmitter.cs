@@ -7,13 +7,15 @@ public sealed class OberonCompilerCallEmitter
     private readonly OberonCompilerRegisterAllocator _registers;
     private readonly Func<OberonCompilerExpression, int, int> _emitExpression;
     private readonly Func<OberonCompilerObject, OberonCompilerLabel?>? _procedureLabelResolver;
+    private readonly int _currentLevel;
 
     public OberonCompilerCallEmitter(
         IOberonCompilerInstructionWriter generator,
         OberonCompilerAddressEmitter addresses,
         OberonCompilerRegisterAllocator registers,
         Func<OberonCompilerExpression, int, int> emitExpression,
-        Func<OberonCompilerObject, OberonCompilerLabel?>? procedureLabelResolver)
+        Func<OberonCompilerObject, OberonCompilerLabel?>? procedureLabelResolver,
+        int currentLevel = 1)
     {
         ArgumentNullException.ThrowIfNull(generator);
         ArgumentNullException.ThrowIfNull(addresses);
@@ -25,6 +27,7 @@ public sealed class OberonCompilerCallEmitter
         _registers = registers;
         _emitExpression = emitExpression;
         _procedureLabelResolver = procedureLabelResolver;
+        _currentLevel = currentLevel;
     }
 
     public void EmitCall(OberonCompilerCallStatement call)
@@ -33,6 +36,7 @@ public sealed class OberonCompilerCallEmitter
         var procedure = call.Procedure.Symbol ?? throw new InvalidOperationException(
             $"procedure '{call.Procedure.Name}' is not defined");
         EmitCallArguments(procedure, call.Arguments);
+        EmitStaticLink(procedure);
         var target = ResolveProcedureLabel(procedure) ?? throw new InvalidOperationException(
             $"procedure '{call.Procedure.Name}' has no code label");
         _generator.EmitCall(target);
@@ -48,11 +52,30 @@ public sealed class OberonCompilerCallEmitter
             throw new InvalidOperationException($"'{call.Procedure.Name}' is a procedure, not a function");
 
         EmitCallArguments(procedure, call.Arguments);
+        EmitStaticLink(procedure);
         var target = ResolveProcedureLabel(procedure) ?? throw new InvalidOperationException(
             $"function '{call.Procedure.Name}' has no code label");
         _generator.EmitCall(target);
         if (destination != 0) _generator.EmitRegister(AluOperation.Mov, destination, 0, 0);
         return destination;
+    }
+
+    private void EmitStaticLink(OberonCompilerObject procedure)
+    {
+        if (procedure.Level <= 1) return;
+
+        _generator.EmitRegister(
+            AluOperation.Mov,
+            OberonCompilerCallingConvention.StaticLinkRegister,
+            OberonCompilerCallingConvention.StackPointer,
+            OberonCompilerCallingConvention.StackPointer);
+        for (var level = _currentLevel; level > procedure.Level; level--)
+        {
+            _generator.EmitLoad(
+                OberonCompilerCallingConvention.StaticLinkRegister,
+                OberonCompilerCallingConvention.StaticLinkRegister,
+                OberonCompilerCallingConvention.StaticLinkOffset);
+        }
     }
 
     private OberonCompilerLabel? ResolveProcedureLabel(OberonCompilerObject procedure) =>
@@ -109,7 +132,8 @@ public sealed class OberonCompilerCallEmitter
 
         if (name.Symbol.Class != OberonCompilerObjectClass.Parameter)
             throw new NotSupportedException("open array length source is not available");
-        _generator.EmitLoad(destination + 1, OberonCompilerCallingConvention.StackPointer,
+        var lengthBase = _addresses.EmitStorageBase(name.Symbol, destination + 1);
+        _generator.EmitLoad(destination + 1, lengthBase,
             checked((int)name.Symbol.Value + 4));
     }
 

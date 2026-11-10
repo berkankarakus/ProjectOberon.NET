@@ -10,8 +10,16 @@ public sealed class OberonCompilerFrameEmitter
         _generator = generator;
     }
 
-    public void EmitProcedurePrologue(int frameSize) =>
+    public void EmitProcedurePrologue(int frameSize, bool hasStaticLink = false)
+    {
         _generator.EmitProcedurePrologue(frameSize);
+        if (hasStaticLink)
+        {
+            _generator.EmitSaveParameter(
+                OberonCompilerCallingConvention.StaticLinkRegister,
+                OberonCompilerCallingConvention.StaticLinkOffset);
+        }
+    }
 
     public void EmitProcedureReturn(int frameSize) =>
         _generator.EmitProcedureReturn(frameSize);

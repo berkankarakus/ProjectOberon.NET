@@ -3,7 +3,7 @@ namespace ProjectOberon.Emulator;
 public sealed class OberonCompilerRegisterAllocator
 {
     public const int FirstExpressionRegister = 0;
-    public const int LastExpressionRegister = 12;
+    public const int LastExpressionRegister = 11;
 
     private readonly int[] _reservations = new int[LastExpressionRegister + 1];
 

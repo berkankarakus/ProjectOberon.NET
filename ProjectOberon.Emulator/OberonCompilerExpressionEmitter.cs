@@ -98,12 +98,12 @@ public sealed class OberonCompilerExpressionEmitter
                 return destination;
             case OberonCompilerObjectClass.Variable:
             case OberonCompilerObjectClass.Parameter when symbol.ReadOnly:
-                _generator.EmitLoad(destination, OberonCompilerCallingConvention.StackPointer,
-                    checked((int)symbol.Value));
+                var valueBase = _addresses.EmitStorageBase(symbol, destination);
+                _generator.EmitLoad(destination, valueBase, checked((int)symbol.Value));
                 return destination;
             case OberonCompilerObjectClass.Parameter:
-                _generator.EmitLoad(destination, OberonCompilerCallingConvention.StackPointer,
-                    checked((int)symbol.Value));
+                var referenceBase = _addresses.EmitStorageBase(symbol, destination);
+                _generator.EmitLoad(destination, referenceBase, checked((int)symbol.Value));
                 _generator.EmitLoad(destination, destination, 0);
                 return destination;
             default:

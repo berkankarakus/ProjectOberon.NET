@@ -6,6 +6,7 @@ internal static class OberonCompilerParserTests
     {
         ParsesModuleDeclarations();
         ParsesProcedureDeclarations();
+        ParsesNestedProcedureCapture();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
         ParsesControlFlowStatements();
@@ -241,6 +242,23 @@ internal static class OberonCompilerParserTests
         TestAssertions.Equal("Ping", call.Procedure.Name);
         TestAssertions.Equal(2, call.Arguments.Count);
         TestAssertions.True(body.Statements[3] is OberonCompilerAssignmentStatement);
+    }
+
+    private static void ParsesNestedProcedureCapture()
+    {
+        const string source = "MODULE Nested; PROCEDURE Outer; VAR value: INTEGER; PROCEDURE Inner(delta: INTEGER); BEGIN value := value + delta; END Inner; BEGIN Inner(1); END Outer; END Nested.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var outer = FindProcedure(result.Procedures!, "Outer");
+        var inner = outer.NestedProcedures.Single();
+        TestAssertions.Equal(2, inner.Symbol.Level);
+        TestAssertions.Equal(8L, inner.Symbol.Type!.Parameters[0].Value);
+
+        var assignment = (OberonCompilerAssignmentStatement)inner.Body!.Statements[0];
+        var captured = (OberonCompilerNameExpression)assignment.Target;
+        TestAssertions.Equal(2, captured.Symbol!.Level);
+        TestAssertions.Equal(4L, captured.Symbol.Value);
     }
 
     private static void ParsesControlFlowStatements()

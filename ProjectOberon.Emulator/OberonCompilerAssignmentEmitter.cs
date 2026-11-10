@@ -57,14 +57,12 @@ public sealed class OberonCompilerAssignmentEmitter
         var offset = checked((int)target.Value);
         if (target.Class == OberonCompilerObjectClass.Parameter && !target.ReadOnly)
         {
-            _generator.EmitLoad(1, OberonCompilerCallingConvention.StackPointer, offset);
+            _addresses.EmitAddress(name, 1);
             _generator.EmitStore(0, 1, 0);
             return;
         }
 
-        var addressRegister = target.Level == 1
-            ? OberonCompilerCallingConvention.ModuleDataBase
-            : OberonCompilerCallingConvention.StackPointer;
+        var addressRegister = _addresses.EmitStorageBase(target, 1);
         _generator.EmitStore(0, addressRegister, offset);
     }
 

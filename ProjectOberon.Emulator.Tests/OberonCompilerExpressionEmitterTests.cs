@@ -108,11 +108,11 @@ internal static class OberonCompilerExpressionEmitterTests
                 3));
         var generator = new OberonCompilerCodeGenerator();
 
-        new OberonCompilerExpressionEmitter(generator).EmitExpression(expression, destination: 12);
+        new OberonCompilerExpressionEmitter(generator).EmitExpression(expression, destination: 11);
 
-        TestAssertions.Equal("MOV r12, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("MOV r11, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("MOV r0, 0x0003", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("ADD r12, r12, r0", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("ADD r11, r11, r0", Risc5Disassembler.Format(generator.Code[2]));
     }
 
     private static void EmitsFieldAddressThroughDedicatedEmitter()

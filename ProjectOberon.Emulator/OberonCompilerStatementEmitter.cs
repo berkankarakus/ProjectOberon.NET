@@ -12,7 +12,8 @@ public sealed class OberonCompilerStatementEmitter
     public OberonCompilerStatementEmitter(
         IOberonCompilerInstructionWriter generator,
         int frameSize = 0,
-        Func<OberonCompilerObject, OberonCompilerLabel?>? procedureLabelResolver = null)
+        Func<OberonCompilerObject, OberonCompilerLabel?>? procedureLabelResolver = null,
+        int currentLevel = 1)
     {
         ArgumentNullException.ThrowIfNull(generator);
         _frameSize = frameSize;
@@ -23,7 +24,8 @@ public sealed class OberonCompilerStatementEmitter
         var addresses = new OberonCompilerAddressEmitter(
             generator,
             (expression, destination) => expressions!.EmitExpression(expression, destination),
-            registers);
+            registers,
+            currentLevel);
         OberonCompilerCallEmitter? calls = null;
         expressions = new OberonCompilerExpressionEmitter(
             generator,
@@ -36,7 +38,8 @@ public sealed class OberonCompilerStatementEmitter
             addresses,
             registers,
             _expressions.EmitExpression,
-            procedureLabelResolver);
+            procedureLabelResolver,
+            currentLevel);
         _calls = calls;
         _assignments = new OberonCompilerAssignmentEmitter(
             generator,

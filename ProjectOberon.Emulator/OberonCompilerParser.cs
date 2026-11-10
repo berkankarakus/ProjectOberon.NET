@@ -170,9 +170,10 @@ public sealed class OberonCompilerParser
         try
         {
             _declarationSection = 0;
-            ParseFormalParameters(procedureType);
+            var hasStaticLink = procedure.Level > 1;
+            ParseFormalParameters(procedureType, hasStaticLink ? 8 : 4);
             Expect(OberonCompilerTokenKind.Semicolon, "; expected after procedure header");
-            _dataOffset = ParameterFrameSize(procedureType);
+            _dataOffset = ParameterFrameSize(procedureType, hasStaticLink);
             ParseDeclarations();
             var frameSize = Align(_dataOffset, 4);
             var nestedProcedures = ParseProcedureDeclarations();
@@ -206,7 +207,7 @@ public sealed class OberonCompilerParser
         }
     }
 
-    private void ParseFormalParameters(OberonCompilerType procedureType)
+    private void ParseFormalParameters(OberonCompilerType procedureType, int parameterOffset)
     {
         if (_current.Kind != OberonCompilerTokenKind.LeftParenthesis) return;
         Next();
@@ -216,7 +217,7 @@ public sealed class OberonCompilerParser
             return;
         }
 
-        var offset = 4;
+        var offset = parameterOffset;
         while (true)
         {
             var byReference = false;
@@ -272,8 +273,9 @@ public sealed class OberonCompilerParser
         _ => 4
     };
 
-    private static int ParameterFrameSize(OberonCompilerType procedureType) =>
-        4 + procedureType.Parameters.Sum(parameter => ParameterSlotSize(parameter.Type!));
+    private static int ParameterFrameSize(OberonCompilerType procedureType, bool hasStaticLink) =>
+        (hasStaticLink ? 8 : 4)
+        + procedureType.Parameters.Sum(parameter => ParameterSlotSize(parameter.Type!));
 
     private void ParseConstants()
     {

@@ -5,16 +5,19 @@ public sealed class OberonCompilerAddressEmitter
     private readonly IOberonCompilerInstructionWriter _generator;
     private readonly Func<OberonCompilerExpression, int, int>? _emitExpression;
     private readonly OberonCompilerRegisterAllocator? _registers;
+    private readonly int _currentLevel;
 
     public OberonCompilerAddressEmitter(
         IOberonCompilerInstructionWriter generator,
         Func<OberonCompilerExpression, int, int>? emitExpression = null,
-        OberonCompilerRegisterAllocator? registers = null)
+        OberonCompilerRegisterAllocator? registers = null,
+        int currentLevel = 1)
     {
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
         _emitExpression = emitExpression;
         _registers = registers;
+        _currentLevel = currentLevel;
     }
 
     public void EmitAddress(OberonCompilerExpression expression, int destination)
@@ -44,21 +47,46 @@ public sealed class OberonCompilerAddressEmitter
         switch (symbol.Class)
         {
             case OberonCompilerObjectClass.Variable:
-                var baseRegister = symbol.Level == 1
-                    ? OberonCompilerCallingConvention.ModuleDataBase
-                    : OberonCompilerCallingConvention.StackPointer;
+                var baseRegister = EmitStorageBase(symbol, destination);
                 _generator.EmitImmediate(AluOperation.Add, destination, baseRegister, offset);
                 return;
             case OberonCompilerObjectClass.Parameter when !symbol.ReadOnly:
-                _generator.EmitLoad(destination, OberonCompilerCallingConvention.StackPointer, offset);
+                var referenceBase = EmitStorageBase(symbol, destination);
+                _generator.EmitLoad(destination, referenceBase, offset);
                 return;
             case OberonCompilerObjectClass.Parameter
                 when symbol.Type?.Form == OberonCompilerTypeForm.Array && symbol.Type.Length < 0:
-                _generator.EmitLoad(destination, OberonCompilerCallingConvention.StackPointer, offset);
+                var arrayBase = EmitStorageBase(symbol, destination);
+                _generator.EmitLoad(destination, arrayBase, offset);
                 return;
             default:
                 throw new NotSupportedException($"'{name.Name}' cannot be passed by reference");
         }
+    }
+
+    public int EmitStorageBase(OberonCompilerObject symbol, int destination)
+    {
+        ArgumentNullException.ThrowIfNull(symbol);
+        if (symbol.Level == 1) return OberonCompilerCallingConvention.ModuleDataBase;
+        if (symbol.Level == _currentLevel) return OberonCompilerCallingConvention.StackPointer;
+        if (symbol.Level > _currentLevel)
+            throw new InvalidOperationException($"symbol '{symbol.Name}' is in a deeper scope");
+
+        OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination);
+        _generator.EmitRegister(
+            AluOperation.Mov,
+            destination,
+            OberonCompilerCallingConvention.StackPointer,
+            OberonCompilerCallingConvention.StackPointer);
+        for (var level = _currentLevel; level > symbol.Level; level--)
+        {
+            _generator.EmitLoad(
+                destination,
+                destination,
+                OberonCompilerCallingConvention.StaticLinkOffset);
+        }
+
+        return destination;
     }
 
     private void EmitIndexedAddress(OberonCompilerIndexExpression index, int destination)

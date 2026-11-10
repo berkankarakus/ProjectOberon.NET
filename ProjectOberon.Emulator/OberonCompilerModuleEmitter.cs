@@ -12,7 +12,10 @@ public sealed class OberonCompilerModuleEmitter
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
         _frames = new OberonCompilerFrameEmitter(generator);
-        _statements = new OberonCompilerStatementEmitter(generator, procedureLabelResolver: ResolveProcedureLabel);
+        _statements = new OberonCompilerStatementEmitter(
+            generator,
+            procedureLabelResolver: ResolveProcedureLabel,
+            currentLevel: 1);
     }
 
     public IReadOnlyList<uint> Emit(OberonCompilerModuleParseResult module)
@@ -29,12 +32,13 @@ public sealed class OberonCompilerModuleEmitter
         foreach (var procedure in allProcedures)
         {
             _generator.Bind(_procedureLabels[procedure.Symbol]);
-            _frames.EmitProcedurePrologue(procedure.FrameSize);
+            _frames.EmitProcedurePrologue(procedure.FrameSize, procedure.Symbol.Level > 1);
             _frames.SaveParameters(procedure.Symbol);
             var procedureStatements = new OberonCompilerStatementEmitter(
                 _generator,
                 procedure.FrameSize,
-                ResolveProcedureLabel);
+                ResolveProcedureLabel,
+                currentLevel: procedure.Symbol.Level + 1);
             if (procedure.Body is not null) procedureStatements.EmitStatementSequence(procedure.Body);
             if (OberonCompilerControlFlowAnalyzer.CanCompleteNormally(procedure.Body))
                 _frames.EmitProcedureReturn(procedure.FrameSize);

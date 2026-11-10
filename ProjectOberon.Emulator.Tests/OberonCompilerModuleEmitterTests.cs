@@ -10,6 +10,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsFunctionReturnValue();
         EmitsOpenArrayParameterCall();
         EmitsNestedProcedureCall();
+        EmitsStaticLinkForNestedProcedure();
         EmitsOpenArrayAndScalarParameterCall();
     }
 
@@ -115,5 +116,25 @@ internal static class OberonCompilerModuleEmitterTests
 
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Contains("MOV r2, 0x0003"));
+    }
+
+    private static void EmitsStaticLinkForNestedProcedure()
+    {
+        const string source = "MODULE Nested; PROCEDURE Outer; VAR value: INTEGER; PROCEDURE Inner(delta: INTEGER); BEGIN value := value + delta; END Inner; BEGIN Inner(1); END Outer; END Nested.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+        var inner = module.Procedures![0].NestedProcedures[0];
+        var captured = ((OberonCompilerAssignmentStatement)inner.Body!.Statements[0]).Target as OberonCompilerNameExpression;
+        TestAssertions.Equal(2, inner.Symbol.Level);
+        TestAssertions.Equal(2, captured!.Symbol!.Level);
+
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Contains("STR r12, [r14, 4]"));
+        TestAssertions.True(instructions.Contains("STR r0, [r14, 8]"));
+        TestAssertions.True(instructions.Contains("MOV r12, r14"));
+        TestAssertions.True(instructions.Contains("LDR r0, [r0, 4]"));
+        TestAssertions.True(instructions.Contains("LDR r1, [r1, 4]"));
     }
 }
