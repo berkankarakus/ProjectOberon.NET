@@ -10,6 +10,8 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsRealArithmetic();
         EmitsPointerValues();
         EmitsPointerDereference();
+        EmitsForLoop();
+        EmitsDescendingForLoop();
         EmitsControlFlow();
         EmitsRecordFieldLoadAndStore();
         EmitsAggregateRecordCopy();
@@ -138,6 +140,34 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("LDR r1, [r13, 0]", Risc5Disassembler.Format(generator.Code[1]));
         TestAssertions.Equal("ADD r1, r1, 0x0000", Risc5Disassembler.Format(generator.Code[2]));
         TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[3]));
+    }
+
+    private static void EmitsForLoop()
+    {
+        const string source = "MODULE Loops; VAR index, total: INTEGER; BEGIN FOR index := 0 TO 3 BY 1 DO total := total + index; END; END Loops.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal("MOV r0, 0x0000", instructions[0]);
+        TestAssertions.Equal("STR r0, [r13, 0]", instructions[1]);
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BLT ")));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNLE ")));
+        TestAssertions.True(instructions.Contains("ADD r0, r0, r1"));
+    }
+
+    private static void EmitsDescendingForLoop()
+    {
+        const string source = "MODULE Loops; VAR index, total: INTEGER; BEGIN FOR index := 3 TO 0 BY -1 DO total := total + index; END; END Loops.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNLT ")));
     }
 
     private static void EmitsRecordFieldLoadAndStore()

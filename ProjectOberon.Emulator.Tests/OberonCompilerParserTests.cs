@@ -10,6 +10,7 @@ internal static class OberonCompilerParserTests
         AcceptsIndexedVarArguments();
         AcceptsPointerValuesAndNil();
         ParsesPointerDereference();
+        ParsesForStatements();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
         ParsesControlFlowStatements();
@@ -293,6 +294,15 @@ internal static class OberonCompilerParserTests
         {
             Receiver: OberonCompilerDereferenceExpression
         });
+    }
+
+    private static void ParsesForStatements()
+    {
+        const string source = "MODULE Loops; VAR index, total: INTEGER; BEGIN FOR index := 0 TO 3 BY 1 DO total := total + index; END; END Loops.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        TestAssertions.True(result.Body!.Statements[0] is OberonCompilerForStatement);
     }
 
     private static void ParsesControlFlowStatements()

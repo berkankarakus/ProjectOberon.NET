@@ -447,6 +447,7 @@ public sealed class OberonCompilerParser
         if (_current.Kind == OberonCompilerTokenKind.If) return ParseIfStatement();
         if (_current.Kind == OberonCompilerTokenKind.While) return ParseWhileStatement();
         if (_current.Kind == OberonCompilerTokenKind.Repeat) return ParseRepeatStatement();
+        if (_current.Kind == OberonCompilerTokenKind.For) return ParseForStatement();
 
         if (_current.Kind == OberonCompilerTokenKind.Return)
         {
@@ -537,6 +538,32 @@ public sealed class OberonCompilerParser
         var body = ParseStatementSequence();
         Expect(OberonCompilerTokenKind.Until, "UNTIL expected after REPEAT body");
         return new OberonCompilerRepeatStatement(body, ParseRuntimeExpression());
+    }
+
+    private OberonCompilerForStatement ParseForStatement()
+    {
+        Next();
+        var controlToken = _current;
+        var control = controlToken.Kind == OberonCompilerTokenKind.Identifier
+            ? ResolveRuntimeName(controlToken)
+            : new OberonCompilerNameExpression(string.Empty, null);
+        if (controlToken.Kind == OberonCompilerTokenKind.Identifier) Next();
+        else AddDiagnostic("FOR control variable expected");
+        Expect(OberonCompilerTokenKind.Becomes, ":= expected after FOR control variable");
+        var start = ParseRuntimeExpression();
+        Expect(OberonCompilerTokenKind.To, "TO expected in FOR statement");
+        var end = ParseRuntimeExpression();
+        OberonCompilerExpression step = new OberonCompilerIntegerLiteralExpression(_symbols.IntegerType, 1);
+        if (_current.Kind == OberonCompilerTokenKind.By)
+        {
+            Next();
+            step = ParseRuntimeExpression();
+        }
+
+        Expect(OberonCompilerTokenKind.Do, "DO expected in FOR statement");
+        var body = ParseStatementSequence();
+        Expect(OberonCompilerTokenKind.End, "END expected after FOR statement");
+        return new OberonCompilerForStatement(control, start, end, step, body);
     }
 
     private IReadOnlyList<OberonCompilerExpression> ParseArgumentList()

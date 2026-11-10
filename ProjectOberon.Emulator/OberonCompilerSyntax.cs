@@ -76,5 +76,12 @@ public sealed record OberonCompilerRepeatStatement(
     OberonCompilerStatementSequence Body,
     OberonCompilerExpression Condition) : OberonCompilerStatement;
 
+public sealed record OberonCompilerForStatement(
+    OberonCompilerNameExpression Control,
+    OberonCompilerExpression Start,
+    OberonCompilerExpression End,
+    OberonCompilerExpression Step,
+    OberonCompilerStatementSequence Body) : OberonCompilerStatement;
+
 public sealed record OberonCompilerStatementSequence(
     IReadOnlyList<OberonCompilerStatement> Statements);

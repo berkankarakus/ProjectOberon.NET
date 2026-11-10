@@ -49,7 +49,8 @@ public sealed class OberonCompilerStatementEmitter
         _controlFlow = new OberonCompilerControlFlowEmitter(
             generator,
             _expressions.EmitExpression,
-            EmitStatementSequence);
+            EmitStatementSequence,
+            _assignments.EmitAssignment);
     }
 
     public void EmitAssignment(OberonCompilerAssignmentStatement assignment) =>
@@ -80,6 +81,9 @@ public sealed class OberonCompilerStatementEmitter
                 break;
             case OberonCompilerRepeatStatement repeat:
                 _controlFlow.EmitRepeat(repeat);
+                break;
+            case OberonCompilerForStatement loop:
+                _controlFlow.EmitFor(loop);
                 break;
             case OberonCompilerCallStatement call:
                 _calls.EmitCall(call);

@@ -72,8 +72,34 @@ public sealed class OberonCompilerSemanticChecker
                     CheckStatements(repeat.Body, expectedReturnType, procedureName);
                     CheckBoolean(repeat.Condition, "UNTIL condition must be BOOLEAN");
                     break;
+                case OberonCompilerForStatement loop:
+                    CheckFor(loop, expectedReturnType, procedureName);
+                    break;
             }
         }
+    }
+
+    private void CheckFor(
+        OberonCompilerForStatement loop,
+        OberonCompilerType? expectedReturnType,
+        string? procedureName)
+    {
+        if (loop.Control.Symbol?.Type?.Form != OberonCompilerTypeForm.Integer)
+            AddDiagnostic("FOR control variable must be INTEGER");
+        if (!IsWritable(loop.Control))
+            AddDiagnostic("FOR control variable is not writable");
+        CheckInteger(loop.Start, "FOR start must be INTEGER");
+        CheckInteger(loop.End, "FOR end must be INTEGER");
+        CheckInteger(loop.Step, "FOR step must be INTEGER");
+        if (loop.Step is OberonCompilerIntegerLiteralExpression { Value: 0 })
+            AddDiagnostic("FOR step must not be zero");
+        CheckStatements(loop.Body, expectedReturnType, procedureName);
+    }
+
+    private void CheckInteger(OberonCompilerExpression expression, string message)
+    {
+        if (CheckExpression(expression)?.Form != OberonCompilerTypeForm.Integer)
+            AddDiagnostic(message);
     }
 
     private void CheckAssignment(OberonCompilerAssignmentStatement assignment)

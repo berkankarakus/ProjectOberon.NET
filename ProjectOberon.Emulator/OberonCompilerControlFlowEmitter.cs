@@ -5,19 +5,23 @@ public sealed class OberonCompilerControlFlowEmitter
     private readonly IOberonCompilerInstructionWriter _generator;
     private readonly Func<OberonCompilerExpression, int, int> _emitExpression;
     private readonly Action<OberonCompilerStatementSequence> _emitStatements;
+    private readonly Action<OberonCompilerAssignmentStatement> _emitAssignment;
 
     public OberonCompilerControlFlowEmitter(
         IOberonCompilerInstructionWriter generator,
         Func<OberonCompilerExpression, int, int> emitExpression,
-        Action<OberonCompilerStatementSequence> emitStatements)
+        Action<OberonCompilerStatementSequence> emitStatements,
+        Action<OberonCompilerAssignmentStatement> emitAssignment)
     {
         ArgumentNullException.ThrowIfNull(generator);
         ArgumentNullException.ThrowIfNull(emitExpression);
         ArgumentNullException.ThrowIfNull(emitStatements);
+        ArgumentNullException.ThrowIfNull(emitAssignment);
 
         _generator = generator;
         _emitExpression = emitExpression;
         _emitStatements = emitStatements;
+        _emitAssignment = emitAssignment;
     }
 
     public void EmitIf(OberonCompilerIfStatement conditional)
@@ -56,6 +60,50 @@ public sealed class OberonCompilerControlFlowEmitter
         _generator.Bind(start);
         _emitStatements(repeat.Body);
         EmitBranchIfFalse(repeat.Condition, start);
+    }
+
+    public void EmitFor(OberonCompilerForStatement loop)
+    {
+        ArgumentNullException.ThrowIfNull(loop);
+        var start = new OberonCompilerLabel();
+        var negative = new OberonCompilerLabel();
+        var body = new OberonCompilerLabel();
+        var end = new OberonCompilerLabel();
+
+        _emitAssignment(new OberonCompilerAssignmentStatement(loop.Control, loop.Start));
+        _generator.Bind(start);
+        _emitExpression(loop.Step, 2);
+        _generator.EmitMoveImmediate(3, 0);
+        _generator.EmitRegister(AluOperation.Sub, 2, 2, 3);
+        _generator.EmitBranch(negative, ConditionCode.Lt);
+
+        EmitForBoundCheck(loop, end, ConditionCode.Le, invert: true);
+        _generator.EmitBranch(body);
+
+        _generator.Bind(negative);
+        EmitForBoundCheck(loop, end, ConditionCode.Lt, invert: true);
+        _generator.Bind(body);
+
+        _emitStatements(loop.Body);
+        var increment = new OberonCompilerBinaryExpression(
+            OberonCompilerTokenKind.Plus,
+            loop.Control,
+            loop.Step);
+        _emitAssignment(new OberonCompilerAssignmentStatement(loop.Control, increment));
+        _generator.EmitBranch(start);
+        _generator.Bind(end);
+    }
+
+    private void EmitForBoundCheck(
+        OberonCompilerForStatement loop,
+        OberonCompilerLabel end,
+        ConditionCode condition,
+        bool invert)
+    {
+        _emitExpression(loop.Control, 0);
+        _emitExpression(loop.End, 1);
+        _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
+        _generator.EmitBranch(end, condition, link: false, invert: invert);
     }
 
     private void EmitBranchIfFalse(
