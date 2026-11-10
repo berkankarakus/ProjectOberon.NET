@@ -216,14 +216,7 @@ public sealed class OberonCompilerExpressionEmitter
 
         var (condition, invert) = ComparisonBranch(comparison.Operator);
         _generator.EmitRegister(AluOperation.Sub, destination, destination, rightRegister);
-        var trueLabel = new OberonCompilerLabel();
-        var end = new OberonCompilerLabel();
-        _generator.EmitBranch(trueLabel, condition, link: false, invert: invert);
-        _generator.EmitMoveImmediate(destination, 0);
-        _generator.EmitBranch(end);
-        _generator.Bind(trueLabel);
-        _generator.EmitMoveImmediate(destination, 1);
-        _generator.Bind(end);
+        EmitBooleanFromCondition(destination, condition, invert);
         return destination;
     }
 
@@ -277,14 +270,22 @@ public sealed class OberonCompilerExpressionEmitter
 
     private void EmitBooleanFromNonZero(int register)
     {
+        EmitBooleanFromCondition(register, ConditionCode.Eq, invert: true);
+    }
+
+    private void EmitBooleanFromCondition(
+        int destination,
+        ConditionCode condition,
+        bool invert = false)
+    {
         var trueLabel = new OberonCompilerLabel();
-        var end = new OberonCompilerLabel();
-        _generator.EmitBranch(trueLabel, ConditionCode.Eq, link: false, invert: true);
-        _generator.EmitMoveImmediate(register, 0);
-        _generator.EmitBranch(end);
+        var endLabel = new OberonCompilerLabel();
+        _generator.EmitBranch(trueLabel, condition, link: false, invert: invert);
+        _generator.EmitMoveImmediate(destination, 0);
+        _generator.EmitBranch(endLabel);
         _generator.Bind(trueLabel);
-        _generator.EmitMoveImmediate(register, 1);
-        _generator.Bind(end);
+        _generator.EmitMoveImmediate(destination, 1);
+        _generator.Bind(endLabel);
     }
 
     private static (ConditionCode Condition, bool Invert) ComparisonBranch(
