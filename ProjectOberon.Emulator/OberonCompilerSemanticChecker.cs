@@ -285,6 +285,7 @@ public sealed class OberonCompilerSemanticChecker
             Symbol.Type.Length: < 0
         } => true,
         OberonCompilerFieldExpression => true,
+        OberonCompilerIndexExpression index => IsAddressable(index.Receiver),
         _ => false
     };
 

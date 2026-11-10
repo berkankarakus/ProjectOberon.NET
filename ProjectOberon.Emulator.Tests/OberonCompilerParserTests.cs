@@ -7,6 +7,7 @@ internal static class OberonCompilerParserTests
         ParsesModuleDeclarations();
         ParsesProcedureDeclarations();
         ParsesNestedProcedureCapture();
+        AcceptsIndexedVarArguments();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
         ParsesControlFlowStatements();
@@ -259,6 +260,15 @@ internal static class OberonCompilerParserTests
         var captured = (OberonCompilerNameExpression)assignment.Target;
         TestAssertions.Equal(2, captured.Symbol!.Level);
         TestAssertions.Equal(4L, captured.Symbol.Value);
+    }
+
+    private static void AcceptsIndexedVarArguments()
+    {
+        const string source = "MODULE Arrays; TYPE Values = ARRAY 4 OF INTEGER; VAR values: Values; index: INTEGER; PROCEDURE Touch(VAR value: INTEGER); BEGIN END Touch; BEGIN Touch(values[index]); END Arrays.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        TestAssertions.Equal(0, result.Diagnostics.Count);
     }
 
     private static void ParsesControlFlowStatements()
