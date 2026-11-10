@@ -411,6 +411,7 @@ public sealed class OberonCompilerParser
             or OberonCompilerTokenKind.Else
             or OberonCompilerTokenKind.Elsif
             or OberonCompilerTokenKind.Until
+            or OberonCompilerTokenKind.Bar
             or OberonCompilerTokenKind.EndOfText))
         {
             if (_current.Kind == OberonCompilerTokenKind.Semicolon)
@@ -429,6 +430,7 @@ public sealed class OberonCompilerParser
                 or OberonCompilerTokenKind.Else
                 or OberonCompilerTokenKind.Elsif
                 or OberonCompilerTokenKind.Until
+                or OberonCompilerTokenKind.Bar
                 or OberonCompilerTokenKind.EndOfText))
             {
                 AddDiagnostic("; expected between statements");
@@ -448,6 +450,7 @@ public sealed class OberonCompilerParser
         if (_current.Kind == OberonCompilerTokenKind.While) return ParseWhileStatement();
         if (_current.Kind == OberonCompilerTokenKind.Repeat) return ParseRepeatStatement();
         if (_current.Kind == OberonCompilerTokenKind.For) return ParseForStatement();
+        if (_current.Kind == OberonCompilerTokenKind.Case) return ParseCaseStatement();
 
         if (_current.Kind == OberonCompilerTokenKind.Return)
         {
@@ -564,6 +567,59 @@ public sealed class OberonCompilerParser
         var body = ParseStatementSequence();
         Expect(OberonCompilerTokenKind.End, "END expected after FOR statement");
         return new OberonCompilerForStatement(control, start, end, step, body);
+    }
+
+    private OberonCompilerCaseStatement ParseCaseStatement()
+    {
+        Next();
+        var selector = ParseRuntimeExpression();
+        Expect(OberonCompilerTokenKind.Of, "OF expected in CASE statement");
+        var arms = new List<OberonCompilerCaseArm>();
+        while (_current.Kind is not (OberonCompilerTokenKind.Else
+            or OberonCompilerTokenKind.End
+            or OberonCompilerTokenKind.EndOfText))
+        {
+            var labels = new List<long>();
+            while (true)
+            {
+                var label = ParseConstantExpression();
+                if (label.Type.Form is OberonCompilerTypeForm.Byte
+                    or OberonCompilerTypeForm.Character
+                    or OberonCompilerTypeForm.Integer)
+                {
+                    labels.Add(label.IntegerValue);
+                }
+                else
+                {
+                    AddDiagnostic("CASE labels must be integer constants");
+                }
+
+                if (_current.Kind != OberonCompilerTokenKind.Comma) break;
+                Next();
+            }
+
+            if (_current.Kind == OberonCompilerTokenKind.Range)
+            {
+                AddDiagnostic("CASE label ranges are not supported yet");
+                Next();
+                _ = ParseConstantExpression();
+            }
+
+            Expect(OberonCompilerTokenKind.Colon, ": expected after CASE labels");
+            arms.Add(new OberonCompilerCaseArm(labels, ParseStatementSequence()));
+            if (_current.Kind != OberonCompilerTokenKind.Bar) break;
+            Next();
+        }
+
+        OberonCompilerStatementSequence? elseBody = null;
+        if (_current.Kind == OberonCompilerTokenKind.Else)
+        {
+            Next();
+            elseBody = ParseStatementSequence();
+        }
+
+        Expect(OberonCompilerTokenKind.End, "END expected after CASE statement");
+        return new OberonCompilerCaseStatement(selector, arms, elseBody);
     }
 
     private IReadOnlyList<OberonCompilerExpression> ParseArgumentList()

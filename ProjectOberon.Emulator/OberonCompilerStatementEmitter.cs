@@ -85,6 +85,9 @@ public sealed class OberonCompilerStatementEmitter
             case OberonCompilerForStatement loop:
                 _controlFlow.EmitFor(loop);
                 break;
+            case OberonCompilerCaseStatement conditional:
+                _controlFlow.EmitCase(conditional);
+                break;
             case OberonCompilerCallStatement call:
                 _calls.EmitCall(call);
                 break;

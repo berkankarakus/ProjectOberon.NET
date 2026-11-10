@@ -12,6 +12,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsPointerDereference();
         EmitsForLoop();
         EmitsDescendingForLoop();
+        EmitsCaseStatement();
         EmitsControlFlow();
         EmitsRecordFieldLoadAndStore();
         EmitsAggregateRecordCopy();
@@ -168,6 +169,20 @@ internal static class OberonCompilerExpressionEmitterTests
 
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNLT ")));
+    }
+
+    private static void EmitsCaseStatement()
+    {
+        const string source = "MODULE Cases; VAR value, result: INTEGER; BEGIN CASE value OF 0: result := 1 | 1, 2: result := 2 ELSE result := 3 END; END Cases.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal("LDR r0, [r13, 0]", instructions[0]);
+        TestAssertions.True(instructions.Count(instruction => instruction.StartsWith("BEQ ")) >= 3);
+        TestAssertions.True(instructions.Contains("MOV r0, 0x0003"));
     }
 
     private static void EmitsRecordFieldLoadAndStore()

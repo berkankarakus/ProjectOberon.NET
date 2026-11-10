@@ -94,6 +94,37 @@ public sealed class OberonCompilerControlFlowEmitter
         _generator.Bind(end);
     }
 
+    public void EmitCase(OberonCompilerCaseStatement conditional)
+    {
+        ArgumentNullException.ThrowIfNull(conditional);
+        _emitExpression(conditional.Selector, 0);
+        var end = new OberonCompilerLabel();
+        var armLabels = conditional.Arms
+            .Select(_ => new OberonCompilerLabel())
+            .ToArray();
+
+        for (var armIndex = 0; armIndex < conditional.Arms.Count; armIndex++)
+        {
+            foreach (var label in conditional.Arms[armIndex].Labels)
+            {
+                _generator.EmitMoveImmediate(1, checked((int)label));
+                _generator.EmitRegister(AluOperation.Sub, 2, 0, 1);
+                _generator.EmitBranch(armLabels[armIndex], ConditionCode.Eq);
+            }
+        }
+
+        if (conditional.ElseBody is not null) _emitStatements(conditional.ElseBody);
+        _generator.EmitBranch(end);
+        for (var armIndex = 0; armIndex < conditional.Arms.Count; armIndex++)
+        {
+            _generator.Bind(armLabels[armIndex]);
+            _emitStatements(conditional.Arms[armIndex].Body);
+            _generator.EmitBranch(end);
+        }
+
+        _generator.Bind(end);
+    }
+
     private void EmitForBoundCheck(
         OberonCompilerForStatement loop,
         OberonCompilerLabel end,

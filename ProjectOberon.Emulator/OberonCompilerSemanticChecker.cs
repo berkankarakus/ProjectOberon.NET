@@ -75,6 +75,9 @@ public sealed class OberonCompilerSemanticChecker
                 case OberonCompilerForStatement loop:
                     CheckFor(loop, expectedReturnType, procedureName);
                     break;
+                case OberonCompilerCaseStatement conditional:
+                    CheckCase(conditional, expectedReturnType, procedureName);
+                    break;
             }
         }
     }
@@ -100,6 +103,24 @@ public sealed class OberonCompilerSemanticChecker
     {
         if (CheckExpression(expression)?.Form != OberonCompilerTypeForm.Integer)
             AddDiagnostic(message);
+    }
+
+    private void CheckCase(
+        OberonCompilerCaseStatement conditional,
+        OberonCompilerType? expectedReturnType,
+        string? procedureName)
+    {
+        var selectorType = CheckExpression(conditional.Selector);
+        if (selectorType?.Form is not (OberonCompilerTypeForm.Byte
+            or OberonCompilerTypeForm.Character
+            or OberonCompilerTypeForm.Integer))
+        {
+            AddDiagnostic("CASE selector must be an integer or character");
+        }
+
+        foreach (var arm in conditional.Arms)
+            CheckStatements(arm.Body, expectedReturnType, procedureName);
+        CheckStatements(conditional.ElseBody, expectedReturnType, procedureName);
     }
 
     private void CheckAssignment(OberonCompilerAssignmentStatement assignment)
