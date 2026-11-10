@@ -14,6 +14,7 @@ internal static class OberonCompilerParserTests
         ParsesCaseStatements();
         ParsesCaseLabelRanges();
         ParsesSetMembership();
+        ParsesSetLiteral();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
         ParsesControlFlowStatements();
@@ -338,6 +339,18 @@ internal static class OberonCompilerParserTests
 
         TestAssertions.True(result.Succeeded);
         TestAssertions.Equal(0, result.Diagnostics.Count);
+    }
+
+    private static void ParsesSetLiteral()
+    {
+        const string source = "MODULE Sets; VAR flags: SET; BEGIN flags := {0, 2..4, 31}; END Sets.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var literal = (OberonCompilerIntegerLiteralExpression)assignment.Value;
+        TestAssertions.Equal(unchecked((int)0x8000_001d), checked((int)literal.Value));
+        TestAssertions.Equal(OberonCompilerTypeForm.Set, literal.Type.Form);
     }
 
     private static void ParsesControlFlowStatements()

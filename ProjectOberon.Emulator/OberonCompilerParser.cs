@@ -763,9 +763,64 @@ public sealed class OberonCompilerParser
             OberonCompilerTokenKind.Nil => new OberonCompilerIntegerLiteralExpression(_symbols.NilType, 0),
             OberonCompilerTokenKind.String => new OberonCompilerStringLiteralExpression(
                 _symbols.StringType, token.StringValue ?? string.Empty),
+            OberonCompilerTokenKind.LeftBrace => ParseRuntimeSetLiteral(),
             OberonCompilerTokenKind.Identifier => ParseRuntimeNameOrCall(token),
             _ => InvalidRuntimeExpression()
         };
+    }
+
+    private OberonCompilerExpression ParseRuntimeSetLiteral()
+    {
+        uint value = 0;
+        while (_current.Kind is not (OberonCompilerTokenKind.RightBrace
+            or OberonCompilerTokenKind.EndOfText))
+        {
+            var start = ParseConstantExpression();
+            var end = start;
+            if (_current.Kind == OberonCompilerTokenKind.Range)
+            {
+                Next();
+                end = ParseConstantExpression();
+            }
+
+            if (!TryGetSetElement(start, out var first)
+                || !TryGetSetElement(end, out var last))
+            {
+                AddDiagnostic("SET elements must be integer constants in the range 0..31");
+            }
+            else if (first > last)
+            {
+                AddDiagnostic("SET range must be ascending");
+            }
+            else
+            {
+                for (var element = first; element <= last; element++)
+                    value |= 1u << element;
+            }
+
+            if (_current.Kind != OberonCompilerTokenKind.Comma) break;
+            Next();
+        }
+
+        Expect(OberonCompilerTokenKind.RightBrace, "} expected after SET literal");
+        return new OberonCompilerIntegerLiteralExpression(
+            _symbols.SetType,
+            unchecked((int)value));
+    }
+
+    private static bool TryGetSetElement(ConstantValue value, out int element)
+    {
+        if (value.Type.Form is OberonCompilerTypeForm.Byte
+            or OberonCompilerTypeForm.Character
+            or OberonCompilerTypeForm.Integer
+            && value.IntegerValue is >= 0 and <= 31)
+        {
+            element = checked((int)value.IntegerValue);
+            return true;
+        }
+
+        element = 0;
+        return false;
     }
 
     private ConstantValue ApplyConstantUnary(OberonCompilerTokenKind operation, ConstantValue value)

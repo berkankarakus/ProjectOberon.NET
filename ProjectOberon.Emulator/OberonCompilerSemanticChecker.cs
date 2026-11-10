@@ -263,6 +263,15 @@ public sealed class OberonCompilerSemanticChecker
             return leftType;
         }
 
+        if (leftType?.Form == OberonCompilerTypeForm.Set
+            && rightType?.Form == OberonCompilerTypeForm.Set
+            && binary.Operator is OberonCompilerTokenKind.Plus
+                or OberonCompilerTokenKind.Minus
+                or OberonCompilerTokenKind.Multiply)
+        {
+            return leftType;
+        }
+
         if (!IsNumeric(leftType) || !IsNumeric(rightType))
             AddDiagnostic("numeric operands expected");
         return leftType;

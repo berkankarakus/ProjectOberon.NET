@@ -17,6 +17,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsCaseStatement();
         EmitsCaseRange();
         EmitsSetMembership();
+        EmitsSetLiteralAndOperations();
         EmitsControlFlow();
         EmitsRecordFieldLoadAndStore();
         EmitsAggregateRecordCopy();
@@ -132,6 +133,21 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("DIV r0, r0, r1", Risc5Disassembler.Format(generator.Code[2]));
         TestAssertions.Equal("MOV r0, H", Risc5Disassembler.Format(generator.Code[3]));
         TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[4]));
+    }
+
+    private static void EmitsSetLiteralAndOperations()
+    {
+        const string source = "MODULE Sets; VAR result: SET; BEGIN result := {1, 3} + {3, 5} - {1}; END Sets.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal(1, instructions.Count(instruction => instruction.StartsWith("IOR ")));
+        TestAssertions.Equal(1, instructions.Count(instruction => instruction.StartsWith("ANN ")));
+        TestAssertions.True(instructions.Any(instruction => instruction == "STR r0, [r13, 0]"));
     }
 
     private static void EmitsRealComparisons()

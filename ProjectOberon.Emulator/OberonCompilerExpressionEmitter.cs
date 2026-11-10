@@ -176,6 +176,20 @@ public sealed class OberonCompilerExpressionEmitter
                 return destination;
             }
 
+            if (IsSet(binary))
+            {
+                var setOperation = binary.Operator switch
+                {
+                    OberonCompilerTokenKind.Plus => AluOperation.Ior,
+                    OberonCompilerTokenKind.Minus => AluOperation.Ann,
+                    OberonCompilerTokenKind.Multiply => AluOperation.And,
+                    _ => throw new NotSupportedException(
+                        $"operator {binary.Operator} is not valid for SET")
+                };
+                _generator.EmitRegister(setOperation, destination, destination, temporary);
+                return destination;
+            }
+
             var operation = IsReal(binary)
                 ? binary.Operator switch
                 {
@@ -318,6 +332,9 @@ public sealed class OberonCompilerExpressionEmitter
 
     private static bool IsReal(OberonCompilerBinaryExpression expression) =>
         IsReal(expression.Left) || IsReal(expression.Right);
+
+    private static bool IsSet(OberonCompilerBinaryExpression expression) =>
+        ExpressionType(expression.Left)?.Form == OberonCompilerTypeForm.Set;
 
     private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression) => expression switch
     {
