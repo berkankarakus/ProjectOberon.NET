@@ -866,8 +866,11 @@ public sealed class OberonCompilerParser
                 OberonCompilerTokenKind.Plus => left.NumericValue + right.NumericValue,
                 OberonCompilerTokenKind.Minus => left.NumericValue - right.NumericValue,
                 OberonCompilerTokenKind.Multiply => left.NumericValue * right.NumericValue,
+                OberonCompilerTokenKind.RealDivide => right.NumericValue == 0 ? 0 : left.NumericValue / right.NumericValue,
                 _ => 0
             };
+            if (operation == OberonCompilerTokenKind.RealDivide && right.NumericValue == 0)
+                AddDiagnostic("division by zero");
             return ConstantValue.Real(_symbols, result);
         }
 

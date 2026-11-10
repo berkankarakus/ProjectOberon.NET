@@ -44,9 +44,11 @@ public sealed class OberonCompilerExpressionEmitter
             case OberonCompilerIntegerLiteralExpression literal:
                 _generator.EmitMoveImmediate(destination, checked((int)literal.Value));
                 return destination;
-            case OberonCompilerRealLiteralExpression:
+            case OberonCompilerRealLiteralExpression literal:
+                _generator.EmitMoveImmediate(destination, BitConverter.SingleToInt32Bits((float)literal.Value));
+                return destination;
             case OberonCompilerStringLiteralExpression:
-                throw new NotSupportedException("real and string lowering is not implemented");
+                throw new NotSupportedException("string lowering is not implemented");
             case OberonCompilerCallExpression call:
                 if (_emitFunctionCall is null)
                     throw new InvalidOperationException("function call emission requires a statement emitter");
@@ -125,8 +127,10 @@ public sealed class OberonCompilerExpressionEmitter
                 var temporary = _registers.AcquireTemporary(destination);
                 try
                 {
-                    _generator.EmitMoveImmediate(temporary, 0);
-                    _generator.EmitRegister(AluOperation.Sub, destination, temporary, destination);
+                    var operation = IsReal(unary.Operand) ? AluOperation.Fsb : AluOperation.Sub;
+                    _generator.EmitMoveImmediate(temporary,
+                        IsReal(unary.Operand) ? BitConverter.SingleToInt32Bits(0f) : 0);
+                    _generator.EmitRegister(operation, destination, temporary, destination);
                 }
                 finally
                 {
@@ -151,7 +155,16 @@ public sealed class OberonCompilerExpressionEmitter
             EmitExpression(binary.Right, temporary);
             if (IsRelation(binary.Operator)) return EmitComparison(binary, destination, temporary);
 
-            var operation = binary.Operator switch
+            var operation = IsReal(binary)
+                ? binary.Operator switch
+                {
+                    OberonCompilerTokenKind.Plus => AluOperation.Fad,
+                    OberonCompilerTokenKind.Minus => AluOperation.Fsb,
+                    OberonCompilerTokenKind.Multiply => AluOperation.Fml,
+                    OberonCompilerTokenKind.Divide or OberonCompilerTokenKind.RealDivide => AluOperation.Fdv,
+                    _ => throw new NotSupportedException($"operator {binary.Operator} is not valid for REAL")
+                }
+                : binary.Operator switch
             {
                 OberonCompilerTokenKind.Plus => AluOperation.Add,
                 OberonCompilerTokenKind.Minus => AluOperation.Sub,
@@ -175,6 +188,9 @@ public sealed class OberonCompilerExpressionEmitter
         int destination,
         int rightRegister)
     {
+        if (IsReal(comparison))
+            throw new NotSupportedException("REAL comparisons are not implemented");
+
         var (condition, invert) = ComparisonBranch(comparison.Operator);
         _generator.EmitRegister(AluOperation.Sub, destination, destination, rightRegister);
         var trueLabel = new OberonCompilerLabel();
@@ -204,5 +220,22 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerTokenKind.Equal or OberonCompilerTokenKind.NotEqual or
         OberonCompilerTokenKind.Less or OberonCompilerTokenKind.LessOrEqual or
         OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual;
+
+    private static bool IsReal(OberonCompilerExpression expression) => ExpressionType(expression)?.Form == OberonCompilerTypeForm.Real;
+
+    private static bool IsReal(OberonCompilerBinaryExpression expression) =>
+        IsReal(expression.Left) || IsReal(expression.Right);
+
+    private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression) => expression switch
+    {
+        OberonCompilerLiteralExpression literal => literal.Type,
+        OberonCompilerNameExpression name => name.Symbol?.Type,
+        OberonCompilerCallExpression call => call.Procedure.Symbol?.Type?.Base,
+        OberonCompilerFieldExpression field => field.Field.Type,
+        OberonCompilerIndexExpression index => index.ElementType,
+        OberonCompilerUnaryExpression unary => ExpressionType(unary.Operand),
+        OberonCompilerBinaryExpression binary => ExpressionType(binary.Left),
+        _ => null
+    };
 
 }

@@ -7,6 +7,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsArithmeticAssignment();
         EmitsModuleVariableLoads();
         EmitsPackedByteLoadsAndStores();
+        EmitsRealArithmetic();
         EmitsControlFlow();
         EmitsRecordFieldLoadAndStore();
         EmitsAggregateRecordCopy();
@@ -89,6 +90,23 @@ internal static class OberonCompilerExpressionEmitterTests
 
         TestAssertions.Equal("LDR.B r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("STR.B r0, [r13, 1]", Risc5Disassembler.Format(generator.Code[1]));
+    }
+
+    private static void EmitsRealArithmetic()
+    {
+        const string source = "MODULE Real; VAR result: REAL; BEGIN result := 1.5 + 2.5 * 2.0; END Real.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
+
+        TestAssertions.Equal("MOV r0, 0x3fc00000", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("MOV r1, 0x40200000", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("MOV r2, 0x40000000", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("FML r1, r1, r2", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("FAD r0, r0, r1", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[5]));
     }
 
     private static void EmitsRecordFieldLoadAndStore()
