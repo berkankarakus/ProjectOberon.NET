@@ -296,8 +296,12 @@ public sealed class OberonCompilerSemanticChecker
 
         if (expectedType.Form == OberonCompilerTypeForm.Array && expectedType.Length < 0)
         {
-            if (actualType.Form != OberonCompilerTypeForm.Array
-                || !AreAssignable(expectedType.Base!, actualType.Base!))
+            var isCharacterString = expectedType.Base?.Form == OberonCompilerTypeForm.Character
+                && actualType.Form == OberonCompilerTypeForm.String;
+            var isCompatibleArray = actualType.Form == OberonCompilerTypeForm.Array
+                && actualType.Base is not null
+                && AreAssignable(expectedType.Base!, actualType.Base);
+            if (!isCharacterString && !isCompatibleArray)
             {
                 AddDiagnostic($"argument for '{parameter.Name}' must be an ARRAY");
             }

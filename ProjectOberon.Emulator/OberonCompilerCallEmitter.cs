@@ -122,6 +122,14 @@ public sealed class OberonCompilerCallEmitter
 
     private void EmitOpenArrayArgument(OberonCompilerExpression argument, int destination)
     {
+        if (argument is OberonCompilerStringLiteralExpression literal)
+        {
+            _addresses.EmitAddress(argument, destination);
+            OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination + 1);
+            _generator.EmitMoveImmediate(destination + 1, literal.Value.Length);
+            return;
+        }
+
         if (argument is not OberonCompilerNameExpression name || name.Symbol is null)
             throw new NotSupportedException("open array arguments must be addressable names");
 

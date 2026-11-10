@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace ProjectOberon.Emulator;
 
 public sealed class OberonCompilerModuleEmitter
@@ -6,6 +8,9 @@ public sealed class OberonCompilerModuleEmitter
     private readonly OberonCompilerFrameEmitter _frames;
     private readonly OberonCompilerStatementEmitter _statements;
     private readonly Dictionary<OberonCompilerObject, OberonCompilerLabel> _procedureLabels = [];
+    private readonly Dictionary<string, int> _stringAddresses = new(StringComparer.Ordinal);
+    private readonly List<byte> _moduleData = [];
+    private int _nextStringOffset;
 
     public OberonCompilerModuleEmitter(OberonCompilerCodeGenerator generator)
     {
@@ -15,8 +20,11 @@ public sealed class OberonCompilerModuleEmitter
         _statements = new OberonCompilerStatementEmitter(
             generator,
             procedureLabelResolver: ResolveProcedureLabel,
-            currentLevel: 1);
+            currentLevel: 1,
+            stringAddressResolver: ResolveStringAddress);
     }
+
+    public IReadOnlyList<byte> ModuleData => _moduleData;
 
     public IReadOnlyList<uint> Emit(OberonCompilerModuleParseResult module)
     {
@@ -24,6 +32,10 @@ public sealed class OberonCompilerModuleEmitter
         if (!module.Succeeded) throw new InvalidOperationException("cannot emit an invalid module");
 
         _procedureLabels.Clear();
+        _stringAddresses.Clear();
+        _moduleData.Clear();
+        _nextStringOffset = Align(ModuleVariableDataSize(module), 4);
+        EnsureModuleData(_nextStringOffset);
         var procedures = module.Procedures ?? [];
         var allProcedures = Flatten(procedures).ToArray();
         foreach (var procedure in allProcedures)
@@ -38,7 +50,8 @@ public sealed class OberonCompilerModuleEmitter
                 _generator,
                 procedure.FrameSize,
                 ResolveProcedureLabel,
-                currentLevel: procedure.Symbol.Level + 1);
+                currentLevel: procedure.Symbol.Level + 1,
+                stringAddressResolver: ResolveStringAddress);
             if (procedure.Body is not null) procedureStatements.EmitStatementSequence(procedure.Body);
             if (OberonCompilerControlFlowAnalyzer.CanCompleteNormally(procedure.Body))
                 _frames.EmitProcedureReturn(procedure.FrameSize);
@@ -50,6 +63,41 @@ public sealed class OberonCompilerModuleEmitter
 
     private OberonCompilerLabel? ResolveProcedureLabel(OberonCompilerObject procedure) =>
         _procedureLabels.TryGetValue(procedure, out var label) ? label : null;
+
+    private int ResolveStringAddress(string value)
+    {
+        if (_stringAddresses.TryGetValue(value, out var address)) return address;
+
+        address = _nextStringOffset;
+        var bytes = Encoding.Latin1.GetBytes(value);
+        EnsureModuleData(address + bytes.Length + 1);
+        for (var index = 0; index < bytes.Length; index++)
+            _moduleData[address + index] = bytes[index];
+        _moduleData[address + bytes.Length] = 0;
+        _stringAddresses.Add(value, address);
+        _nextStringOffset = address + bytes.Length + 1;
+        return address;
+    }
+
+    private static int ModuleVariableDataSize(OberonCompilerModuleParseResult module)
+    {
+        var end = 0;
+        foreach (var symbol in module.ModuleScope?.Objects ?? [])
+        {
+            if (symbol.Class != OberonCompilerObjectClass.Variable) continue;
+            end = Math.Max(end, checked((int)symbol.Value + (symbol.Type?.Size ?? 0)));
+        }
+
+        return end;
+    }
+
+    private void EnsureModuleData(int size)
+    {
+        while (_moduleData.Count < size) _moduleData.Add(0);
+    }
+
+    private static int Align(int value, int alignment) =>
+        checked((value + alignment - 1) / alignment * alignment);
 
     private static IEnumerable<OberonCompilerProcedureDefinition> Flatten(
         IEnumerable<OberonCompilerProcedureDefinition> procedures)

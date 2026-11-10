@@ -30,6 +30,14 @@ public sealed class OberonCompilerAssignmentEmitter
         var targetType = ExpressionType(assignment.Target);
         if (OberonCompilerTypeRules.IsAggregate(targetType))
         {
+            if (assignment.Value is OberonCompilerStringLiteralExpression literal
+                && targetType!.Form == OberonCompilerTypeForm.Array
+                && targetType.Base?.Form == OberonCompilerTypeForm.Character)
+            {
+                EmitStringCopy(assignment.Target, literal, targetType.Length);
+                return;
+            }
+
             EmitAggregateCopy(assignment.Target, assignment.Value, targetType!.Size);
             return;
         }
@@ -95,6 +103,29 @@ public sealed class OberonCompilerAssignmentEmitter
             _generator.EmitLoad(0, 1, offset, byteValue: true);
             _generator.EmitStore(0, 2, offset, byteValue: true);
             offset++;
+        }
+    }
+
+    private void EmitStringCopy(
+        OberonCompilerExpression target,
+        OberonCompilerStringLiteralExpression source,
+        int targetLength)
+    {
+        _addresses.EmitAddress(source, 1);
+        using var protectedSource = _registers.ReserveRange(1, 1);
+        _addresses.EmitAddress(target, 2);
+
+        var copied = Math.Min(source.Value.Length, targetLength);
+        for (var offset = 0; offset < copied; offset++)
+        {
+            _generator.EmitLoad(0, 1, offset, byteValue: true);
+            _generator.EmitStore(0, 2, offset, byteValue: true);
+        }
+
+        for (var offset = copied; offset < targetLength; offset++)
+        {
+            _generator.EmitMoveImmediate(0, 0);
+            _generator.EmitStore(0, 2, offset, byteValue: true);
         }
     }
 

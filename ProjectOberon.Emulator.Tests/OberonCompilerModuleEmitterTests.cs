@@ -13,6 +13,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsStaticLinkForNestedProcedure();
         EmitsRecordParameterPointerCall();
         EmitsPointerParameterCall();
+        EmitsStringDataAndCharCopy();
         EmitsOpenArrayAndScalarParameterCall();
     }
 
@@ -168,5 +169,21 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.True(instructions.Contains("STR r0, [r14, 4]"));
         TestAssertions.True(instructions.Contains("LDR r0, [r13, 0]"));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BTL ")));
+    }
+
+    private static void EmitsStringDataAndCharCopy()
+    {
+        const string source = "MODULE Strings; VAR text: ARRAY 6 OF CHAR; BEGIN text := \"hello\"; END Strings.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+        var emitter = new OberonCompilerModuleEmitter(generator);
+
+        emitter.Emit(module);
+
+        TestAssertions.True(emitter.ModuleData.Skip(8).Take(6).SequenceEqual(
+            new byte[] { (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o', 0 }));
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Contains("ADD r1, r13, 0x0008"));
+        TestAssertions.True(instructions.Contains("STR.B r0, [r2, 5]"));
     }
 }

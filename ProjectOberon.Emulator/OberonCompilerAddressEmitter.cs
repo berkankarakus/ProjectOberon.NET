@@ -5,25 +5,40 @@ public sealed class OberonCompilerAddressEmitter
     private readonly IOberonCompilerInstructionWriter _generator;
     private readonly Func<OberonCompilerExpression, int, int>? _emitExpression;
     private readonly OberonCompilerRegisterAllocator? _registers;
+    private readonly Func<string, int>? _stringAddressResolver;
     private readonly int _currentLevel;
 
     public OberonCompilerAddressEmitter(
         IOberonCompilerInstructionWriter generator,
         Func<OberonCompilerExpression, int, int>? emitExpression = null,
         OberonCompilerRegisterAllocator? registers = null,
-        int currentLevel = 1)
+        int currentLevel = 1,
+        Func<string, int>? stringAddressResolver = null)
     {
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
         _emitExpression = emitExpression;
         _registers = registers;
         _currentLevel = currentLevel;
+        _stringAddressResolver = stringAddressResolver;
     }
 
     public void EmitAddress(OberonCompilerExpression expression, int destination)
     {
         ArgumentNullException.ThrowIfNull(expression);
         OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination);
+
+        if (expression is OberonCompilerStringLiteralExpression literal)
+        {
+            if (_stringAddressResolver is null)
+                throw new InvalidOperationException("string literal lowering requires a module data resolver");
+            _generator.EmitImmediate(
+                AluOperation.Add,
+                destination,
+                OberonCompilerCallingConvention.ModuleDataBase,
+                _stringAddressResolver(literal.Value));
+            return;
+        }
 
         if (expression is OberonCompilerIndexExpression index)
         {

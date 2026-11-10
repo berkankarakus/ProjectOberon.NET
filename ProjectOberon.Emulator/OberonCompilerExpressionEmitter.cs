@@ -47,8 +47,9 @@ public sealed class OberonCompilerExpressionEmitter
             case OberonCompilerRealLiteralExpression literal:
                 _generator.EmitMoveImmediate(destination, BitConverter.SingleToInt32Bits((float)literal.Value));
                 return destination;
-            case OberonCompilerStringLiteralExpression:
-                throw new NotSupportedException("string lowering is not implemented");
+            case OberonCompilerStringLiteralExpression literal:
+                _addresses.EmitAddress(literal, destination);
+                return destination;
             case OberonCompilerCallExpression call:
                 if (_emitFunctionCall is null)
                     throw new InvalidOperationException("function call emission requires a statement emitter");
