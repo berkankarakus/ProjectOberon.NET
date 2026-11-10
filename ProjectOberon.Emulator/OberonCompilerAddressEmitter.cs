@@ -59,6 +59,11 @@ public sealed class OberonCompilerAddressEmitter
                 var arrayBase = EmitStorageBase(symbol, destination);
                 _generator.EmitLoad(destination, arrayBase, offset);
                 return;
+            case OberonCompilerObjectClass.Parameter
+                when OberonCompilerTypeRules.IsAggregate(symbol.Type):
+                var aggregateBase = EmitStorageBase(symbol, destination);
+                _generator.EmitLoad(destination, aggregateBase, offset);
+                return;
             default:
                 throw new NotSupportedException($"'{name.Name}' cannot be passed by reference");
         }

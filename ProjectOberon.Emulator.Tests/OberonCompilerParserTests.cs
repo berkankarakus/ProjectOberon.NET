@@ -181,9 +181,9 @@ internal static class OberonCompilerParserTests
         var shapes = Find(scope, "Shapes")!.Type!;
         TestAssertions.Equal(3, shapes.ParameterCount);
         TestAssertions.Equal(4L, shapes.Parameters[0].Value);
-        TestAssertions.Equal(12L, shapes.Parameters[1].Value);
+        TestAssertions.Equal(8L, shapes.Parameters[1].Value);
         TestAssertions.Equal(-1, shapes.Parameters[1].Type!.Length);
-        TestAssertions.Equal(20L, shapes.Parameters[2].Value);
+        TestAssertions.Equal(16L, shapes.Parameters[2].Value);
         TestAssertions.Equal(OberonCompilerObjectClass.Procedure, Find(scope, "Outer")!.Class);
         var outerDefinition = FindProcedure(result.Procedures!, "Outer");
         TestAssertions.Equal(1, outerDefinition.NestedProcedures.Count);

@@ -268,8 +268,9 @@ public sealed class OberonCompilerParser
 
     private static int ParameterSlotSize(OberonCompilerType type) => type.Form switch
     {
-        OberonCompilerTypeForm.Record => 8,
+        OberonCompilerTypeForm.Record => 4,
         OberonCompilerTypeForm.Array when type.Length < 0 => 8,
+        OberonCompilerTypeForm.Array => 4,
         _ => 4
     };
 

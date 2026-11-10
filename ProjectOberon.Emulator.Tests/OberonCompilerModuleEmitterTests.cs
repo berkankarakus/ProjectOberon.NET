@@ -11,6 +11,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsOpenArrayParameterCall();
         EmitsNestedProcedureCall();
         EmitsStaticLinkForNestedProcedure();
+        EmitsRecordParameterPointerCall();
         EmitsOpenArrayAndScalarParameterCall();
     }
 
@@ -136,5 +137,21 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.True(instructions.Contains("MOV r12, r14"));
         TestAssertions.True(instructions.Contains("LDR r0, [r0, 4]"));
         TestAssertions.True(instructions.Contains("LDR r1, [r1, 4]"));
+    }
+
+    private static void EmitsRecordParameterPointerCall()
+    {
+        const string source = "MODULE Records; TYPE Pair = RECORD left, right: INTEGER; END; VAR pair: Pair; result: INTEGER; PROCEDURE Read(value: Pair); BEGIN result := value.left; END Read; BEGIN Read(pair); END Records.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Contains("STR r0, [r14, 4]"));
+        TestAssertions.True(instructions.Contains("LDR r0, [r14, 4]"));
+        TestAssertions.True(instructions.Contains("LDR r0, [r0, 0]"));
+        TestAssertions.True(instructions.Contains("ADD r0, r13, 0x0000"));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BTL ")));
     }
 }

@@ -110,6 +110,12 @@ public sealed class OberonCompilerCallEmitter
                 continue;
             }
 
+            if (OberonCompilerTypeRules.IsAggregate(parameter.Type))
+            {
+                _addresses.EmitAddress(arguments[index], register);
+                continue;
+            }
+
             throw new NotSupportedException("record parameter lowering is not implemented");
         }
     }

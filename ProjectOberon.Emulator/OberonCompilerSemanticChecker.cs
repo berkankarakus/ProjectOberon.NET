@@ -251,6 +251,9 @@ public sealed class OberonCompilerSemanticChecker
             AddDiagnostic($"argument {parameter.Name} of '{procedureName}' expects {TypeName(expectedType)}");
         }
 
+        if (OberonCompilerTypeRules.IsAggregate(expectedType) && !IsAddressable(argument))
+            AddDiagnostic($"aggregate argument '{parameter.Name}' of '{procedureName}' must be addressable");
+
         if (!parameter.ReadOnly && !IsAddressable(argument))
             AddDiagnostic($"VAR argument '{parameter.Name}' of '{procedureName}' must be addressable");
     }
@@ -284,6 +287,11 @@ public sealed class OberonCompilerSemanticChecker
             Symbol.Type.Form: OberonCompilerTypeForm.Array,
             Symbol.Type.Length: < 0
         } => true,
+        OberonCompilerNameExpression
+        {
+            Symbol.Class: OberonCompilerObjectClass.Parameter,
+            Symbol.Type: { } type
+        } when OberonCompilerTypeRules.IsAggregate(type) => true,
         OberonCompilerFieldExpression => true,
         OberonCompilerIndexExpression index => IsAddressable(index.Receiver),
         _ => false

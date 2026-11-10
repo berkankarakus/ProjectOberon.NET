@@ -52,6 +52,13 @@ public sealed class OberonCompilerFrameEmitter
                 continue;
             }
 
+            if (OberonCompilerTypeRules.IsAggregate(parameter.Type))
+            {
+                _generator.EmitSaveParameter(register, checked((int)parameter.Value));
+                register++;
+                continue;
+            }
+
             throw new NotSupportedException("aggregate parameter lowering is not implemented");
         }
     }
