@@ -227,6 +227,20 @@ public sealed class OberonCompilerSemanticChecker
     {
         var leftType = CheckExpression(binary.Left);
         var rightType = CheckExpression(binary.Right);
+        if (binary.Operator == OberonCompilerTokenKind.In)
+        {
+            if (leftType?.Form is not (OberonCompilerTypeForm.Byte
+                or OberonCompilerTypeForm.Character
+                or OberonCompilerTypeForm.Integer))
+            {
+                AddDiagnostic("IN left operand must be an integer");
+            }
+
+            if (rightType?.Form != OberonCompilerTypeForm.Set)
+                AddDiagnostic("IN right operand must be a SET");
+            return _booleanType;
+        }
+
         if (IsRelation(binary.Operator))
         {
             if (leftType is not null && rightType is not null

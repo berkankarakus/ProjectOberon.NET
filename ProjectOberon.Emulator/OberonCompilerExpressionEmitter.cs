@@ -201,6 +201,13 @@ public sealed class OberonCompilerExpressionEmitter
         int destination,
         int rightRegister)
     {
+        if (comparison.Operator == OberonCompilerTokenKind.In)
+        {
+            _generator.EmitRegister(AluOperation.And, destination, destination, rightRegister);
+            EmitBooleanFromNonZero(destination);
+            return destination;
+        }
+
         if (IsReal(comparison))
             throw new NotSupportedException("REAL comparisons are not implemented");
 
@@ -215,6 +222,18 @@ public sealed class OberonCompilerExpressionEmitter
         _generator.EmitMoveImmediate(destination, 1);
         _generator.Bind(end);
         return destination;
+    }
+
+    private void EmitBooleanFromNonZero(int register)
+    {
+        var trueLabel = new OberonCompilerLabel();
+        var end = new OberonCompilerLabel();
+        _generator.EmitBranch(trueLabel, ConditionCode.Eq, link: false, invert: true);
+        _generator.EmitMoveImmediate(register, 0);
+        _generator.EmitBranch(end);
+        _generator.Bind(trueLabel);
+        _generator.EmitMoveImmediate(register, 1);
+        _generator.Bind(end);
     }
 
     private static (ConditionCode Condition, bool Invert) ComparisonBranch(
@@ -232,7 +251,8 @@ public sealed class OberonCompilerExpressionEmitter
     private static bool IsRelation(OberonCompilerTokenKind operation) => operation is
         OberonCompilerTokenKind.Equal or OberonCompilerTokenKind.NotEqual or
         OberonCompilerTokenKind.Less or OberonCompilerTokenKind.LessOrEqual or
-        OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual;
+        OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual or
+        OberonCompilerTokenKind.In;
 
     private static bool IsReal(OberonCompilerExpression expression) => ExpressionType(expression)?.Form == OberonCompilerTypeForm.Real;
 

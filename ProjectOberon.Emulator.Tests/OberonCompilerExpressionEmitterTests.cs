@@ -14,6 +14,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsDescendingForLoop();
         EmitsCaseStatement();
         EmitsCaseRange();
+        EmitsSetMembership();
         EmitsControlFlow();
         EmitsRecordFieldLoadAndStore();
         EmitsAggregateRecordCopy();
@@ -197,6 +198,22 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BLT ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BLE ")));
+    }
+
+    private static void EmitsSetMembership()
+    {
+        const string source = "MODULE Sets; VAR value: INTEGER; flags: SET; result: BOOLEAN; BEGIN result := value IN flags; END Sets.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal("LDR r0, [r13, 0]", instructions[0]);
+        TestAssertions.Equal("LDR r1, [r13, 4]", instructions[1]);
+        TestAssertions.Equal("AND r0, r0, r1", instructions[2]);
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
+        TestAssertions.Equal("STR.B r0, [r13, 8]", instructions[^1]);
     }
 
     private static void EmitsRecordFieldLoadAndStore()

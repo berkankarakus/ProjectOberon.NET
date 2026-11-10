@@ -1017,7 +1017,8 @@ public sealed class OberonCompilerParser
     private static bool IsRelation(OberonCompilerTokenKind kind) => kind is
         OberonCompilerTokenKind.Equal or OberonCompilerTokenKind.NotEqual or
         OberonCompilerTokenKind.Less or OberonCompilerTokenKind.LessOrEqual or
-        OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual;
+        OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual or
+        OberonCompilerTokenKind.In;
 
     private ConstantValue InvalidConstant()
     {
