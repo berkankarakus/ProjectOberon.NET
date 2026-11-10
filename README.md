@@ -1,8 +1,12 @@
-# C# emulator
+# ProjectOberon.NET
 
-This directory contains the incremental C# implementation of the RISC5
-emulator. The C++ implementation remains the reference implementation while
-the port is developed and compared against it.
+This repository contains the C#/.NET implementation of the Project Oberon
+RISC5 emulator, runtime ports and Oberon compiler slices. The C++ emulator and
+the original ROM/disk assets remain in the reference `ProjectOberon` repository.
+
+The .NET code is intentionally kept in a separate repository so it can evolve
+and be tested independently while preserving compatibility with the reference
+ROM, disk image and RISC5 behavior.
 
 The first slice contains:
 
@@ -16,14 +20,14 @@ The first slice contains:
 Build and run the tests:
 
 ```sh
-dotnet build dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj
-dotnet run --project dotnet/ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj
+dotnet build ProjectOberon.Cli/ProjectOberon.Cli.csproj
+dotnet run --project ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj
 ```
 
 Run the CLI:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+dotnet run --project ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
   --rom RISC5Verilog/prom.mem \
   --disk RISC-work.img \
   --read-only \
@@ -100,7 +104,7 @@ differences between the two implementations.
 Build and run the C# SDL2 frontend:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
+dotnet run --project ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
   --rom RISC5Verilog/prom.mem \
   --disk RISC-work.img
 ```
@@ -131,7 +135,7 @@ For example, start the `Oberon` event loop after initializing its imported
 modules through the same host-backed boot session used by the CLI:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
+dotnet run --project ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
   --disk RISC-work.img \
   --read-only \
   --start-module Oberon \
@@ -145,7 +149,7 @@ An experimental host text editor can be opened over the framebuffer with an
 Oberon screen font:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
+dotnet run --project ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
   --editor notes.txt \
   --font systools/Oberon10.Scn.Fnt
 ```
@@ -204,7 +208,7 @@ host-side component with focused tests.
 List the files in an Oberon disk image without booting the emulator:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
+dotnet run --project ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
   --disk RISC-work.img
 ```
 
@@ -217,14 +221,14 @@ The filesystem CLI can also inspect and modify an existing image. Listing and
 flag:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
+dotnet run --project ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
   --disk RISC-work.img --cat System.rsc > System.rsc
 
-dotnet run --project dotnet/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
+dotnet run --project ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
   --disk RISC-work.img --put Demo.Mod Demo.Mod --writable
-dotnet run --project dotnet/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
+dotnet run --project ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
   --disk RISC-work.img --rename Demo.Mod Demo2.Mod --writable
-dotnet run --project dotnet/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
+dotnet run --project ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
   --disk RISC-work.img --delete Demo2.Mod --writable
 ```
 
@@ -234,7 +238,7 @@ image when experimenting with mutating operations.
 Inspect a compiled Oberon module using the layout read by `Modules.Mod`:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
+dotnet run --project ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
   --disk RISC-work.img \
   --module Oberon.rsc
 ```
@@ -242,7 +246,7 @@ dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- 
 Generate a Graphviz dependency graph for all compiled modules:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
+dotnet run --project ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
   --disk RISC-work.img --graph > oberon-modules.dot
 dot -Tsvg oberon-modules.dot > oberon-modules.svg
 ```
@@ -250,7 +254,7 @@ dot -Tsvg oberon-modules.dot > oberon-modules.svg
 Map compiled modules to their extracted Oberon sources and commands:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
+dotnet run --project ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
   --disk RISC-work.img --source-map --root .
 ```
 
@@ -261,7 +265,7 @@ module.
 Disassemble the code for a compiled command and connect it to the source line:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
+dotnet run --project ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- \
   --disk RISC-work.img \
   --module System.rsc \
   --disassemble \
@@ -273,7 +277,7 @@ dotnet run --project dotnet/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj -- 
 Trace the compiled modules whose header sectors are touched during boot:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+dotnet run --project ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
   --rom RISC5Verilog/prom.mem \
   --disk RISC-work.img \
   --read-only \
@@ -284,7 +288,7 @@ dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
 Generate a graph combining boot order and module imports:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+dotnet run --project ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
   --rom RISC5Verilog/prom.mem \
   --disk RISC-work.img \
   --read-only \
@@ -297,7 +301,7 @@ loader. This prepares its RAM image, module table, stack and body entry point
 before executing the requested number of instructions:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+dotnet run --project ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
   --disk RISC-work.img \
   --start-module Oberon \
   --steps 1000
@@ -307,7 +311,7 @@ To start at a named exported command instead of the module body entry point,
 add `--command`:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+dotnet run --project ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
   --disk RISC-work.img \
   --start-module System \
   --command Directory \
@@ -322,7 +326,7 @@ those symbol files and installs the host-backed bindings before starting an
 ordinary RSC module. A read-only smoke run against the checked-in image is:
 
 ```sh
-dotnet run --project dotnet/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+dotnet run --project ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
   --disk RISC-work.img \
   --read-only \
   --start-module Oberon \
