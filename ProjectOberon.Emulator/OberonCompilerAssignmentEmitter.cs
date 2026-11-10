@@ -30,21 +30,21 @@ public sealed class OberonCompilerAssignmentEmitter
         _emitExpression(assignment.Value, 0);
         if (assignment.Target is OberonCompilerFieldExpression field)
         {
-            if (!IsScalar(field.Field.Type))
+            if (!OberonCompilerTypeRules.IsScalar(field.Field.Type))
                 throw new NotSupportedException("aggregate field stores are not implemented");
             using var preservedValue = _registers.ReserveRange(0, 1);
             _addresses.EmitAddress(field, 1);
-            _generator.EmitStore(0, 1, 0);
+            _generator.EmitStore(0, 1, 0, OberonCompilerTypeRules.IsByteSized(field.Field.Type));
             return;
         }
 
         if (assignment.Target is OberonCompilerIndexExpression index)
         {
-            if (!IsScalar(index.ElementType))
+            if (!OberonCompilerTypeRules.IsScalar(index.ElementType))
                 throw new NotSupportedException("aggregate array element stores are not implemented");
             using var preservedValue = _registers.ReserveRange(0, 1);
             _addresses.EmitAddress(index, 1);
-            _generator.EmitStore(0, 1, 0);
+            _generator.EmitStore(0, 1, 0, OberonCompilerTypeRules.IsByteSized(index.ElementType));
             return;
         }
 
@@ -58,15 +58,12 @@ public sealed class OberonCompilerAssignmentEmitter
         if (target.Class == OberonCompilerObjectClass.Parameter && !target.ReadOnly)
         {
             _addresses.EmitAddress(name, 1);
-            _generator.EmitStore(0, 1, 0);
+            _generator.EmitStore(0, 1, 0, OberonCompilerTypeRules.IsByteSized(target.Type));
             return;
         }
 
         var addressRegister = _addresses.EmitStorageBase(target, 1);
-        _generator.EmitStore(0, addressRegister, offset);
+        _generator.EmitStore(0, addressRegister, offset, OberonCompilerTypeRules.IsByteSized(target.Type));
     }
 
-    private static bool IsScalar(OberonCompilerType? type) => type?.Form is
-        OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean
-        or OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer;
 }

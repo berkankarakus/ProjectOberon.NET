@@ -36,9 +36,7 @@ public sealed class OberonCompilerFrameEmitter
         var register = 0;
         foreach (var parameter in procedure.Type!.Parameters)
         {
-            if (parameter.Type?.Form is (
-                OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean
-                or OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer))
+            if (OberonCompilerTypeRules.IsScalar(parameter.Type))
             {
                 _generator.EmitSaveParameter(register, checked((int)parameter.Value));
                 register++;

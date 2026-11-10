@@ -96,7 +96,7 @@ public sealed class OberonCompilerCallEmitter
                 .Take(index)
                 .Sum(ParameterRegisterCount);
             using var preservedArguments = _registers.ReserveRange(0, register);
-            if (IsScalar(parameter.Type))
+            if (OberonCompilerTypeRules.IsScalar(parameter.Type))
             {
                 if (parameter.ReadOnly) _emitExpression(arguments[index], register);
                 else _addresses.EmitAddress(arguments[index], register);
@@ -136,10 +136,6 @@ public sealed class OberonCompilerCallEmitter
         _generator.EmitLoad(destination + 1, lengthBase,
             checked((int)name.Symbol.Value + 4));
     }
-
-    private static bool IsScalar(OberonCompilerType? type) => type?.Form is
-        OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean
-        or OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer;
 
     private static int ParameterRegisterCount(OberonCompilerObject parameter) =>
         parameter.Type?.Form == OberonCompilerTypeForm.Array && parameter.Type.Length < 0 ? 2 : 1;

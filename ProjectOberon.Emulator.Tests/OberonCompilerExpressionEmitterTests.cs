@@ -6,6 +6,7 @@ internal static class OberonCompilerExpressionEmitterTests
     {
         EmitsArithmeticAssignment();
         EmitsModuleVariableLoads();
+        EmitsPackedByteLoadsAndStores();
         EmitsControlFlow();
         EmitsRecordFieldLoadAndStore();
         AllocatesScratchRegistersWithoutUsingDestinationPlusOne();
@@ -74,6 +75,19 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BLT ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
+    }
+
+    private static void EmitsPackedByteLoadsAndStores()
+    {
+        const string source = "MODULE Bytes; VAR first, second: BOOLEAN; BEGIN second := first; END Bytes.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
+
+        TestAssertions.Equal("LDR.B r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("STR.B r0, [r13, 1]", Risc5Disassembler.Format(generator.Code[1]));
     }
 
     private static void EmitsRecordFieldLoadAndStore()

@@ -68,19 +68,19 @@ public sealed class OberonCompilerExpressionEmitter
 
     private int EmitField(OberonCompilerFieldExpression field, int destination)
     {
-        if (!IsScalar(field.Field.Type))
+        if (!OberonCompilerTypeRules.IsScalar(field.Field.Type))
             throw new NotSupportedException("aggregate field loads are not implemented");
         _addresses.EmitAddress(field, destination);
-        _generator.EmitLoad(destination, destination, 0);
+        _generator.EmitLoad(destination, destination, 0, OberonCompilerTypeRules.IsByteSized(field.Field.Type));
         return destination;
     }
 
     private int EmitIndex(OberonCompilerIndexExpression index, int destination)
     {
-        if (!IsScalar(index.ElementType))
+        if (!OberonCompilerTypeRules.IsScalar(index.ElementType))
             throw new NotSupportedException("aggregate array element loads are not implemented");
         _addresses.EmitAddress(index, destination);
-        _generator.EmitLoad(destination, destination, 0);
+        _generator.EmitLoad(destination, destination, 0, OberonCompilerTypeRules.IsByteSized(index.ElementType));
         return destination;
     }
 
@@ -94,17 +94,20 @@ public sealed class OberonCompilerExpressionEmitter
                 _generator.EmitMoveImmediate(destination, checked((int)symbol.Value));
                 return destination;
             case OberonCompilerObjectClass.Variable when symbol.Level == 1:
-                _generator.EmitLoad(destination, ModuleDataBase, checked((int)symbol.Value));
+                _generator.EmitLoad(destination, ModuleDataBase, checked((int)symbol.Value),
+                    OberonCompilerTypeRules.IsByteSized(symbol.Type));
                 return destination;
             case OberonCompilerObjectClass.Variable:
             case OberonCompilerObjectClass.Parameter when symbol.ReadOnly:
                 var valueBase = _addresses.EmitStorageBase(symbol, destination);
-                _generator.EmitLoad(destination, valueBase, checked((int)symbol.Value));
+                _generator.EmitLoad(destination, valueBase, checked((int)symbol.Value),
+                    OberonCompilerTypeRules.IsByteSized(symbol.Type));
                 return destination;
             case OberonCompilerObjectClass.Parameter:
                 var referenceBase = _addresses.EmitStorageBase(symbol, destination);
                 _generator.EmitLoad(destination, referenceBase, checked((int)symbol.Value));
-                _generator.EmitLoad(destination, destination, 0);
+                _generator.EmitLoad(destination, destination, 0,
+                    OberonCompilerTypeRules.IsByteSized(symbol.Type));
                 return destination;
             default:
                 throw new NotSupportedException($"symbol '{name.Name}' cannot be lowered yet");
@@ -202,7 +205,4 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerTokenKind.Less or OberonCompilerTokenKind.LessOrEqual or
         OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual;
 
-    private static bool IsScalar(OberonCompilerType? type) => type?.Form is
-        OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Boolean or
-        OberonCompilerTypeForm.Character or OberonCompilerTypeForm.Integer;
 }
