@@ -1,12 +1,12 @@
 # ProjectOberon.NET
 
 This repository contains the C#/.NET implementation of the Project Oberon
-RISC5 emulator, runtime ports and Oberon compiler slices. The C++ emulator and
-the original ROM/disk assets remain in the reference `ProjectOberon` repository.
+RISC5 emulator, runtime ports and Oberon compiler slices. It is an independent
+implementation with its own history, build, tests and SDL2 frontend.
 
-The .NET code is intentionally kept in a separate repository so it can evolve
-and be tested independently while preserving compatibility with the reference
-ROM, disk image and RISC5 behavior.
+ROM and disk images are runtime inputs and are intentionally kept outside the
+source repository. Supply compatible files with `--rom` and `--disk` when
+running the emulator or its inspection tools.
 
 The first slice contains:
 
@@ -34,9 +34,9 @@ dotnet run --project ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
   --steps 100000
 ```
 
-The C# and C++ runners use the same ROM and disk image. Their final CPU state
-is compared during development to catch instruction, MMIO, timer and SPI
-compatibility regressions.
+The runner accepts standard Project Oberon RISC5 ROM and disk images. Its
+final CPU state, MMIO, timer and SPI behavior are covered by the included
+deterministic tests.
 
 The first source-level Oberon port slice is available in the emulator library:
 `OberonDisplay` implements the `Display.Mod` raster operations against the
@@ -89,7 +89,7 @@ the loader can register those symbols as external, host-owned modules.
 `OberonModuleMemoryLoader` materializes that module graph in emulator RAM,
 and applies the `Modules.Mod` BL, data and type-descriptor fixup chains.
 `OberonCoreHostBinding` composes the host-backed `Kernel`, `Files` and
-`Modules` modules for the reference disk image; SMB procedure and variable
+`Modules` modules for a compatible disk image; SMB procedure and variable
 values are preserved as sparse word-offset entry tables so imported RSC fixups
 resolve to the correct byte addresses. Direct module startup is available
 through `OberonModuleRuntime` and the CLI’s `--start-module` option.
@@ -109,7 +109,7 @@ dotnet run --project ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
   --disk RISC-work.img
 ```
 
-The C# UI preserves the C++ controls: `F9` pause/resume, `F10` single-step,
+The UI provides `F9` pause/resume, `F10` single-step,
 `Escape` quit, keyboard forwarding, mouse input, framebuffer scaling and
 vertical flip control. SDL text input is forwarded to the emulated UART receive
 queue, while physical key events are translated to the Oberon Set 2 keyboard
@@ -320,10 +320,10 @@ dotnet run --project ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
 
 The command must be present in the module's RSC command table.
 
-The reference `RISC-work.img` keeps `Kernel`, `Files` and `Modules` as
+An Oberon `RISC-work.img` keeps `Kernel`, `Files` and `Modules` as
 kernel-linked modules and stores only their `.smb` symbol files. The CLI loads
 those symbol files and installs the host-backed bindings before starting an
-ordinary RSC module. A read-only smoke run against the checked-in image is:
+ordinary RSC module. A read-only smoke run against a supplied image is:
 
 ```sh
 dotnet run --project ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
