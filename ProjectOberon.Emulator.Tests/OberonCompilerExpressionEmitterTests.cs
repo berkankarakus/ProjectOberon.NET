@@ -10,6 +10,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsRecordFieldLoadAndStore();
         AllocatesScratchRegistersWithoutUsingDestinationPlusOne();
         EmitsFieldAddressThroughDedicatedEmitter();
+        EmitsArrayIndexLoadAndStore();
         EmitsThroughInstructionWriterAbstraction();
     }
 
@@ -125,6 +126,30 @@ internal static class OberonCompilerExpressionEmitterTests
 
         TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("ADD r0, r0, 0x0000", Risc5Disassembler.Format(generator.Code[1]));
+    }
+
+    private static void EmitsArrayIndexLoadAndStore()
+    {
+        const string source = "MODULE Arrays; TYPE Values = ARRAY 4 OF INTEGER; VAR values: Values; index: INTEGER; BEGIN values[index] := values[index] + 1; END Arrays.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("LDR r2, [r13, 16]", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("MOV r3, 0x0004", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("MUL r2, r2, r3", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("ADD r0, r0, r2", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("LDR r0, [r0, 0]", Risc5Disassembler.Format(generator.Code[5]));
+        TestAssertions.Equal("MOV r1, 0x0001", Risc5Disassembler.Format(generator.Code[6]));
+        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[7]));
+        TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[8]));
+        TestAssertions.Equal("LDR r2, [r13, 16]", Risc5Disassembler.Format(generator.Code[9]));
+        TestAssertions.Equal("MOV r3, 0x0004", Risc5Disassembler.Format(generator.Code[10]));
+        TestAssertions.Equal("MUL r2, r2, r3", Risc5Disassembler.Format(generator.Code[11]));
+        TestAssertions.Equal("ADD r1, r1, r2", Risc5Disassembler.Format(generator.Code[12]));
+        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[13]));
     }
 
     private static void EmitsThroughInstructionWriterAbstraction()

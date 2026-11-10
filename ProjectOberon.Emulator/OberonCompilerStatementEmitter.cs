@@ -18,14 +18,19 @@ public sealed class OberonCompilerStatementEmitter
         _frameSize = frameSize;
         _frames = new OberonCompilerFrameEmitter(generator);
 
-        var addresses = new OberonCompilerAddressEmitter(generator);
         var registers = new OberonCompilerRegisterAllocator();
+        OberonCompilerExpressionEmitter? expressions = null;
+        var addresses = new OberonCompilerAddressEmitter(
+            generator,
+            (expression, destination) => expressions!.EmitExpression(expression, destination),
+            registers);
         OberonCompilerCallEmitter? calls = null;
-        _expressions = new OberonCompilerExpressionEmitter(
+        expressions = new OberonCompilerExpressionEmitter(
             generator,
             addresses,
             registers,
             (call, destination) => calls!.EmitFunctionCall(call, destination));
+        _expressions = expressions;
         calls = new OberonCompilerCallEmitter(
             generator,
             addresses,
@@ -36,6 +41,7 @@ public sealed class OberonCompilerStatementEmitter
         _assignments = new OberonCompilerAssignmentEmitter(
             generator,
             addresses,
+            registers,
             _expressions.EmitExpression);
         _controlFlow = new OberonCompilerControlFlowEmitter(
             generator,

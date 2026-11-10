@@ -704,8 +704,24 @@ public sealed class OberonCompilerParser
 
     private OberonCompilerExpression ParseSelectors(OberonCompilerExpression expression)
     {
-        while (_current.Kind == OberonCompilerTokenKind.Period)
+        while (_current.Kind is OberonCompilerTokenKind.Period or OberonCompilerTokenKind.LeftBracket)
         {
+            if (_current.Kind == OberonCompilerTokenKind.LeftBracket)
+            {
+                Next();
+                var index = ParseRuntimeExpression();
+                Expect(OberonCompilerTokenKind.RightBracket, "] expected after array index");
+                var arrayType = ExpressionType(expression);
+                if (arrayType?.Form != OberonCompilerTypeForm.Array || arrayType.Base is null)
+                {
+                    AddDiagnostic("array index requires an ARRAY receiver");
+                    continue;
+                }
+
+                expression = new OberonCompilerIndexExpression(expression, index, arrayType.Base);
+                continue;
+            }
+
             Next();
             if (_current.Kind != OberonCompilerTokenKind.Identifier)
             {
@@ -740,6 +756,7 @@ public sealed class OberonCompilerParser
         OberonCompilerNameExpression name => name.Symbol?.Type,
         OberonCompilerCallExpression call => call.Procedure.Symbol?.Type?.Base,
         OberonCompilerFieldExpression field => field.Field.Type,
+        OberonCompilerIndexExpression index => index.ElementType,
         _ => null
     };
 

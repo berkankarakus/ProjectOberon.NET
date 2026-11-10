@@ -7,6 +7,7 @@ internal static class OberonCompilerParserTests
         ParsesModuleDeclarations();
         ParsesProcedureDeclarations();
         ParsesModuleStatements();
+        ParsesArrayIndexSelectors();
         ParsesControlFlowStatements();
         FoldsConstantExpressions();
         ReportsDeclarationErrors();
@@ -275,6 +276,20 @@ internal static class OberonCompilerParserTests
         TestAssertions.Equal(1, ifStatement.ElseBody!.Statements.Count);
         TestAssertions.True(body.Statements[1] is OberonCompilerWhileStatement);
         TestAssertions.True(body.Statements[2] is OberonCompilerRepeatStatement);
+    }
+
+    private static void ParsesArrayIndexSelectors()
+    {
+        const string source = "MODULE Arrays; TYPE Values = ARRAY 4 OF INTEGER; VAR values: Values; index: INTEGER; BEGIN values[index] := values[index] + 1; END Arrays.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        TestAssertions.True(assignment.Target is OberonCompilerIndexExpression);
+        TestAssertions.True(assignment.Value is OberonCompilerBinaryExpression
+            {
+                Left: OberonCompilerIndexExpression
+            });
     }
 
     private static OberonCompilerObject? Find(OberonCompilerScope scope, string name) =>

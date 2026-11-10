@@ -53,6 +53,8 @@ public sealed class OberonCompilerExpressionEmitter
                 return _emitFunctionCall(call, destination);
             case OberonCompilerFieldExpression field:
                 return EmitField(field, destination);
+            case OberonCompilerIndexExpression index:
+                return EmitIndex(index, destination);
             case OberonCompilerNameExpression name:
                 return EmitName(name, destination);
             case OberonCompilerUnaryExpression unary:
@@ -69,6 +71,15 @@ public sealed class OberonCompilerExpressionEmitter
         if (!IsScalar(field.Field.Type))
             throw new NotSupportedException("aggregate field loads are not implemented");
         _addresses.EmitAddress(field, destination);
+        _generator.EmitLoad(destination, destination, 0);
+        return destination;
+    }
+
+    private int EmitIndex(OberonCompilerIndexExpression index, int destination)
+    {
+        if (!IsScalar(index.ElementType))
+            throw new NotSupportedException("aggregate array element loads are not implemented");
+        _addresses.EmitAddress(index, destination);
         _generator.EmitLoad(destination, destination, 0);
         return destination;
     }

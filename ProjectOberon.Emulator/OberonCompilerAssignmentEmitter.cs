@@ -4,19 +4,23 @@ public sealed class OberonCompilerAssignmentEmitter
 {
     private readonly IOberonCompilerInstructionWriter _generator;
     private readonly OberonCompilerAddressEmitter _addresses;
+    private readonly OberonCompilerRegisterAllocator _registers;
     private readonly Func<OberonCompilerExpression, int, int> _emitExpression;
 
     public OberonCompilerAssignmentEmitter(
         IOberonCompilerInstructionWriter generator,
         OberonCompilerAddressEmitter addresses,
+        OberonCompilerRegisterAllocator registers,
         Func<OberonCompilerExpression, int, int> emitExpression)
     {
         ArgumentNullException.ThrowIfNull(generator);
         ArgumentNullException.ThrowIfNull(addresses);
+        ArgumentNullException.ThrowIfNull(registers);
         ArgumentNullException.ThrowIfNull(emitExpression);
 
         _generator = generator;
         _addresses = addresses;
+        _registers = registers;
         _emitExpression = emitExpression;
     }
 
@@ -28,7 +32,18 @@ public sealed class OberonCompilerAssignmentEmitter
         {
             if (!IsScalar(field.Field.Type))
                 throw new NotSupportedException("aggregate field stores are not implemented");
+            using var preservedValue = _registers.ReserveRange(0, 1);
             _addresses.EmitAddress(field, 1);
+            _generator.EmitStore(0, 1, 0);
+            return;
+        }
+
+        if (assignment.Target is OberonCompilerIndexExpression index)
+        {
+            if (!IsScalar(index.ElementType))
+                throw new NotSupportedException("aggregate array element stores are not implemented");
+            using var preservedValue = _registers.ReserveRange(0, 1);
+            _addresses.EmitAddress(index, 1);
             _generator.EmitStore(0, 1, 0);
             return;
         }

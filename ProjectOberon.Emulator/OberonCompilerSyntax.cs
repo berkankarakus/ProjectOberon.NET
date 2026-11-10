@@ -29,6 +29,11 @@ public sealed record OberonCompilerFieldExpression(
     OberonCompilerExpression Receiver,
     OberonCompilerObject Field) : OberonCompilerExpression;
 
+public sealed record OberonCompilerIndexExpression(
+    OberonCompilerExpression Receiver,
+    OberonCompilerExpression Index,
+    OberonCompilerType ElementType) : OberonCompilerExpression;
+
 public sealed record OberonCompilerUnaryExpression(
     OberonCompilerTokenKind Operator,
     OberonCompilerExpression Operand) : OberonCompilerExpression;
