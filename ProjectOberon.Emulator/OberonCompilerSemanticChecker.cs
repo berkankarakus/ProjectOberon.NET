@@ -300,6 +300,8 @@ public sealed class OberonCompilerSemanticChecker
     private static bool AreAssignable(OberonCompilerType expected, OberonCompilerType actual)
     {
         if (ReferenceEquals(expected, actual)) return true;
+        if (expected.Form == OberonCompilerTypeForm.Pointer
+            && actual.Form == OberonCompilerTypeForm.Nil) return true;
         if (IsNumeric(expected) && IsNumeric(actual)) return true;
         return expected.Form == OberonCompilerTypeForm.Array
             && expected.Base?.Form == OberonCompilerTypeForm.Character
@@ -307,7 +309,10 @@ public sealed class OberonCompilerSemanticChecker
     }
 
     private static bool AreComparable(OberonCompilerType left, OberonCompilerType right) =>
-        ReferenceEquals(left, right) || IsNumeric(left) && IsNumeric(right);
+        ReferenceEquals(left, right)
+        || left.Form == OberonCompilerTypeForm.Pointer && right.Form == OberonCompilerTypeForm.Nil
+        || left.Form == OberonCompilerTypeForm.Nil && right.Form == OberonCompilerTypeForm.Pointer
+        || IsNumeric(left) && IsNumeric(right);
 
     private static bool IsNumeric(OberonCompilerType? type) => type?.Form is
         OberonCompilerTypeForm.Byte or OberonCompilerTypeForm.Character

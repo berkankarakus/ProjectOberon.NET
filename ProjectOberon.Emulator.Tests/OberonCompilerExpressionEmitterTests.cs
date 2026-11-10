@@ -8,6 +8,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsModuleVariableLoads();
         EmitsPackedByteLoadsAndStores();
         EmitsRealArithmetic();
+        EmitsPointerValues();
         EmitsControlFlow();
         EmitsRecordFieldLoadAndStore();
         EmitsAggregateRecordCopy();
@@ -107,6 +108,20 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("FML r1, r1, r2", Risc5Disassembler.Format(generator.Code[3]));
         TestAssertions.Equal("FAD r0, r0, r1", Risc5Disassembler.Format(generator.Code[4]));
         TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[5]));
+    }
+
+    private static void EmitsPointerValues()
+    {
+        const string source = "MODULE Pointers; TYPE Node = RECORD value: INTEGER; END; IntRef = POINTER TO Node; VAR first, second: IntRef; BEGIN first := NIL; second := first; END Pointers.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        TestAssertions.Equal("MOV r0, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("LDR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("STR r0, [r13, 4]", Risc5Disassembler.Format(generator.Code[3]));
     }
 
     private static void EmitsRecordFieldLoadAndStore()
