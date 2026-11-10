@@ -8,7 +8,7 @@ public sealed partial class OberonFileDirectory
     public void Insert(string name, int fileAddress)
     {
         OberonFileNameRules.Validate(name);
-        if (fileAddress <= 0 || fileAddress % OberonKernel.LogicalSectorUnit != 0)
+        if (fileAddress <= 0 || fileAddress % OberonDiskLayout.LogicalSectorUnit != 0)
             throw new ArgumentOutOfRangeException(nameof(fileAddress));
 
         var promotion = InsertPage(RootAddress, new Entry(name, fileAddress, 0));

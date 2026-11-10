@@ -64,12 +64,10 @@ public sealed class OberonFileSystem
 
     public byte[] ReadLogicalSector(int address)
     {
-        if (address < 0 || address % LogicalSectorUnit != 0)
-            throw new ArgumentOutOfRangeException(nameof(address), "Oberon disk addresses must be non-negative multiples of 29");
         return OberonDiskLayout.ReadSector(_disk, address);
     }
 
-    public static uint PhysicalSector(int address) => OberonKernel.PhysicalSector(address);
+    public static uint PhysicalSector(int address) => OberonDiskLayout.PhysicalSector(address);
 
     private void EnumeratePage(int address, string prefix, List<OberonDirectoryEntry> entries, HashSet<int> visited)
     {
