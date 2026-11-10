@@ -8,6 +8,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsModuleVariableLoads();
         EmitsPackedByteLoadsAndStores();
         EmitsRealArithmetic();
+        EmitsRealComparisons();
         EmitsPointerValues();
         EmitsPointerDereference();
         EmitsForLoop();
@@ -114,6 +115,22 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("FML r1, r1, r2", Risc5Disassembler.Format(generator.Code[3]));
         TestAssertions.Equal("FAD r0, r0, r1", Risc5Disassembler.Format(generator.Code[4]));
         TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[5]));
+    }
+
+    private static void EmitsRealComparisons()
+    {
+        const string source = "MODULE Real; VAR less, lessEqual, equal, notEqual, greaterEqual, greater: BOOLEAN; BEGIN less := 1.5 < 2.5; lessEqual := 1.5 <= 1.5; equal := 2.5 = 2.5; notEqual := 2.5 # 3.5; greaterEqual := 3.5 >= 2.5; greater := 3.5 > 2.5; END Real.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal(6, instructions.Count(instruction => instruction.StartsWith("FSB ")));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BMI ")));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
+        TestAssertions.True(instructions.Any(instruction => instruction == "MOV r0, 0x0001"));
+        TestAssertions.True(instructions.Any(instruction => instruction == "MOV r0, 0x0000"));
     }
 
     private static void EmitsPointerValues()

@@ -209,7 +209,10 @@ public sealed class OberonCompilerExpressionEmitter
         }
 
         if (IsReal(comparison))
-            throw new NotSupportedException("REAL comparisons are not implemented");
+        {
+            EmitRealComparison(comparison.Operator, destination, rightRegister);
+            return destination;
+        }
 
         var (condition, invert) = ComparisonBranch(comparison.Operator);
         _generator.EmitRegister(AluOperation.Sub, destination, destination, rightRegister);
@@ -222,6 +225,54 @@ public sealed class OberonCompilerExpressionEmitter
         _generator.EmitMoveImmediate(destination, 1);
         _generator.Bind(end);
         return destination;
+    }
+
+    private void EmitRealComparison(
+        OberonCompilerTokenKind operation,
+        int leftRegister,
+        int rightRegister)
+    {
+        _generator.EmitRegister(AluOperation.Fsb, leftRegister, leftRegister, rightRegister);
+
+        var trueLabel = new OberonCompilerLabel();
+        var falseLabel = new OberonCompilerLabel();
+        var endLabel = new OberonCompilerLabel();
+
+        switch (operation)
+        {
+            case OberonCompilerTokenKind.Equal:
+                _generator.EmitBranch(trueLabel, ConditionCode.Eq);
+                break;
+            case OberonCompilerTokenKind.NotEqual:
+                _generator.EmitBranch(trueLabel, ConditionCode.Eq, link: false, invert: true);
+                break;
+            case OberonCompilerTokenKind.Less:
+                _generator.EmitBranch(trueLabel, ConditionCode.Mi);
+                break;
+            case OberonCompilerTokenKind.LessOrEqual:
+                _generator.EmitBranch(trueLabel, ConditionCode.Mi);
+                _generator.EmitBranch(trueLabel, ConditionCode.Eq);
+                break;
+            case OberonCompilerTokenKind.Greater:
+                _generator.EmitBranch(falseLabel, ConditionCode.Mi);
+                _generator.EmitBranch(falseLabel, ConditionCode.Eq);
+                _generator.EmitBranch(trueLabel);
+                break;
+            case OberonCompilerTokenKind.GreaterOrEqual:
+                _generator.EmitBranch(falseLabel, ConditionCode.Mi);
+                _generator.EmitBranch(trueLabel);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
+        }
+
+        _generator.EmitBranch(falseLabel);
+        _generator.Bind(trueLabel);
+        _generator.EmitMoveImmediate(leftRegister, 1);
+        _generator.EmitBranch(endLabel);
+        _generator.Bind(falseLabel);
+        _generator.EmitMoveImmediate(leftRegister, 0);
+        _generator.Bind(endLabel);
     }
 
     private void EmitBooleanFromNonZero(int register)
