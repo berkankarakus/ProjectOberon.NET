@@ -4,12 +4,12 @@ public sealed class OberonCompilerExpressionEmitter
 {
     public const int ModuleDataBase = OberonCompilerCallingConvention.ModuleDataBase;
 
-    private readonly OberonCompilerCodeGenerator _generator;
+    private readonly IOberonCompilerInstructionWriter _generator;
     private readonly OberonCompilerAddressEmitter _addresses;
     private readonly OberonCompilerRegisterAllocator _registers;
     private readonly Func<OberonCompilerCallExpression, int, int>? _emitFunctionCall;
 
-    public OberonCompilerExpressionEmitter(OberonCompilerCodeGenerator generator)
+    public OberonCompilerExpressionEmitter(IOberonCompilerInstructionWriter generator)
         : this(
             generator,
             new OberonCompilerAddressEmitter(generator),
@@ -19,7 +19,7 @@ public sealed class OberonCompilerExpressionEmitter
     }
 
     internal OberonCompilerExpressionEmitter(
-        OberonCompilerCodeGenerator generator,
+        IOberonCompilerInstructionWriter generator,
         OberonCompilerAddressEmitter addresses,
         OberonCompilerRegisterAllocator registers,
         Func<OberonCompilerCallExpression, int, int>? emitFunctionCall)
@@ -87,11 +87,11 @@ public sealed class OberonCompilerExpressionEmitter
                 return destination;
             case OberonCompilerObjectClass.Variable:
             case OberonCompilerObjectClass.Parameter when symbol.ReadOnly:
-                _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer,
+                _generator.EmitLoad(destination, OberonCompilerCallingConvention.StackPointer,
                     checked((int)symbol.Value));
                 return destination;
             case OberonCompilerObjectClass.Parameter:
-                _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer,
+                _generator.EmitLoad(destination, OberonCompilerCallingConvention.StackPointer,
                     checked((int)symbol.Value));
                 _generator.EmitLoad(destination, destination, 0);
                 return destination;

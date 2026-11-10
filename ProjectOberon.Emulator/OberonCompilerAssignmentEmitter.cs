@@ -2,12 +2,12 @@ namespace ProjectOberon.Emulator;
 
 public sealed class OberonCompilerAssignmentEmitter
 {
-    private readonly OberonCompilerCodeGenerator _generator;
+    private readonly IOberonCompilerInstructionWriter _generator;
     private readonly OberonCompilerAddressEmitter _addresses;
     private readonly Func<OberonCompilerExpression, int, int> _emitExpression;
 
     public OberonCompilerAssignmentEmitter(
-        OberonCompilerCodeGenerator generator,
+        IOberonCompilerInstructionWriter generator,
         OberonCompilerAddressEmitter addresses,
         Func<OberonCompilerExpression, int, int> emitExpression)
     {
@@ -42,14 +42,14 @@ public sealed class OberonCompilerAssignmentEmitter
         var offset = checked((int)target.Value);
         if (target.Class == OberonCompilerObjectClass.Parameter && !target.ReadOnly)
         {
-            _generator.EmitLoad(1, OberonCompilerCodeGenerator.StackPointer, offset);
+            _generator.EmitLoad(1, OberonCompilerCallingConvention.StackPointer, offset);
             _generator.EmitStore(0, 1, 0);
             return;
         }
 
         var addressRegister = target.Level == 1
             ? OberonCompilerCallingConvention.ModuleDataBase
-            : OberonCompilerCodeGenerator.StackPointer;
+            : OberonCompilerCallingConvention.StackPointer;
         _generator.EmitStore(0, addressRegister, offset);
     }
 

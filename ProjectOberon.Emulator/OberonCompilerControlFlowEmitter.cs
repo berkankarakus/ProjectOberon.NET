@@ -2,12 +2,12 @@ namespace ProjectOberon.Emulator;
 
 public sealed class OberonCompilerControlFlowEmitter
 {
-    private readonly OberonCompilerCodeGenerator _generator;
+    private readonly IOberonCompilerInstructionWriter _generator;
     private readonly Func<OberonCompilerExpression, int, int> _emitExpression;
     private readonly Action<OberonCompilerStatementSequence> _emitStatements;
 
     public OberonCompilerControlFlowEmitter(
-        OberonCompilerCodeGenerator generator,
+        IOberonCompilerInstructionWriter generator,
         Func<OberonCompilerExpression, int, int> emitExpression,
         Action<OberonCompilerStatementSequence> emitStatements)
     {

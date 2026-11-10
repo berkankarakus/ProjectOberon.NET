@@ -2,9 +2,9 @@ namespace ProjectOberon.Emulator;
 
 public sealed class OberonCompilerAddressEmitter
 {
-    private readonly OberonCompilerCodeGenerator _generator;
+    private readonly IOberonCompilerInstructionWriter _generator;
 
-    public OberonCompilerAddressEmitter(OberonCompilerCodeGenerator generator)
+    public OberonCompilerAddressEmitter(IOberonCompilerInstructionWriter generator)
     {
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
@@ -33,15 +33,15 @@ public sealed class OberonCompilerAddressEmitter
             case OberonCompilerObjectClass.Variable:
                 var baseRegister = symbol.Level == 1
                     ? OberonCompilerCallingConvention.ModuleDataBase
-                    : OberonCompilerCodeGenerator.StackPointer;
+                    : OberonCompilerCallingConvention.StackPointer;
                 _generator.EmitImmediate(AluOperation.Add, destination, baseRegister, offset);
                 return;
             case OberonCompilerObjectClass.Parameter when !symbol.ReadOnly:
-                _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer, offset);
+                _generator.EmitLoad(destination, OberonCompilerCallingConvention.StackPointer, offset);
                 return;
             case OberonCompilerObjectClass.Parameter
                 when symbol.Type?.Form == OberonCompilerTypeForm.Array && symbol.Type.Length < 0:
-                _generator.EmitLoad(destination, OberonCompilerCodeGenerator.StackPointer, offset);
+                _generator.EmitLoad(destination, OberonCompilerCallingConvention.StackPointer, offset);
                 return;
             default:
                 throw new NotSupportedException($"'{name.Name}' cannot be passed by reference");

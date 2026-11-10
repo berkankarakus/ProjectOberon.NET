@@ -10,7 +10,7 @@ public sealed class OberonCompilerStatementEmitter
     private readonly int _frameSize;
 
     public OberonCompilerStatementEmitter(
-        OberonCompilerCodeGenerator generator,
+        IOberonCompilerInstructionWriter generator,
         int frameSize = 0,
         Func<OberonCompilerObject, OberonCompilerLabel?>? procedureLabelResolver = null)
     {

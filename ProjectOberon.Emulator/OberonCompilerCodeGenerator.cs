@@ -6,11 +6,11 @@ public sealed class OberonCompilerLabel
     internal List<int> Fixups { get; } = [];
 }
 
-public sealed class OberonCompilerCodeGenerator
+public sealed class OberonCompilerCodeGenerator : IOberonCompilerInstructionWriter
 {
-    public const int StackPointer = 14;
-    public const int LinkRegister = 15;
-    public const int RegisterStackBase = 10;
+    public const int StackPointer = OberonCompilerCallingConvention.StackPointer;
+    public const int LinkRegister = OberonCompilerCallingConvention.LinkRegister;
+    public const int RegisterStackBase = OberonCompilerCallingConvention.RegisterStackBase;
 
     private readonly List<uint> _code = [];
 

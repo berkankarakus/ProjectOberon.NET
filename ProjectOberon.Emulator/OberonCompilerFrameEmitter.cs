@@ -2,9 +2,9 @@ namespace ProjectOberon.Emulator;
 
 public sealed class OberonCompilerFrameEmitter
 {
-    private readonly OberonCompilerCodeGenerator _generator;
+    private readonly IOberonCompilerInstructionWriter _generator;
 
-    public OberonCompilerFrameEmitter(OberonCompilerCodeGenerator generator)
+    public OberonCompilerFrameEmitter(IOberonCompilerInstructionWriter generator)
     {
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;

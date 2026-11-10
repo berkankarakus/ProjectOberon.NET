@@ -2,14 +2,14 @@ namespace ProjectOberon.Emulator;
 
 public sealed class OberonCompilerCallEmitter
 {
-    private readonly OberonCompilerCodeGenerator _generator;
+    private readonly IOberonCompilerInstructionWriter _generator;
     private readonly OberonCompilerAddressEmitter _addresses;
     private readonly OberonCompilerRegisterAllocator _registers;
     private readonly Func<OberonCompilerExpression, int, int> _emitExpression;
     private readonly Func<OberonCompilerObject, OberonCompilerLabel?>? _procedureLabelResolver;
 
     public OberonCompilerCallEmitter(
-        OberonCompilerCodeGenerator generator,
+        IOberonCompilerInstructionWriter generator,
         OberonCompilerAddressEmitter addresses,
         OberonCompilerRegisterAllocator registers,
         Func<OberonCompilerExpression, int, int> emitExpression,
@@ -109,7 +109,7 @@ public sealed class OberonCompilerCallEmitter
 
         if (name.Symbol.Class != OberonCompilerObjectClass.Parameter)
             throw new NotSupportedException("open array length source is not available");
-        _generator.EmitLoad(destination + 1, OberonCompilerCodeGenerator.StackPointer,
+        _generator.EmitLoad(destination + 1, OberonCompilerCallingConvention.StackPointer,
             checked((int)name.Symbol.Value + 4));
     }
 
