@@ -10,6 +10,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsRecordFieldLoadAndStore();
         AllocatesScratchRegistersWithoutUsingDestinationPlusOne();
         EmitsFieldAddressThroughDedicatedEmitter();
+        EmitsThroughInstructionWriterAbstraction();
     }
 
     private static void EmitsArithmeticAssignment()
@@ -124,5 +125,68 @@ internal static class OberonCompilerExpressionEmitterTests
 
         TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("ADD r0, r0, 0x0000", Risc5Disassembler.Format(generator.Code[1]));
+    }
+
+    private static void EmitsThroughInstructionWriterAbstraction()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var expression = new OberonCompilerBinaryExpression(
+            OberonCompilerTokenKind.Plus,
+            new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, 2),
+            new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, 3));
+        var writer = new RecordingInstructionWriter();
+
+        new OberonCompilerExpressionEmitter(writer).EmitExpression(expression, destination: 4);
+
+        TestAssertions.Equal("MOV r4, 0x0002", writer.Calls[0]);
+        TestAssertions.Equal("MOV r0, 0x0003", writer.Calls[1]);
+        TestAssertions.Equal("Add r4, r4, r0", writer.Calls[2]);
+    }
+
+    private sealed class RecordingInstructionWriter : IOberonCompilerInstructionWriter
+    {
+        public List<string> Calls { get; } = [];
+
+        public void EmitRegister(AluOperation operation, int destination, int left, int right, bool carry = false) =>
+            Calls.Add($"{operation} r{destination}, r{left}, r{right}");
+
+        public void EmitMoveImmediate(int destination, int value) =>
+            Calls.Add($"MOV r{destination}, 0x{value:x4}");
+
+        public void EmitImmediate(AluOperation operation, int destination, int left, int immediate) =>
+            throw new NotSupportedException();
+
+        public void EmitLoad(int destination, int addressRegister, int offset, bool byteValue = false) =>
+            throw new NotSupportedException();
+
+        public void EmitStore(int source, int addressRegister, int offset, bool byteValue = false) =>
+            throw new NotSupportedException();
+
+        public int EmitBranch(ConditionCode condition = ConditionCode.Always, bool link = false) =>
+            throw new NotSupportedException();
+
+        public int EmitBranch(ConditionCode condition, bool link, bool invert) =>
+            throw new NotSupportedException();
+
+        public int EmitBranchRegister(int register, ConditionCode condition = ConditionCode.Always, bool link = false) =>
+            throw new NotSupportedException();
+
+        public int EmitBranch(
+            OberonCompilerLabel label,
+            ConditionCode condition = ConditionCode.Always,
+            bool link = false) => throw new NotSupportedException();
+
+        public int EmitBranch(
+            OberonCompilerLabel label,
+            ConditionCode condition,
+            bool link,
+            bool invert) => throw new NotSupportedException();
+
+        public void Bind(OberonCompilerLabel label) => throw new NotSupportedException();
+        public void EmitReturn() => throw new NotSupportedException();
+        public void EmitCall(OberonCompilerLabel target) => throw new NotSupportedException();
+        public void EmitProcedurePrologue(int frameSize) => throw new NotSupportedException();
+        public void EmitSaveParameter(int register, int offset) => throw new NotSupportedException();
+        public void EmitProcedureReturn(int frameSize) => throw new NotSupportedException();
     }
 }
