@@ -11,6 +11,7 @@ internal sealed record RscOptions(
 {
     public static RscOptions Parse(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
         if (args.Contains("--help", StringComparer.Ordinal)
             || args.Contains("-h", StringComparer.Ordinal))
         {

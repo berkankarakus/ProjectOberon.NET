@@ -89,6 +89,7 @@ internal static class SubcommandOptionTests
 
     private static void RejectsInvalidRscOptions()
     {
+        TestAssertions.Throws<ArgumentNullException>(() => RscOptions.Parse(null!));
         TestAssertions.Throws<ArgumentException>(() => RscOptions.Parse([]));
         TestAssertions.Throws<ArgumentException>(() => RscOptions.Parse(["--disk", "work.img", "--count", "0"]));
         TestAssertions.Throws<ArgumentException>(() => RscOptions.Parse(["--disk"]));
