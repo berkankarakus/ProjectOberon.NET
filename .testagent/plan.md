@@ -42,3 +42,4 @@
 | Compiler CLI accepts one source only | Reject ambiguous positional and `--source` combinations | `CompilerCliOptionTests.RejectsMultipleSourcePaths` |
 | RSC CLI supports the conventional short help flag | Treat `-h` like `--help` before parsing other options | `SubcommandOptionTests.HandlesRscHelp` |
 | Filesystem CLI supports the conventional short help flag | Treat `-h` like `--help` before parsing other options | `SubcommandOptionTests.HandlesFileSystemHelp` |
+| Main CLI help is a short-circuit | Print help even when extra arguments follow `-h` or `--help` | `CliOptionTests.UsesSafeDefaults` |

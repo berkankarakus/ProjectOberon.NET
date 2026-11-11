@@ -15,6 +15,13 @@ internal sealed record Options(
 {
     public static Options Parse(string[] args)
     {
+        if (args.Contains("--help", StringComparer.Ordinal)
+            || args.Contains("-h", StringComparer.Ordinal))
+        {
+            return new Options(null, null, true, 1000, true, null, null,
+                false, false, null, false, false, null);
+        }
+
         string? rom = null;
         string? disk = null;
         var diskWritable = true;

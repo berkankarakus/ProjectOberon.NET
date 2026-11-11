@@ -50,6 +50,7 @@ internal static class CliOptionTests
         TestAssertions.True(options.Breakpoint is null);
         TestAssertions.False(options.Initialize);
         TestAssertions.False(options.Boot);
+        TestAssertions.True(Options.Parse(["-h", "--unknown"]).Help);
     }
 
     private static void RejectsOptionsThatRequireADisk()
