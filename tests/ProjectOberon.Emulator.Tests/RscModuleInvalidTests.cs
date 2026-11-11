@@ -121,4 +121,11 @@ internal static partial class RscModuleTests
 
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
     }
+
+    private static void RejectsLongModuleNames()
+    {
+        var data = BuildRsc(new string('D', 32), 1, [], "Start");
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
+    }
 }

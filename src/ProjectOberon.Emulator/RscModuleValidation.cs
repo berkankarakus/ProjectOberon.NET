@@ -2,6 +2,15 @@ namespace ProjectOberon.Emulator;
 
 internal static class RscModuleValidation
 {
+    public static void ValidateModuleName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        if (name.Length == 0 || name.Length >= 32)
+        {
+            throw new InvalidDataException("RSC module name must be between 1 and 31 characters");
+        }
+    }
+
     public static void ValidateUniqueNames<T>(
         IEnumerable<T> items,
         Func<T, string> nameSelector,

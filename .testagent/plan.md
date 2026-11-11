@@ -31,3 +31,4 @@
 | Compiler RSC code starts word-aligned | Pad the generated string section before placing RISC5 code | `OberonCompilerRscTests.EmitsStringPayload` |
 | Compiler RSC string assignments execute | Run generated character-copy code through the module loader | `OberonCompilerRscTests.ExecutesCompilerProducedStringBody` |
 | RSC data sections produce aligned code addresses | Reject modules whose type, variable and string sections end unaligned | `RscModuleTests.RejectsUnalignedDataSections` |
+| RSC module names fit runtime descriptors | Reject names that cannot fit the 32-byte Oberon descriptor field | `RscModuleTests.RejectsLongModuleNames` |

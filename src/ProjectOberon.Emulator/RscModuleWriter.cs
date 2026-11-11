@@ -66,6 +66,7 @@ public static class RscModuleWriter
 
     private static void ValidateModule(RscModule module)
     {
+        RscModuleValidation.ValidateModuleName(module.Name);
         ValidateString(module.Name, nameof(module.Name), allowEmpty: false);
         if (module.Version != VersionKey)
         {

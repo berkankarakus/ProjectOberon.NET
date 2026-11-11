@@ -18,6 +18,7 @@ internal static partial class RscModuleTests
         RejectsNonAsciiStrings();
         RejectsTrailingBytes();
         RejectsUnalignedDataSections();
+        RejectsLongModuleNames();
         WritesRoundTripModule();
         RejectsMismatchedCodeCount();
         RejectsMismatchedPayloadCount();

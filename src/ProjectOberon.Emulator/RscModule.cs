@@ -35,6 +35,7 @@ public static class RscModuleReader
     {
         var reader = new RscReader(data);
         var name = reader.ReadString();
+        RscModuleValidation.ValidateModuleName(name);
         var key = reader.ReadInt32();
         var version = reader.ReadByte();
         var size = reader.ReadInt32();
