@@ -7,6 +7,7 @@ internal static class OberonCompilerSymbolFileTests
         WritesFilesAcceptedByTheExistingReader();
         RejectsUnexportedSymbols();
         RejectsInvalidModuleNames();
+        RejectsNonAsciiNestedNames();
     }
 
     private static void WritesFilesAcceptedByTheExistingReader()
@@ -52,5 +53,15 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Throws<ArgumentException>(() => OberonCompilerSymbolFileWriter.Write(
             new string('D', 32), []));
         TestAssertions.Throws<ArgumentException>(() => OberonCompilerSymbolFileWriter.Write("Démо", []));
+    }
+
+    private static void RejectsNonAsciiNestedNames()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var record = symbols.CreateRecord();
+        symbols.DeclareField(record, "é", symbols.IntegerType, 0, exported: true);
+        var type = symbols.Declare("Record", OberonCompilerObjectClass.Type, record, exported: true);
+
+        TestAssertions.Throws<ArgumentException>(() => OberonCompilerSymbolFileWriter.Write("Demo", [type]));
     }
 }

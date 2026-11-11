@@ -223,6 +223,12 @@ public static class OberonCompilerSymbolFileWriter
 
         public void WriteString(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+            if (value.Contains('\0') || value.Any(character => character > 0x7f))
+            {
+                throw new ArgumentException("SMB strings must contain ASCII characters", nameof(value));
+            }
+
             var bytes = Encoding.ASCII.GetBytes(value);
             _data.AddRange(bytes);
             WriteByte(0);
