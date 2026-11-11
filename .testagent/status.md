@@ -10,7 +10,8 @@
 - Architecture tests use set equality for the allowed project graph, so an
   extra, missing, reverse, or adapter-to-adapter reference fails the suite.
 - RSC tests assert module name, section sizes, code round-trip, imports,
-  exported command offsets, body offsets, and runtime command resolution.
+  exported command offsets, body offsets, runtime command resolution, and
+  rejection of invalid code offsets.
 - No assertion-free or always-true assertions were added.
 - The tests intentionally do not claim type descriptor or pointer-fixup
   coverage; those remain an explicit compiler gap.
