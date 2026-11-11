@@ -17,21 +17,12 @@ public static class OberonFilesHostBinding
         ArgumentNullException.ThrowIfNull(files);
 
         var state = new BindingState(files);
-        var procedureExports = OberonSymbolBinding.Procedures(symbol);
-        var handlers = procedureExports
-            .Select(export => CreateHandler(symbol.Name, export.Name, state))
-            .ToArray();
-        return new OberonExternalModuleBinding(
-            symbol.Name,
+        return OberonHostBindingFactory.Create(
+            symbol,
             dataAddress,
             codeAddress,
-            OberonSymbolBinding.EntryOffsets(symbol, entryOffsetScale))
-        {
-            EntryHandlers = handlers,
-            HostCallOffsets = procedureExports
-                .Select(export => OberonSymbolBinding.ScaleOffset(export.Value, entryOffsetScale))
-                .ToArray()
-        };
+            entryOffsetScale,
+            export => CreateHandler(symbol.Name, export.Name, state));
     }
 
     private static Action<OberonHostCallContext> CreateHandler(

@@ -13,21 +13,12 @@ public static class OberonKernelHostBinding
         ArgumentNullException.ThrowIfNull(kernel);
         kernel.SyncModuleData(dataAddress);
 
-        var procedureExports = OberonSymbolBinding.Procedures(symbol);
-        var handlers = procedureExports
-            .Select(export => CreateHandler(symbol.Name, export.Name, kernel, dataAddress))
-            .ToArray();
-        return new OberonExternalModuleBinding(
-            symbol.Name,
+        return OberonHostBindingFactory.Create(
+            symbol,
             dataAddress,
             codeAddress,
-            OberonSymbolBinding.EntryOffsets(symbol, entryOffsetScale))
-        {
-            EntryHandlers = handlers,
-            HostCallOffsets = procedureExports
-                .Select(export => OberonSymbolBinding.ScaleOffset(export.Value, entryOffsetScale))
-                .ToArray()
-        };
+            entryOffsetScale,
+            export => CreateHandler(symbol.Name, export.Name, kernel, dataAddress));
     }
 
     private static Action<OberonHostCallContext> CreateHandler(
