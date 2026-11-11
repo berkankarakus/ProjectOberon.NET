@@ -66,4 +66,21 @@ internal static class HostCallTests
 
         machine.Step();
     }
+
+    public static void ValidatesHostCallStrings()
+    {
+        using var machine = new Machine();
+        machine.HostCalls.Register(0x100, context =>
+        {
+            context.WriteCString(0x600, "ç");
+            TestAssertions.Equal("ç", context.ReadCString(0x600));
+            TestAssertions.Throws<InvalidDataException>(() => context.ReadCString(0x600, 1));
+            TestAssertions.Throws<InvalidDataException>(() => context.WriteCString(0x600, "123", 3));
+            context.Return();
+        });
+        machine.Cpu.SetRegister(15, 0x200);
+        machine.Cpu.SetProgramCounter(0x100);
+
+        machine.Step();
+    }
 }
