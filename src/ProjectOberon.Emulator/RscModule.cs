@@ -126,6 +126,11 @@ public static class RscModuleReader
             fixupProgram,
             fixupData,
             fixupTypes);
+        RscModuleValidation.ValidatePointerReferences(
+            typeDescriptorBytes,
+            variableBytes,
+            stringBytes,
+            pointerReferences);
         RscModuleValidation.ValidateCodeLayout(codeWords, commands, bodyOffset);
 
         return new RscModule(name, key, version, size, imports, typeDescriptorBytes, variableBytes, stringBytes,

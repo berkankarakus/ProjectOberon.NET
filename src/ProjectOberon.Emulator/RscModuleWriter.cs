@@ -121,6 +121,11 @@ public static class RscModuleWriter
             module.FixupProgram,
             module.FixupData,
             module.FixupTypes);
+        RscModuleValidation.ValidatePointerReferences(
+            module.TypeDescriptorBytes,
+            module.VariableBytes,
+            module.StringBytes,
+            module.PointerReferences);
         RscModuleValidation.ValidateCodeLayout(module.CodeWords, module.Commands, module.BodyOffset);
     }
 

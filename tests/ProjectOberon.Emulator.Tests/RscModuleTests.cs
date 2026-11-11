@@ -14,6 +14,7 @@ internal static partial class RscModuleTests
         RejectsNegativeSize();
         RejectsDuplicateNames();
         RejectsInvalidEntriesAndFixups();
+        RejectsInvalidPointerReferences();
         WritesRoundTripModule();
         RejectsMismatchedCodeCount();
         RejectsMismatchedPayloadCount();

@@ -87,4 +87,13 @@ internal static partial class RscModuleTests
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidProgramFixup));
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidTypeFixup));
     }
+
+    private static void RejectsInvalidPointerReferences()
+    {
+        var negative = BuildRsc("Demo", 1, [], "Start", variableBytes: 4, pointerReferences: [-1]);
+        var outside = BuildRsc("Demo", 1, [], "Start", variableBytes: 4, pointerReferences: [4]);
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(negative));
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(outside));
+    }
 }

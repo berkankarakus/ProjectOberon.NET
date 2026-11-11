@@ -74,6 +74,24 @@ internal static class RscModuleValidation
         }
     }
 
+    public static void ValidatePointerReferences(
+        int typeDescriptorBytes,
+        int variableBytes,
+        int stringBytes,
+        IReadOnlyList<int> references)
+    {
+        ArgumentNullException.ThrowIfNull(references);
+        var dataBytes = checked(typeDescriptorBytes + variableBytes + stringBytes);
+        foreach (var reference in references)
+        {
+            if (reference < 0 || reference % sizeof(uint) != 0
+                || reference > dataBytes - sizeof(uint))
+            {
+                throw new InvalidDataException($"invalid RSC pointer reference: {reference}");
+            }
+        }
+    }
+
     private static void ValidateWordOffset(int wordCount, int offset, string name)
     {
         if (offset < 0 || (offset != 0 && offset >= wordCount))
