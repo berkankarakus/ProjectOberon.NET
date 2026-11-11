@@ -50,14 +50,21 @@ public sealed class OberonTaskScheduler
     public OberonTask NewTask(Action handler, int period)
     {
         ArgumentNullException.ThrowIfNull(handler);
-        if (period < 0) throw new ArgumentOutOfRangeException(nameof(period));
+        if (period < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(period));
+        }
+
         return new OberonTask(handler, period);
     }
 
     public bool Install(OberonTask task)
     {
         ArgumentNullException.ThrowIfNull(task);
-        if (task.State != OberonTaskState.Off) return false;
+        if (task.State != OberonTaskState.Off)
+        {
+            return false;
+        }
 
         task.Next = _currentTask.Next;
         _currentTask.Next = task;
@@ -70,7 +77,10 @@ public sealed class OberonTaskScheduler
     public bool Remove(OberonTask task)
     {
         ArgumentNullException.ThrowIfNull(task);
-        if (task.State == OberonTaskState.Off) return false;
+        if (task.State == OberonTaskState.Off)
+        {
+            return false;
+        }
 
         var previous = task;
         while (!ReferenceEquals(previous.Next, task))
