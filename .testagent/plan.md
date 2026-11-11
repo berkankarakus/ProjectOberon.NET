@@ -22,3 +22,4 @@
 | RSC entry and fixup heads stay in bounds | Reject invalid code and type-section offsets before memory loading | `RscModuleTests.RejectsInvalidEntriesAndFixups` |
 | Runtime exposes the active module data base | Initialize r13 alongside the module table and stack registers | `OberonModuleTests.MemoryImage` |
 | RSC pointer tables stay inside module data | Reject negative, unaligned and out-of-range pointer slots | `RscModuleTests.RejectsInvalidPointerReferences` |
+| RSC names remain ASCII | Reject non-ASCII bytes instead of silently replacing them | `RscModuleTests.RejectsNonAsciiStrings` |

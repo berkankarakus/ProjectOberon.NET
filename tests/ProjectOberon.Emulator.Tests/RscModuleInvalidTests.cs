@@ -96,4 +96,12 @@ internal static partial class RscModuleTests
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(negative));
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(outside));
     }
+
+    private static void RejectsNonAsciiStrings()
+    {
+        var data = BuildRsc("Demo", 1, [], "Start");
+        data[0] = 0xff;
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
+    }
 }

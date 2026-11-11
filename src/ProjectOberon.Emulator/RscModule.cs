@@ -193,6 +193,11 @@ public static class RscModuleReader
                 {
                     return System.Text.Encoding.ASCII.GetString(_data[start..(_position - 1)]);
                 }
+
+                if (_data[_position - 1] > 0x7f)
+                {
+                    throw new InvalidDataException("RSC strings must contain ASCII characters");
+                }
             }
         }
 
