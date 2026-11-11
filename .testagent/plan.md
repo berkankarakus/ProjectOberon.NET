@@ -49,6 +49,7 @@
 | Shared contracts have no runtime dependency | Keep instruction encoding and RSC model contracts below both emulator and compiler assemblies | `ArchitectureTests.CoreDependsOnlyOnContracts`, `ArchitectureTests.CompilerDependsOnlyOnContracts` |
 | RSC format assembly is independent | Keep RSC reader, writer and validation above contracts and separate from runtime implementation | `ArchitectureTests.RscDependsOnlyOnContracts`, solution build |
 | SMB format assembly is independent | Keep symbol-module models and reader reusable without runtime dependencies | `ArchitectureTests.SymbolsHaveNoProjectReferences`, solution build |
+| Compiler can consume external SMB procedures | Load imported symbol modules and resolve exported zero-argument procedures in qualified calls | `OberonCompilerParserTests.ImportsExternalProcedures`, `CompilerCliOptionTests.ParsesImportedSymbols` |
 | Compiler label ownership is independent | Move labels out of the concrete code generator file to remove the writer/generator file cycle | `OberonCompilerModuleEmitterTests` |
 | Host binding assembly is shared | Centralize export, entry-offset and handler packaging for Files/Kernel/Modules | Existing host binding suites |
 | Memory map ownership is independent | Move address constants into a shared map so device code does not depend on `Memory` | `DeviceMmioTests`, `DeviceStorageTests`, `OberonModuleTests` |

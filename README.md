@@ -269,6 +269,17 @@ dotnet run --project src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csp
   path/to/Demo.Mod --rsc Demo.rsc --no-disassemble
 ```
 
+An external SMB module can be supplied for imported procedure resolution:
+
+```sh
+dotnet run --project src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj -- \
+  path/to/Demo.Mod --import Files=Files.smb --no-disassemble
+```
+
+The current import slice resolves exported, zero-argument procedures. Other
+export kinds remain available to the runtime symbol loader but are not yet
+lowered into compiler types.
+
 The compiler CLI now emits a minimal RSC container. Full type descriptor and
 pointer-fixup generation remains a separate compiler milestone; modules that
 require those descriptors are rejected with a clear compiler error.
