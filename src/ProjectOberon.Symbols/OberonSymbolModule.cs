@@ -56,6 +56,7 @@ public static class OberonSymbolModuleReader
             }
         }
 
+        reader.EnsureEnd();
         return new OberonSymbolModule(name, key, version, exports);
     }
 
@@ -222,6 +223,11 @@ public static class OberonSymbolModuleReader
                 {
                     return Encoding.ASCII.GetString(_data[start..(_position - 1)]);
                 }
+
+                if (_data[_position - 1] > 0x7f)
+                {
+                    throw new InvalidDataException("SMB strings must contain ASCII characters");
+                }
             }
         }
 
@@ -230,6 +236,23 @@ public static class OberonSymbolModuleReader
             if (count < 0 || count > _data.Length - _position)
             {
                 throw new InvalidDataException("truncated SMB module");
+            }
+        }
+
+        public void EnsureEnd()
+        {
+            var remaining = _data.Length - _position;
+            if (remaining > 3)
+            {
+                throw new InvalidDataException("unexpected trailing bytes in SMB module");
+            }
+
+            for (var index = _position; index < _data.Length; index++)
+            {
+                if (_data[index] != 0)
+                {
+                    throw new InvalidDataException("unexpected trailing bytes in SMB module");
+                }
             }
         }
     }

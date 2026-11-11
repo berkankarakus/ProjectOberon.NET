@@ -36,4 +36,23 @@ internal static partial class SymbolModuleTests
 
         TestAssertions.ThrowsInvalidData(() => OberonSymbolModuleReader.Parse(data));
     }
+
+    private static void RejectsNonAsciiStrings()
+    {
+        var data = BuildSmb(writer =>
+        {
+            writer.AddByte(2);
+            writer.AddByte(0x80);
+            writer.AddByte(0);
+        });
+
+        TestAssertions.ThrowsInvalidData(() => OberonSymbolModuleReader.Parse(data));
+    }
+
+    private static void RejectsTrailingBytes()
+    {
+        var data = BuildSmb(_ => { }).Append((byte)1).ToArray();
+
+        TestAssertions.ThrowsInvalidData(() => OberonSymbolModuleReader.Parse(data));
+    }
 }

@@ -8,5 +8,7 @@ internal static partial class SymbolModuleTests
         RejectsUnsupportedVersion();
         RejectsTruncatedModule();
         RejectsInvalidTypeForm();
+        RejectsNonAsciiStrings();
+        RejectsTrailingBytes();
     }
 }
