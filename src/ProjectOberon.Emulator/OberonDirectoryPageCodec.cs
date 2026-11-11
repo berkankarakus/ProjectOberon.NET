@@ -89,7 +89,7 @@ public static class OberonDirectoryPageCodec
     private static byte[] EncodeName(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        if (name.Length > 31 || name.Any(character => character > byte.MaxValue || character == '\0'))
+        if (name.Length > 31 || name.Any(character => character > 0x7f || character == '\0'))
         {
             throw new ArgumentException(
                 "directory entry name must be 31 ASCII characters or fewer",
