@@ -179,6 +179,12 @@ internal sealed record CompilerOptions(
             throw new ArgumentException("--import expects NAME=FILE");
         }
 
-        return new CompilerImport(value[..separator], value[(separator + 1)..]);
+        var name = value[..separator];
+        if (!char.IsLetter(name[0]) || name.Any(character => !char.IsLetterOrDigit(character) && character != '_'))
+        {
+            throw new ArgumentException("--import module name must be an Oberon identifier");
+        }
+
+        return new CompilerImport(name, value[(separator + 1)..]);
     }
 }

@@ -10,6 +10,7 @@ internal static class CompilerCliOptionTests
         ParsesImportedSymbols();
         RejectsDuplicateImports();
         RejectsInvalidImport();
+        RejectsInvalidImportName();
     }
 
     private static void ParsesOutputOptions()
@@ -65,5 +66,11 @@ internal static class CompilerCliOptionTests
     private static void RejectsInvalidImport()
     {
         TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse(["Demo.Mod", "--import", "Files.smb"]));
+    }
+
+    private static void RejectsInvalidImportName()
+    {
+        TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse([
+            "Demo.Mod", "--import", "Files.Mod=Files.smb"]));
     }
 }
