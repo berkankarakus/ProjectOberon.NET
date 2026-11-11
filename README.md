@@ -273,6 +273,23 @@ The compiler CLI now emits a minimal RSC container. Full type descriptor and
 pointer-fixup generation remains a separate compiler milestone; modules that
 require those descriptors are rejected with a clear compiler error.
 
+The generated RSC currently supports scalar data and character-array string
+payloads. The reader and writer reject duplicate import or command names and
+validate command, entry, body and fixup offsets before the module reaches the
+emulator memory loader. This keeps malformed artifacts as compiler/loader
+errors instead of turning them into ambiguous runtime behavior.
+
+Run the fast validation suite after changing compiler or RSC code:
+
+```sh
+dotnet build ProjectOberon.NET.slnx --disable-build-servers -m:1 -v:q
+dotnet run --project tests/ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj -- \
+  --skip-disk-tests
+```
+
+The suite includes compiler artifact round-trips, repeated-emission checks,
+RSC boundary validation, runtime diagnostics and dependency-direction tests.
+
 The project layout and dependency direction are documented in
 [`docs/architecture.md`](docs/architecture.md) and enforced by the architecture
 tests.

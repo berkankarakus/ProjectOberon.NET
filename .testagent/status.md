@@ -16,6 +16,10 @@
   value and unknown-option failures.
 - RSC reader tests now cover invalid command/body layout before module loading.
 - Runtime diagnostics now expose module-load error codes for actionable logs.
+- Compiler string payloads are tested for deduplication and RSC round-trip
+  preservation.
+- RSC entry and fixup heads are tested for code/type-section bounds; the
+  reader and writer share these validations with duplicate-name checks.
 - No assertion-free or always-true assertions were added.
 - The tests intentionally do not claim type descriptor or pointer-fixup
   coverage; those remain an explicit compiler gap.
