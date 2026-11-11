@@ -19,6 +19,7 @@ internal sealed record FsOptions(
 {
     public static FsOptions Parse(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
         if (args.Length == 0
             || args.Contains("--help", StringComparer.Ordinal)
             || args.Contains("-h", StringComparer.Ordinal))

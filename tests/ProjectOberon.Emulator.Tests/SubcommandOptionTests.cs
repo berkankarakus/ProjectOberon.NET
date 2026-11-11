@@ -49,6 +49,7 @@ internal static class SubcommandOptionTests
 
     private static void RejectsInvalidFileSystemOptions()
     {
+        TestAssertions.Throws<ArgumentNullException>(() => FsOptions.Parse(null!));
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--prefix", "Ober"]));
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--disk"]));
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--unknown"]));
