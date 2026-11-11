@@ -76,3 +76,6 @@
 | File page tables remain bounded | Reject allocated-page counts beyond the header extension table | `OberonDiskFormatTests.RejectsMissingFilePages` |
 | Boot names remain representable | Reject non-ASCII and overlong module names before writing the boot buffer | `OberonBootSessionTests.InitializesAndStartsModule` |
 | Input coordinates have valid dimensions | Reject non-positive source extents and output maxima | `InputMappingTests.ScalesAndClampsCoordinates` |
+| Disk names preserve byte fidelity | Reject non-ASCII names during directory and file-header read/write | `OberonDiskFormatTests.RejectsInvalidDirectoryPageShape`, `OberonDiskFormatTests.RejectsInvalidFileHeader` |
+| File extension pages have complete sectors | Reject short extension pages before reading page addresses | `OberonDiskFormatTests.RejectsMissingFilePages` |
+| CLI parsers reject null argument arrays | Validate parser entry points before inspecting options | `CliOptionTests`, `SubcommandOptionTests`, `SdlUiTests` |
