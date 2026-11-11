@@ -6,6 +6,7 @@ internal static class OberonCompilerRscTests
     {
         EmitsMinimalRscModule();
         EmitsImportsAndExportedCommands();
+        LoadsCompilerProducedRsc();
     }
 
     private static void EmitsMinimalRscModule()
@@ -39,5 +40,23 @@ internal static class OberonCompilerRscTests
         TestAssertions.Equal("Start", module.Commands[0].Name);
         TestAssertions.Equal(0, module.Commands[0].CodeOffset);
         TestAssertions.True(module.BodyOffset > module.Commands[0].CodeOffset);
+    }
+
+    private static void LoadsCompilerProducedRsc()
+    {
+        const string source = "MODULE Demo; PROCEDURE Start*; END Start; BEGIN END Demo.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == "Demo" ? bytes : null);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+
+        var image = runtime.StartCommand("Demo", "Start");
+
+        TestAssertions.Equal(image.CodeAddress, cpu.PcByte);
+        TestAssertions.Equal(image.CodeAddress, image.FindCommandAddress("Start")!.Value);
+        TestAssertions.Equal(definition.BodyOffset, checked((int)(image.BodyAddress - image.CodeAddress)));
     }
 }

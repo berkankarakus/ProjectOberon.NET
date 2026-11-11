@@ -9,3 +9,4 @@
 | Folder hierarchy is real and usable | Move projects to `src/` and `tests/`, update project and solution paths | Solution build and test runner |
 | Minimal compiler RSC output is round-trippable | Build `RscModule` from compiler output and parse the writer result | `OberonCompilerRscTests.EmitsMinimalRscModule` |
 | Imports and exported commands survive compilation | Map imports and top-level exported procedure labels to RSC metadata | `OberonCompilerRscTests.EmitsImportsAndExportedCommands` |
+| Compiler output is accepted by the runtime loader | Materialize generated RSC and resolve an exported command address | `OberonCompilerRscTests.LoadsCompilerProducedRsc` |
