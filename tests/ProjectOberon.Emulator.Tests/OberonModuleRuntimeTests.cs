@@ -25,6 +25,7 @@ internal static partial class OberonModuleTests
         TestAssertions.Equal(imported.CodeAddress, imported.FindCommandAddress("Run")!.Value);
         TestAssertions.Equal(image.CodeAddress + 4, image.BodyAddress);
         TestAssertions.Equal(0x100u, cpu.Register(12));
+        TestAssertions.Equal(image.DataAddress, cpu.Register(13));
         TestAssertions.Equal((uint)memory.RamSize - 4, cpu.Register(14));
         TestAssertions.Equal(image.BodyAddress, cpu.PcByte);
 

@@ -77,6 +77,7 @@ public sealed class OberonModuleRuntime
             }
 
             _cpu.SetRegister(12, ModuleTableAddress);
+            _cpu.SetRegister(13, image.DataAddress);
             _cpu.SetRegister(14, initializerStack);
             _cpu.SetRegister(15, returnAddress);
             _cpu.SetProgramCounter(image.BodyAddress);
@@ -136,6 +137,7 @@ public sealed class OberonModuleRuntime
         }
 
         _cpu.SetRegister(12, ModuleTableAddress);
+        _cpu.SetRegister(13, image.DataAddress);
         _cpu.SetRegister(14, stack);
         _cpu.SetProgramCounter(entryAddress);
         return image;

@@ -20,3 +20,4 @@
 | Repeated compiler strings share one payload | Keep identical string literals from expanding module data | `OberonCompilerModuleEmitterTests.DeduplicatesRepeatedStringData` |
 | Compiler RSC preserves string data | Emit string bytes into the RSC string section and round-trip them | `OberonCompilerRscTests.EmitsStringPayload` |
 | RSC entry and fixup heads stay in bounds | Reject invalid code and type-section offsets before memory loading | `RscModuleTests.RejectsInvalidEntriesAndFixups` |
+| Runtime exposes the active module data base | Initialize r13 alongside the module table and stack registers | `OberonModuleTests.MemoryImage` |
