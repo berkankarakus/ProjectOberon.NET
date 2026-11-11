@@ -70,6 +70,7 @@ var tests = new (string Name, Action Test)[]
     ("CLI instruction trace", CliTraceTests.Run),
     ("Oberon fonts", OberonFontTests.Run),
     ("Oberon text frames", OberonTextFrameTests.Run),
+    ("Oberon text frame layout validation", OberonTextFrameTests.ValidatesLayoutBounds),
     ("Oberon viewers", OberonViewerTests.Run),
     ("Oberon menu viewers", OberonMenuViewerTests.Run),
     ("Oberon text frame viewers", OberonTextFrameViewerTests.Run),
