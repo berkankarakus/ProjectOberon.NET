@@ -62,21 +62,14 @@ public sealed class OberonModuleRuntime
 
         const uint returnAddress = Memory.RomBase;
         var savedProgramCounter = _cpu.PcByte;
-        var savedRegisters = new uint[16];
-        for (var index = 0; index < savedRegisters.Length; index++)
-        {
-            savedRegisters[index] = _cpu.Register(index);
-        }
+        var savedRegisters = CaptureRegisters();
 
         var savedStack = savedRegisters[14];
         try
         {
             var initializerStack = savedStack == 0 ? AlignStack(_memory.RamSize) : savedStack;
             ValidateStack(initializerStack);
-            for (var index = 0; index < savedRegisters.Length; index++)
-            {
-                _cpu.SetRegister(index, 0);
-            }
+            ClearRegisters();
 
             _cpu.SetRegister(12, ModuleTableAddress);
             _cpu.SetRegister(13, image.DataAddress);
@@ -104,10 +97,7 @@ public sealed class OberonModuleRuntime
         }
         finally
         {
-            for (var index = 0; index < savedRegisters.Length; index++)
-            {
-                _cpu.SetRegister(index, savedRegisters[index]);
-            }
+            RestoreRegisters(savedRegisters);
 
             _cpu.SetProgramCounter(savedProgramCounter);
         }
@@ -153,6 +143,33 @@ public sealed class OberonModuleRuntime
         }
 
         return (uint)(ramSize - 4);
+    }
+
+    private uint[] CaptureRegisters()
+    {
+        var registers = new uint[16];
+        for (var index = 0; index < registers.Length; index++)
+        {
+            registers[index] = _cpu.Register(index);
+        }
+
+        return registers;
+    }
+
+    private void ClearRegisters()
+    {
+        for (var index = 0; index < 16; index++)
+        {
+            _cpu.SetRegister(index, 0);
+        }
+    }
+
+    private void RestoreRegisters(IReadOnlyList<uint> registers)
+    {
+        for (var index = 0; index < registers.Count; index++)
+        {
+            _cpu.SetRegister(index, registers[index]);
+        }
     }
 
     private void ValidateStack(uint stackPointer)
