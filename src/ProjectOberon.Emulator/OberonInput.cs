@@ -47,7 +47,11 @@ public sealed class OberonKeyboard
 
     private void Peek()
     {
-        if (_received || _scanCodes.Count == 0) return;
+        if (_received || _scanCodes.Count == 0)
+        {
+            return;
+        }
+
         var scanCode = _scanCodes.Dequeue();
         if (scanCode == 0xf0)
         {
@@ -60,8 +64,14 @@ public sealed class OberonKeyboard
             return;
         }
 
-        if (scanCode is 0x12 or 0x59) _shift = !_up;
-        else if (scanCode == 0x14) _ctrl = !_up;
+        if (scanCode is 0x12 or 0x59)
+        {
+            _shift = !_up;
+        }
+        else if (scanCode == 0x14)
+        {
+            _ctrl = !_up;
+        }
         else if (!_up)
         {
             _keyCode = scanCode;
