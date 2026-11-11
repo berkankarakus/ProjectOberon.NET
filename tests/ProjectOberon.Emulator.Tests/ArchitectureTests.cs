@@ -75,15 +75,22 @@ internal static class ArchitectureTests
         foreach (var adapter in AdapterProjects)
         {
             var references = ReadReferences(adapter);
-            var expected = adapter == "src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj"
-                ? new[] { CoreProject, CompilerProject, RscProject, SymbolsProject }
-                : adapter == "src/ProjectOberon.Cli/ProjectOberon.Cli.csproj"
-                    ? new[] { CoreProject, RscProject }
-                : adapter == "src/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj"
-                    ? new[] { CoreProject, RscProject }
-                : new[] { CoreProject };
+            var expected = ExpectedAdapterReferences(adapter);
             TestAssertions.True(references.SetEquals(expected));
         }
+    }
+
+    private static IReadOnlyList<string> ExpectedAdapterReferences(string adapter)
+    {
+        return adapter switch
+        {
+            "src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj"
+                => [CoreProject, CompilerProject, RscProject, SymbolsProject],
+            "src/ProjectOberon.Cli/ProjectOberon.Cli.csproj"
+                or "src/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj"
+                => [CoreProject, RscProject],
+            _ => [CoreProject]
+        };
     }
 
     private static void ProductionProjectsDoNotDependOnTests()
