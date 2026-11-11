@@ -123,6 +123,11 @@ public static class OberonFileHeaderCodec
         var length = 0;
         while (length < 32 && data[offset + length] != 0)
         {
+            if (data[offset + length] > 0x7f)
+            {
+                throw new InvalidDataException("Oberon file names must contain ASCII characters");
+            }
+
             length++;
         }
 
