@@ -182,17 +182,6 @@ public static class RscModuleReader
             }
         }
 
-        public void Skip(int count)
-        {
-            if (count < 0)
-            {
-                throw new InvalidDataException($"negative RSC section length: {count}");
-            }
-
-            Ensure(count);
-            _position += count;
-        }
-
         public byte[] ReadBytes(int count)
         {
             if (count < 0)
