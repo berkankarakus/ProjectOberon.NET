@@ -83,4 +83,16 @@ internal static class HostCallTests
 
         machine.Step();
     }
+
+    public static void ValidatesHostCallRegistration()
+    {
+        var dispatcher = new OberonHostCallDispatcher();
+        Action<OberonHostCallContext> handler = _ => { };
+        dispatcher.Register(0x100, handler);
+
+        TestAssertions.Throws<InvalidOperationException>(() => dispatcher.Register(0x100, handler));
+        TestAssertions.Throws<InvalidOperationException>(() => dispatcher.Register(
+            Memory.AddressMask + 0x101, handler));
+        TestAssertions.Throws<ArgumentException>(() => dispatcher.Register(0x102, handler));
+    }
 }

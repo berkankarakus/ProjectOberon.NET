@@ -22,6 +22,7 @@ var tests = new (string Name, Action Test)[]
     ("external host binding", HostCallTests.BindsExternalEntryHandlers),
     ("host call argument validation", HostCallTests.ValidatesHostCallContextArguments),
     ("host call string validation", HostCallTests.ValidatesHostCallStrings),
+    ("host call registration validation", HostCallTests.ValidatesHostCallRegistration),
     ("Kernel host binding", KernelHostBindingTests.DispatchesClockAndSectorMapServices),
     ("Kernel install host binding", KernelHostBindingTests.DispatchesInstallService),
     ("Kernel heap host binding", KernelHostBindingTests.DispatchesHeapAllocationService),
