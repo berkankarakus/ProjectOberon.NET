@@ -64,7 +64,8 @@ try
         Console.WriteLine($"{index * 4:x6}: {instruction:x8} {Risc5Disassembler.Format(instruction)}");
     }
 }
-catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
+catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException
+    or InvalidOperationException or NotSupportedException)
 {
     Console.Error.WriteLine($"project-oberon-compiler: {error.Message}");
     Environment.ExitCode = 1;

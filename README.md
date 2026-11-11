@@ -270,7 +270,8 @@ dotnet run --project src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csp
 ```
 
 The compiler CLI now emits a minimal RSC container. Full type descriptor and
-pointer-fixup generation remains a separate compiler milestone.
+pointer-fixup generation remains a separate compiler milestone; modules that
+require those descriptors are rejected with a clear compiler error.
 
 The project layout and dependency direction are documented in
 [`docs/architecture.md`](docs/architecture.md) and enforced by the architecture

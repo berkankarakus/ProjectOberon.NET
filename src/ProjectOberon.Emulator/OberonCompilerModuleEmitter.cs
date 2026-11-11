@@ -78,6 +78,7 @@ public sealed class OberonCompilerModuleEmitter
     public RscModule EmitRsc(OberonCompilerModuleParseResult module)
     {
         ArgumentNullException.ThrowIfNull(module);
+        EnsureMinimalRscSupported(module);
         var code = Emit(module);
         var imports = (module.ModuleScope?.Objects ?? [])
             .Where(symbol => symbol.Class == OberonCompilerObjectClass.Module)
@@ -134,6 +135,32 @@ public sealed class OberonCompilerModuleEmitter
         _stringAddresses.Add(value, address);
         _nextStringOffset = address + bytes.Length + 1;
         return address;
+    }
+
+    private static void EnsureMinimalRscSupported(OberonCompilerModuleParseResult module)
+    {
+        foreach (var symbol in module.ModuleScope?.Objects ?? [])
+        {
+            if (symbol.Type is not null && RequiresTypeDescriptor(symbol.Type, []))
+            {
+                throw new NotSupportedException(
+                    $"minimal RSC output does not support type descriptors: {symbol.Name}");
+            }
+        }
+    }
+
+    private static bool RequiresTypeDescriptor(
+        OberonCompilerType type,
+        HashSet<OberonCompilerType> visited)
+    {
+        if (!visited.Add(type)) return false;
+        return type.Form switch
+        {
+            OberonCompilerTypeForm.Pointer or OberonCompilerTypeForm.Record => true,
+            OberonCompilerTypeForm.Array when type.Base is not null =>
+                RequiresTypeDescriptor(type.Base, visited),
+            _ => false
+        };
     }
 
     private static int ModuleVariableDataSize(OberonCompilerModuleParseResult module)

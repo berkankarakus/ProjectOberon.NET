@@ -7,6 +7,7 @@ internal static class OberonCompilerRscTests
         EmitsMinimalRscModule();
         EmitsImportsAndExportedCommands();
         LoadsCompilerProducedRsc();
+        RejectsUnsupportedMinimalRscTypes();
     }
 
     private static void EmitsMinimalRscModule()
@@ -58,5 +59,14 @@ internal static class OberonCompilerRscTests
         TestAssertions.Equal(image.CodeAddress, cpu.PcByte);
         TestAssertions.Equal(image.CodeAddress, image.FindCommandAddress("Start")!.Value);
         TestAssertions.Equal(definition.BodyOffset, checked((int)(image.BodyAddress - image.CodeAddress)));
+    }
+
+    private static void RejectsUnsupportedMinimalRscTypes()
+    {
+        const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; VAR node: Node; BEGIN END Demo.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.Throws<NotSupportedException>(() =>
+            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
     }
 }
