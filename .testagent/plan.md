@@ -60,3 +60,9 @@
 | Compiler import aliases are trustworthy | Reject an alias that does not match the SMB module descriptor | `CompilerCliOptionTests.RejectsImportAliasMismatch`, `CompilerCliOptionTests.LoadsMatchingImport` |
 | SMB exports are unique | Reject duplicate export names instead of silently shadowing them | `SymbolModuleTests.RejectsDuplicateExports` |
 | Compiler CLI declares its format dependency | Reference the standalone Symbols assembly directly and enforce it in architecture tests | `ArchitectureTests.AdaptersDependOnlyOnCore`, solution build |
+| RSC table counts are payload-bounded | Reject code and entry counts before allocating arrays larger than the remaining file | `RscModuleTests.RejectsCodeAndEntryCountsLargerThanThePayload` |
+| SMB numbers have bounded encodings | Reject variable-length numbers with more than four continuation bytes | `SymbolModuleTests.RejectsOverlongNumbers` |
+| SMB writer preserves text fidelity | Reject non-ASCII module, export, and nested type names before serialization | `OberonCompilerSymbolFileTests.RejectsInvalidModuleNames`, `OberonCompilerSymbolFileTests.RejectsNonAsciiNestedNames` |
+| Host-call register arguments are explicit | Reject register numbers outside r0-r15 instead of relying on CPU masking | `HostCallTests.ValidatesHostCallContextArguments` |
+| Kernel branch installation is safe | Reject unaligned addresses and out-of-range branch displacements | `KernelHostBindingTests.DispatchesInstallService` |
+| Memory and disk lifecycles are covered | Validate ROM parsing, reset behavior, closed disks, and invalid sectors | `MemoryTests`, `CpuTests.ResetsStateAndValidatesAddresses`, `DeviceTests.DiskImageValidatesLifecycle` |
