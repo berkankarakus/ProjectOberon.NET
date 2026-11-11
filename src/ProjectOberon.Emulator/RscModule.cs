@@ -43,6 +43,11 @@ public static class RscModuleReader
             throw new InvalidDataException($"unsupported RSC version: 0x{version:x2}");
         }
 
+        if (size < 0)
+        {
+            throw new InvalidDataException($"invalid RSC size: {size}");
+        }
+
         var imports = new List<RscImport>();
         while (true)
         {

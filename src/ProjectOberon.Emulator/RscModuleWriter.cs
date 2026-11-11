@@ -72,6 +72,11 @@ public static class RscModuleWriter
             throw new InvalidDataException($"unsupported RSC version: 0x{module.Version:x2}");
         }
 
+        if (module.Size < 0)
+        {
+            throw new InvalidDataException($"invalid RSC size: {module.Size}");
+        }
+
         if (module.VariableBytes < 0 || module.TypeDescriptorBytes < 0 || module.StringBytes < 0 || module.CodeWords < 0)
         {
             throw new InvalidDataException("RSC section length cannot be negative");

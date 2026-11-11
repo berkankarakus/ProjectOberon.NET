@@ -61,4 +61,10 @@ internal static partial class RscModuleTests
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidCommand));
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidBody));
     }
+
+    private static void RejectsNegativeSize()
+    {
+        var data = BuildRsc("Demo", 1, [], "Start", size: -1);
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
+    }
 }
