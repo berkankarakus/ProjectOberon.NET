@@ -23,5 +23,6 @@ internal static partial class RscModuleTests
         RejectsMismatchedCodeCount();
         RejectsMismatchedPayloadCount();
         RejectsInvalidCodeOffsets();
+        RejectsLongModuleName();
     }
 }

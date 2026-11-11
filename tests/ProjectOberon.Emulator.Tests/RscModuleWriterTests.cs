@@ -58,4 +58,12 @@ internal static partial class RscModuleTests
         TestAssertions.ThrowsInvalidData(() => RscModuleWriter.Write(command));
         TestAssertions.ThrowsInvalidData(() => RscModuleWriter.Write(body));
     }
+
+    private static void RejectsLongModuleName()
+    {
+        var module = new RscModule(
+            new string('D', 32), 1, 1, 0, [], 0, 0, 0, 1, [0], [], [], [], 0, 0, 0, 0, (byte)'O');
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleWriter.Write(module));
+    }
 }

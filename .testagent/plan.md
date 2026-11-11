@@ -32,3 +32,4 @@
 | Compiler RSC string assignments execute | Run generated character-copy code through the module loader | `OberonCompilerRscTests.ExecutesCompilerProducedStringBody` |
 | RSC data sections produce aligned code addresses | Reject modules whose type, variable and string sections end unaligned | `RscModuleTests.RejectsUnalignedDataSections` |
 | RSC module names fit runtime descriptors | Reject names that cannot fit the 32-byte Oberon descriptor field | `RscModuleTests.RejectsLongModuleNames` |
+| RSC writer mirrors module name validation | Reject oversized module names before serialization | `RscModuleTests.RejectsLongModuleName` |
