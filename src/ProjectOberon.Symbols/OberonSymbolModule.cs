@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using System.Text;
 
-namespace ProjectOberon.Emulator;
+namespace ProjectOberon.Symbols;
 
 public sealed record OberonSymbolExport(string Name, int Class, int Value)
 {

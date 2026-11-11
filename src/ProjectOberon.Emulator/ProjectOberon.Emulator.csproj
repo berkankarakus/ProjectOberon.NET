@@ -2,5 +2,6 @@
   <ItemGroup>
     <ProjectReference Include="../ProjectOberon.Contracts/ProjectOberon.Contracts.csproj" />
     <ProjectReference Include="../ProjectOberon.Rsc/ProjectOberon.Rsc.csproj" />
+    <ProjectReference Include="../ProjectOberon.Symbols/ProjectOberon.Symbols.csproj" />
   </ItemGroup>
 </Project>

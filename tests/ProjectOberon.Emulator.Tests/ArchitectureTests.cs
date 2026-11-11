@@ -4,6 +4,7 @@ internal static class ArchitectureTests
 {
     private const string ContractsProject = "src/ProjectOberon.Contracts/ProjectOberon.Contracts.csproj";
     private const string RscProject = "src/ProjectOberon.Rsc/ProjectOberon.Rsc.csproj";
+    private const string SymbolsProject = "src/ProjectOberon.Symbols/ProjectOberon.Symbols.csproj";
     private const string CoreProject = "src/ProjectOberon.Emulator/ProjectOberon.Emulator.csproj";
     private const string CompilerProject = "src/ProjectOberon.Compiler/ProjectOberon.Compiler.csproj";
     private const string TestProject = "tests/ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj";
@@ -20,6 +21,7 @@ internal static class ArchitectureTests
     public static void Run()
     {
         CoreHasNoProjectReferences();
+        SymbolsHaveNoProjectReferences();
         RscDependsOnlyOnContracts();
         CoreDependsOnlyOnContracts();
         CompilerDependsOnlyOnContracts();
@@ -41,12 +43,17 @@ internal static class ArchitectureTests
 
     private static void CoreDependsOnlyOnContracts()
     {
-        TestAssertions.True(ReadReferences(CoreProject).SetEquals([ContractsProject, RscProject]));
+        TestAssertions.True(ReadReferences(CoreProject).SetEquals([ContractsProject, RscProject, SymbolsProject]));
     }
 
     private static void RscDependsOnlyOnContracts()
     {
         TestAssertions.True(ReadReferences(RscProject).SetEquals([ContractsProject]));
+    }
+
+    private static void SymbolsHaveNoProjectReferences()
+    {
+        TestAssertions.True(ReadReferences(SymbolsProject).Count == 0);
     }
 
     private static void AdaptersDependOnlyOnCore()
@@ -67,7 +74,7 @@ internal static class ArchitectureTests
 
     private static void ProductionProjectsDoNotDependOnTests()
     {
-        foreach (var project in AdapterProjects.Append(CoreProject).Append(CompilerProject).Append(ContractsProject).Append(RscProject))
+        foreach (var project in AdapterProjects.Append(CoreProject).Append(CompilerProject).Append(ContractsProject).Append(RscProject).Append(SymbolsProject))
         {
             TestAssertions.False(ReadReferences(project).Contains(TestProject));
         }
@@ -85,7 +92,7 @@ internal static class ArchitectureTests
     private static void SolutionContainsExpectedProjectPaths()
     {
         var solution = File.ReadAllText(Path.Combine(RepositoryRoot(), "ProjectOberon.NET.slnx"));
-        foreach (var project in AdapterProjects.Append(CoreProject).Append(CompilerProject).Append(ContractsProject).Append(RscProject).Append(TestProject))
+        foreach (var project in AdapterProjects.Append(CoreProject).Append(CompilerProject).Append(ContractsProject).Append(RscProject).Append(SymbolsProject).Append(TestProject))
         {
             TestAssertions.True(solution.Contains($"Path=\"{project}\"", StringComparison.Ordinal));
         }

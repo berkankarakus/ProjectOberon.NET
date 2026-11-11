@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="src/ProjectOberon.Contracts/ProjectOberon.Contracts.csproj" />
   <Project Path="src/ProjectOberon.Rsc/ProjectOberon.Rsc.csproj" />
+  <Project Path="src/ProjectOberon.Symbols/ProjectOberon.Symbols.csproj" />
   <Project Path="src/ProjectOberon.Emulator/ProjectOberon.Emulator.csproj" />
   <Project Path="src/ProjectOberon.Compiler/ProjectOberon.Compiler.csproj" />
   <Project Path="src/ProjectOberon.Cli/ProjectOberon.Cli.csproj" />
