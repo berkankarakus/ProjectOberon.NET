@@ -44,6 +44,8 @@ internal static partial class OberonDiskFormatTests
         TestAssertions.Throws<ArgumentException>(() => OberonFileHeaderCodec.Read(sector[..100], 29));
         TestAssertions.Throws<ArgumentException>(() => OberonFileHeaderCodec.Write(new byte[100], "Demo", 0, 0, 0, [], []));
         TestAssertions.Throws<ArgumentException>(() => OberonFileHeaderCodec.Write(sector, new string('x', 32), 0, 0, 0, [], []));
+        TestAssertions.Throws<ArgumentException>(() => OberonFileHeaderCodec.Write(sector, "café", 0, 0, 0, [], []));
+        TestAssertions.Throws<ArgumentNullException>(() => OberonFileHeaderCodec.Write(sector, null!, 0, 0, 0, [], []));
     }
 
     private static void RejectsMissingFilePages()

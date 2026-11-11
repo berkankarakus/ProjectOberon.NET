@@ -77,9 +77,12 @@ public static class OberonFileHeaderCodec
             throw new ArgumentException("header sector is too small", nameof(sector));
         }
 
-        if (name.Length >= 32)
+        ArgumentNullException.ThrowIfNull(name);
+        if (name.Length >= 32 || name.Any(character => character > 0x7f || character == '\0'))
         {
-            throw new ArgumentException("Oberon file name is too long", nameof(name));
+            throw new ArgumentException(
+                "Oberon file name must be 31 ASCII characters or fewer",
+                nameof(name));
         }
 
         sector.Clear();
