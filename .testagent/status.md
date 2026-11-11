@@ -20,6 +20,10 @@
   preservation.
 - RSC entry and fixup heads are tested for code/type-section bounds; the
   reader and writer share these validations with duplicate-name checks.
+- CLI instruction traces now include the module table and module data-base
+  registers used by compiler-generated code.
+- Compiler-generated scalar and string RSC bodies are executed through the
+  runtime loader in tests.
 - No assertion-free or always-true assertions were added.
 - The tests intentionally do not claim type descriptor or pointer-fixup
   coverage; those remain an explicit compiler gap.

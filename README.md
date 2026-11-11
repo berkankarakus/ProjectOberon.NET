@@ -414,3 +414,12 @@ launch through `dotnet-trace collect -- ...` instead of attaching after start.
 The `.nettrace` artifact can be opened in PerfView or converted to Speedscope
 for visual inspection. Record the runtime version, OS, PID, UTC time window,
 exact command and artifact path with the trace.
+
+The emulator CLI's `--trace N` output includes `r12` (the Oberon module table),
+`r13` (the active module data base), `r14` (the stack) and `r15` (the return
+address). These registers are the first values to compare when a compiled
+module's PC advances but its data or framebuffer does not change.
+
+Compiler-produced minimal RSC files can be smoke-tested without a disk image
+by using the test runner; the suite executes scalar and character-array module
+bodies through the same memory loader used by the CLI.
