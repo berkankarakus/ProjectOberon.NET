@@ -31,4 +31,24 @@ internal static class RuntimeDiagnosticsTests
         TestAssertions.True(output.Contains("module-load: code=5", StringComparison.Ordinal));
         TestAssertions.True(output.Contains("corrupted module Demo", StringComparison.Ordinal));
     }
+
+    public static void ValidatesArgumentsAndPreservesDetails()
+    {
+        TestAssertions.Throws<ArgumentException>(() => OberonRuntimeDiagnostics.Format(
+            "",
+            machine: null,
+            new InvalidOperationException("boom")));
+        TestAssertions.Throws<ArgumentNullException>(() => OberonRuntimeDiagnostics.Format(
+            "test-app",
+            machine: null,
+            error: null!));
+
+        var output = OberonRuntimeDiagnostics.Format(
+            "test-app",
+            machine: null,
+            new InvalidOperationException("outer", new FormatException("inner")));
+        TestAssertions.True(output.Contains("exception details:", StringComparison.Ordinal));
+        TestAssertions.True(output.Contains("FormatException: inner", StringComparison.Ordinal));
+        TestAssertions.False(output.Contains("cpu: steps=", StringComparison.Ordinal));
+    }
 }
