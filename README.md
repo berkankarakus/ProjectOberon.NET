@@ -308,6 +308,12 @@ dotnet run --project tests/ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.T
 The suite includes compiler artifact round-trips, repeated-emission checks,
 RSC boundary validation, runtime diagnostics and dependency-direction tests.
 
+The same Release build and deterministic test flow can be run with:
+
+```sh
+bash scripts/verify-dotnet.sh
+```
+
 The project layout and dependency direction are documented in
 [`docs/architecture.md`](docs/architecture.md) and enforced by the architecture
 tests. Shared instruction/RSC contracts are kept in
