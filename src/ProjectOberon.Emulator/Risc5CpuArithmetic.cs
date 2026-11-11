@@ -92,7 +92,12 @@ public sealed partial class Risc5Cpu
                     var divisor = unchecked((int)operand);
                     var quotient = dividend / divisor;
                     var remainder = dividend % divisor;
-                    if (remainder < 0) { quotient--; remainder += divisor; }
+                    if (remainder < 0)
+                    {
+                        quotient--;
+                        remainder += divisor;
+                    }
+
                     result = unchecked((uint)quotient);
                     _high = unchecked((uint)remainder);
                 }
