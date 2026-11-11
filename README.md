@@ -24,6 +24,18 @@ dotnet build ProjectOberon.Cli/ProjectOberon.Cli.csproj
 dotnet run --project ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj
 ```
 
+The boot/input integration test requires a compatible `RISC-work.img`. Set
+`PROJECT_OBERON_DISK` to its path, or run the deterministic unit suite without
+the external disk test:
+
+```sh
+PROJECT_OBERON_DISK=/path/to/RISC-work.img \
+  dotnet run --project ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj
+
+dotnet run --project ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj -- \
+  --skip-disk-tests
+```
+
 Run the CLI:
 
 ```sh

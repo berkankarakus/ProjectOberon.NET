@@ -7,7 +7,10 @@ internal static class OberonBootSessionTests
     public static void BootConsumesKeyboardInput()
     {
         using var machine = new Machine();
-        machine.OpenDisk("RISC-work.img", writable: false);
+        var diskPath = Environment.GetEnvironmentVariable("PROJECT_OBERON_DISK");
+        machine.OpenDisk(
+            string.IsNullOrWhiteSpace(diskPath) ? "RISC-work.img" : diskPath,
+            writable: false);
         var boot = OberonBootSession.Create(machine);
         boot.Boot("Oberon");
         machine.Memory.EnqueueKeyboard(0x1c);

@@ -1,0 +1,35 @@
+name: .NET CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore ProjectOberon.NET.slnx
+
+      - name: Build
+        run: dotnet build ProjectOberon.NET.slnx --no-restore --configuration Release
+
+      - name: Run deterministic tests
+        run: >-
+          dotnet run
+          --project ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj
+          --no-build
+          --configuration Release
+          -- --skip-disk-tests

@@ -1,3 +1,9 @@
+var skipDiskTests = args.Contains("--skip-disk-tests", StringComparer.Ordinal);
+var diskTests = new HashSet<string>(StringComparer.Ordinal)
+{
+    "Oberon boot consumes keyboard"
+};
+
 var tests = new (string Name, Action Test)[]
 {
     ("arithmetic and flags", CpuTests.ArithmeticAndFlags),
@@ -69,6 +75,12 @@ var tests = new (string Name, Action Test)[]
 
 foreach (var (name, test) in tests)
 {
+    if (skipDiskTests && diskTests.Contains(name))
+    {
+        Console.WriteLine($"[skip] {name} (disk fixture not requested)");
+        continue;
+    }
+
     test();
     Console.WriteLine($"[ok] {name}");
 }
