@@ -15,6 +15,8 @@ internal static partial class OberonModuleTests
         TestAssertions.Equal(2, module.Number);
         TestAssertions.Equal("B", module.Imports[0].Name);
         TestAssertions.Equal("Start", module.FindCommand("Start")!.Name);
+        TestAssertions.True(module.FindCommand("Missing") is null);
+        TestAssertions.True(module.FindCommand("start") is null);
         TestAssertions.Equal(2, loader.LoadedModules.Count);
         TestAssertions.True(ReferenceEquals(module, loader.Load("A")));
         TestAssertions.True(ReferenceEquals(module, loader.Load("A.RSC")));
