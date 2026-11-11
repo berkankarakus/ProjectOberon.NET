@@ -72,6 +72,12 @@ The dependency rules are enforced by `ArchitectureTests` in the test runner.
 Adding a project-to-project reference requires updating that test intentionally
 instead of silently creating a reverse or adapter-to-adapter dependency.
 
+CodeGraph also indexes symbol-level references. Its unresolved-reference count
+includes framework symbols such as `List`, `Console` and exception types,
+test fixture helpers, and some C# alias/partial-method patterns. Those are not
+project dependency edges; the authoritative project-direction check is the
+`.csproj` graph asserted by `ArchitectureTests`.
+
 Refresh the source dependency index after structural changes with:
 
 ```sh
