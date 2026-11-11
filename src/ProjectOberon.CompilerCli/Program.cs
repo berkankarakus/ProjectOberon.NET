@@ -1,3 +1,4 @@
+using ProjectOberon.Compiler;
 using ProjectOberon.Emulator;
 
 try

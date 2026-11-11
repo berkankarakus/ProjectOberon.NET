@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace ProjectOberon.Emulator;
+namespace ProjectOberon.Compiler;
 
 public enum OberonCompilerTokenKind
 {

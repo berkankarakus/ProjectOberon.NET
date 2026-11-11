@@ -1,4 +1,4 @@
-namespace ProjectOberon.Emulator;
+namespace ProjectOberon.Compiler;
 
 internal static class OberonCompilerTypeRules
 {
