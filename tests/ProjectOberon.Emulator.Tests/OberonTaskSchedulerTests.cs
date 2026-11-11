@@ -8,6 +8,7 @@ internal static class OberonTaskSchedulerTests
         RunsTasksByPeriod();
         RemovesTasksAndUpdatesCurrentTask();
         CollectsActivityCount();
+        ValidatesTasksAndRestoresStateAfterFailure();
     }
 
     private static void CreatesTasksOffAndInstallsOnce()
@@ -61,5 +62,17 @@ internal static class OberonTaskSchedulerTests
         scheduler.Collect(17);
 
         TestAssertions.Equal(17, scheduler.ActivityCount);
+    }
+
+    private static void ValidatesTasksAndRestoresStateAfterFailure()
+    {
+        var scheduler = new OberonTaskScheduler();
+        TestAssertions.Throws<ArgumentNullException>(() => scheduler.NewTask(null!, 1));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => scheduler.NewTask(static () => { }, -1));
+
+        var task = scheduler.NewTask(static () => throw new InvalidOperationException("task failure"), 1);
+        scheduler.Install(task);
+        TestAssertions.Throws<InvalidOperationException>(() => scheduler.Tick(0));
+        TestAssertions.Equal(OberonTaskState.Idle, task.State);
     }
 }
