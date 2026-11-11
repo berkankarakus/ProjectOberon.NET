@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="ProjectOberon.Emulator/ProjectOberon.Emulator.csproj" />
   <Project Path="ProjectOberon.Cli/ProjectOberon.Cli.csproj" />
+  <Project Path="ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj" />
   <Project Path="ProjectOberon.FsCli/ProjectOberon.FsCli.csproj" />
   <Project Path="ProjectOberon.RscCli/ProjectOberon.RscCli.csproj" />
   <Project Path="ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj" />

@@ -247,6 +247,17 @@ dotnet run --project ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
 `--put` refuses to overwrite an existing Oberon file. Use a copy of the disk
 image when experimenting with mutating operations.
 
+Compile an Oberon source module and inspect the generated RISC5 instructions:
+
+```sh
+dotnet run --project ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj -- \
+  path/to/Demo.Mod
+```
+
+The compiler CLI currently emits a host-side instruction listing. RSC packaging
+and loader integration are tracked separately because they also require the
+module type descriptor and pointer-fixup tables.
+
 Inspect a compiled Oberon module using the layout read by `Modules.Mod`:
 
 ```sh
