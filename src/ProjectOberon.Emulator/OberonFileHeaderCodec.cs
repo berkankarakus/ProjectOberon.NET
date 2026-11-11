@@ -8,6 +8,7 @@ public static class OberonFileHeaderCodec
     public const int HeaderSize = 352;
     public const int ExtensionCount = 12;
     public const int SectorCount = 64;
+    public const int MaxAllocatedPages = SectorCount + ExtensionCount * 256 - 1;
     public const int HeaderMark = unchecked((int)0x9ba7_1d86);
 
     public static OberonFileHeader Read(ReadOnlySpan<byte> sector, int headerAddress)
@@ -34,7 +35,7 @@ public static class OberonFileHeaderCodec
     public static int[] ReadPageAddresses(OberonFileHeader header, Func<int, byte[]> readSector)
     {
         ArgumentNullException.ThrowIfNull(readSector);
-        if (header.AllocatedPages < 0)
+        if (header.AllocatedPages < 0 || header.AllocatedPages > MaxAllocatedPages)
         {
             throw new InvalidDataException("invalid Oberon file length");
         }

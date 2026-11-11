@@ -51,5 +51,8 @@ internal static partial class OberonDiskFormatTests
         var header = new OberonFileHeader("Demo", 1, 1, 0, [0], [29, 0]);
 
         TestAssertions.Throws<InvalidDataException>(() => OberonFileHeaderCodec.ReadPageAddresses(header, _ => []));
+        TestAssertions.Throws<InvalidDataException>(() => OberonFileHeaderCodec.ReadPageAddresses(
+            header with { AllocatedPages = OberonFileHeaderCodec.MaxAllocatedPages + 1 },
+            _ => []));
     }
 }
