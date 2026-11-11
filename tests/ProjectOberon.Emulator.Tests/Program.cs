@@ -51,6 +51,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon persistent files", OberonPersistenceTests.OberonPersistentFiles),
     ("Oberon module loader", OberonModuleTests.LoaderGraph),
     ("Oberon module memory image", OberonModuleTests.MemoryImage),
+    ("Oberon module runtime validation", OberonModuleTests.ValidatesRuntimeArguments),
     ("Oberon module memory validation", OberonModuleMemoryValidationTests.ValidatesLoaderAddresses),
     ("Oberon module fixups", OberonModuleTests.Fixups),
     ("Oberon disk format", OberonDiskFormatTests.Run),

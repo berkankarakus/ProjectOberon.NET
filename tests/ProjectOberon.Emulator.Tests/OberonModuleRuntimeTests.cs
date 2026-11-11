@@ -2,6 +2,17 @@ using ProjectOberon.Emulator;
 
 internal static partial class OberonModuleTests
 {
+    public static void ValidatesRuntimeArguments()
+    {
+        var memory = new Memory();
+        var cpu = new Risc5Cpu(memory);
+        var modules = new OberonModuleLoader(_ => null);
+
+        TestAssertions.Throws<ArgumentNullException>(() => new OberonModuleRuntime(null!, cpu, modules));
+        TestAssertions.Throws<ArgumentNullException>(() => new OberonModuleRuntime(memory, null!, modules));
+        TestAssertions.Throws<ArgumentNullException>(() => new OberonModuleRuntime(memory, cpu, null!));
+    }
+
     public static void MemoryImage()
     {
         var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal)
