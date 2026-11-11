@@ -36,6 +36,7 @@ public static class OberonSymbolModuleReader
         }
 
         var exports = new List<OberonSymbolExport>();
+        var exportNames = new HashSet<string>(StringComparer.Ordinal);
         while (true)
         {
             var symbolClass = reader.ReadSignedByte();
@@ -45,6 +46,11 @@ public static class OberonSymbolModuleReader
             }
 
             var exportName = reader.ReadString();
+            if (!exportNames.Add(exportName))
+            {
+                throw new InvalidDataException($"duplicate SMB export: {exportName}");
+            }
+
             var typeInfo = SkipType(ref reader);
             var value = symbolClass is 1 or 2 ? reader.ReadNum() : 0;
             exports.Add(new OberonSymbolExport(exportName, symbolClass, value)
