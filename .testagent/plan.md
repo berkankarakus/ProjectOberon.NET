@@ -66,3 +66,4 @@
 | Host-call register arguments are explicit | Reject register numbers outside r0-r15 instead of relying on CPU masking | `HostCallTests.ValidatesHostCallContextArguments` |
 | Kernel branch installation is safe | Reject unaligned addresses and out-of-range branch displacements | `KernelHostBindingTests.DispatchesInstallService` |
 | Memory and disk lifecycles are covered | Validate ROM parsing, reset behavior, closed disks, and invalid sectors | `MemoryTests`, `CpuTests.ResetsStateAndValidatesAddresses`, `DeviceTests.DiskImageValidatesLifecycle` |
+| Release verification is repeatable | Run the same Release build and deterministic test flow locally and in CI | `scripts/verify-dotnet.sh` |
