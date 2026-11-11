@@ -7,6 +7,9 @@ internal static class CompilerCliOptionTests
         RejectsUnknownOption();
         RejectsSharedOutputPath();
         RejectsMultipleSourcePaths();
+        ParsesImportedSymbols();
+        RejectsDuplicateImports();
+        RejectsInvalidImport();
     }
 
     private static void ParsesOutputOptions()
@@ -42,5 +45,25 @@ internal static class CompilerCliOptionTests
         TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse(["First.Mod", "Second.Mod"]));
         TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse([
             "--source", "First.Mod", "Second.Mod"]));
+    }
+
+    private static void ParsesImportedSymbols()
+    {
+        var options = CompilerOptions.Parse(["Demo.Mod", "--import", "Files=Files.smb"]);
+
+        TestAssertions.Equal(1, options.Imports.Count);
+        TestAssertions.Equal("Files", options.Imports[0].Name);
+        TestAssertions.Equal("Files.smb", options.Imports[0].Path);
+    }
+
+    private static void RejectsDuplicateImports()
+    {
+        TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse([
+            "Demo.Mod", "--import", "Files=one.smb", "--import", "Files=two.smb"]));
+    }
+
+    private static void RejectsInvalidImport()
+    {
+        TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse(["Demo.Mod", "--import", "Files.smb"]));
     }
 }

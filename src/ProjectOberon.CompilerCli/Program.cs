@@ -1,6 +1,7 @@
 using ProjectOberon.Compiler;
 using ProjectOberon.Emulator;
 using ProjectOberon.Rsc;
+using ProjectOberon.Symbols;
 
 try
 {
@@ -12,7 +13,10 @@ try
     }
 
     var source = File.ReadAllText(options.SourcePath);
-    var result = new OberonCompilerParser(source).ParseModule();
+    var importedModules = options.Imports
+        .Select(import => (import.Name, Module: OberonSymbolModuleReader.Parse(File.ReadAllBytes(import.Path))))
+        .ToDictionary(import => import.Name, import => import.Module, StringComparer.Ordinal);
+    var result = new OberonCompilerParser(source, importedModules: importedModules).ParseModule();
     if (!result.Succeeded)
     {
         Console.Error.WriteLine(OberonCompilerDiagnostics.Format(options.SourcePath, result.Diagnostics));
@@ -70,10 +74,13 @@ catch (Exception error) when (error is IOException or UnauthorizedAccessExceptio
     Environment.ExitCode = 1;
 }
 
+internal sealed record CompilerImport(string Name, string Path);
+
 internal sealed record CompilerOptions(
     string SourcePath,
     string? SymbolPath,
     string? RscPath,
+    IReadOnlyList<CompilerImport> Imports,
     bool Disassemble,
     bool Help)
 {
@@ -81,12 +88,13 @@ internal sealed record CompilerOptions(
     {
         if (args.Length == 0)
         {
-            return new CompilerOptions(string.Empty, null, null, true, true);
+            return new CompilerOptions(string.Empty, null, null, [], true, true);
         }
 
         string? source = null;
         string? symbolPath = null;
         string? rscPath = null;
+        var imports = new List<CompilerImport>();
         var disassemble = true;
         for (var index = 0; index < args.Length; index++)
         {
@@ -94,7 +102,7 @@ internal sealed record CompilerOptions(
             {
                 case "--help":
                 case "-h":
-                    return new CompilerOptions(string.Empty, null, null, true, true);
+                    return new CompilerOptions(string.Empty, null, null, [], true, true);
                 case "--source":
                     source = ReadValue(args, ref index, "--source");
                     break;
@@ -103,6 +111,9 @@ internal sealed record CompilerOptions(
                     break;
                 case "--rsc":
                     rscPath = ReadValue(args, ref index, "--rsc");
+                    break;
+                case "--import":
+                    imports.Add(ParseImport(ReadValue(args, ref index, "--import")));
                     break;
                 case "--no-disassemble":
                     disassemble = false;
@@ -135,13 +146,18 @@ internal sealed record CompilerOptions(
             throw new ArgumentException("--symbols and --rsc must point to different files");
         }
 
-        return new CompilerOptions(source, symbolPath, rscPath, disassemble, false);
+        if (imports.GroupBy(import => import.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
+        {
+            throw new ArgumentException("an imported module was specified more than once");
+        }
+
+        return new CompilerOptions(source, symbolPath, rscPath, imports, disassemble, false);
     }
 
     public static void PrintUsage()
     {
-        Console.WriteLine("usage: project-oberon-compiler SOURCE.Mod [--symbols FILE] [--rsc FILE] [--no-disassemble]");
-        Console.WriteLine("       project-oberon-compiler --source SOURCE.Mod [--symbols FILE] [--rsc FILE] [--no-disassemble]");
+        Console.WriteLine("usage: project-oberon-compiler SOURCE.Mod [--symbols FILE] [--rsc FILE] [--import NAME=FILE] [--no-disassemble]");
+        Console.WriteLine("       project-oberon-compiler --source SOURCE.Mod [--symbols FILE] [--rsc FILE] [--import NAME=FILE] [--no-disassemble]");
         Console.WriteLine("compiles an Oberon module, prints its RISC5 listing, and optionally writes SMB/RSC files");
     }
 
@@ -153,5 +169,16 @@ internal sealed record CompilerOptions(
         }
 
         return args[index];
+    }
+
+    private static CompilerImport ParseImport(string value)
+    {
+        var separator = value.IndexOf('=');
+        if (separator <= 0 || separator == value.Length - 1)
+        {
+            throw new ArgumentException("--import expects NAME=FILE");
+        }
+
+        return new CompilerImport(value[..separator], value[(separator + 1)..]);
     }
 }
