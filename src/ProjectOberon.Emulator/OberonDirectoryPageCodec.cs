@@ -54,6 +54,7 @@ public static class OberonDirectoryPageCodec
 
     public static byte[] Write(OberonDirectoryPage page)
     {
+        ArgumentNullException.ThrowIfNull(page);
         if (page.Entries.Count > MaxEntries || page.Children.Count != page.Entries.Count + 1)
         {
             throw new InvalidDataException("invalid Oberon directory page shape");
