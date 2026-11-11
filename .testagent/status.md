@@ -11,7 +11,9 @@
   extra, missing, reverse, or adapter-to-adapter reference fails the suite.
 - RSC tests assert module name, section sizes, code round-trip, imports,
   exported command offsets, body offsets, runtime command resolution, and
-  rejection of invalid code offsets.
+  rejection of invalid code offsets and unsupported descriptor types.
+- Compiler CLI option tests cover successful SMB/RSC parsing and both missing
+  value and unknown-option failures.
 - No assertion-free or always-true assertions were added.
 - The tests intentionally do not claim type descriptor or pointer-fixup
   coverage; those remain an explicit compiler gap.
