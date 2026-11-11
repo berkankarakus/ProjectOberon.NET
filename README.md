@@ -254,6 +254,13 @@ dotnet run --project ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj 
   path/to/Demo.Mod
 ```
 
+Write the exported symbol file used by the module loader:
+
+```sh
+dotnet run --project ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj -- \
+  path/to/Demo.Mod --symbols Demo.smb --no-disassemble
+```
+
 The compiler CLI currently emits a host-side instruction listing. RSC packaging
 and loader integration are tracked separately because they also require the
 module type descriptor and pointer-fixup tables.
