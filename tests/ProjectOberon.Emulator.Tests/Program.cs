@@ -49,6 +49,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon text model", OberonTextTests.Run),
     ("Oberon compiler scanner", OberonCompilerScannerTests.Run),
     ("Oberon compiler symbols", OberonCompilerSymbolsTests.Run),
+    ("Oberon compiler register allocator", OberonCompilerRegisterAllocatorTests.Run),
     ("Oberon compiler symbol files", OberonCompilerSymbolFileTests.Run),
     ("Oberon compiler parser", OberonCompilerParserTests.Run),
     ("Oberon compiler code generator", OberonCompilerCodeGeneratorTests.Run),
