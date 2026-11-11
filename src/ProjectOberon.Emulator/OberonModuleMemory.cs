@@ -48,6 +48,8 @@ public sealed class OberonModuleMemoryLoader
             throw new ArgumentException("external entry count does not match the symbol module", nameof(binding));
         }
 
+        ValidateWordAlignedOffsets(binding.EntryOffsets, nameof(binding.EntryOffsets));
+
         ValidateAlignedAddress(binding.DataAddress, nameof(binding.DataAddress));
         ValidateAlignedAddress(binding.CodeAddress, nameof(binding.CodeAddress));
         if (_images.ContainsKey(module.Name))
@@ -190,6 +192,17 @@ public sealed class OberonModuleMemoryLoader
         if (address > (uint)_memory.RamSize || length > (uint)_memory.RamSize - address)
         {
             throw new OberonModuleLoadException(7, "not enough emulator memory for Oberon module");
+        }
+    }
+
+    private static void ValidateWordAlignedOffsets(IReadOnlyList<uint> offsets, string parameterName)
+    {
+        for (var index = 0; index < offsets.Count; index++)
+        {
+            if ((offsets[index] & 3) != 0)
+            {
+                throw new ArgumentException("entry offsets must be word-aligned", parameterName);
+            }
         }
     }
 }

@@ -36,3 +36,4 @@
 | Memory materialization failures carry module-load codes | Wrap malformed fixup-chain failures with module context | `OberonModuleTests.Fixups` |
 | Test exceptions can be inspected | Return the captured exception from the assertion helper | `OberonModuleTests.Fixups` |
 | CLI traces expose module state | Include r12/r13 alongside stack and return registers | `CliTraceTests.FormatsModuleAndStackRegisters` |
+| External module entry offsets are aligned | Reject host bindings that would create unaligned code targets | `OberonModuleTests.SymbolBinding` |

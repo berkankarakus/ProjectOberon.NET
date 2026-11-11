@@ -18,6 +18,8 @@ internal static partial class OberonModuleTests
         TestAssertions.True(module.Imports[0].IsExternal);
         var boundMemory = new Memory(64 * 1024);
         var boundLoader = new OberonModuleMemoryLoader(boundMemory, graph, 0x1000, 0x100);
+        TestAssertions.Throws<ArgumentException>(() => boundLoader.BindExternal(
+            new OberonExternalModuleBinding("Kernel", 0x3000, 0x4000, [2, 0, 0, 0])));
         boundLoader.BindExternal(new OberonExternalModuleBinding("Kernel", 0x3000, 0x4000, [0, 0, 0, 0x20]));
         var boundImage = boundLoader.Load("A");
         var boundKernel = boundLoader.LoadedImages.Single(candidate => candidate.Module.Name == "Kernel");
