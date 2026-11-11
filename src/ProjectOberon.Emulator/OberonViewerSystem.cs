@@ -14,9 +14,20 @@ public sealed partial class OberonViewerSystem
         int height,
         int minimumHeight = DefaultMinimumHeight)
     {
-        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
-        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
-        if (minimumHeight <= 0) throw new ArgumentOutOfRangeException(nameof(minimumHeight));
+        if (width <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(width));
+        }
+
+        if (height <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(height));
+        }
+
+        if (minimumHeight <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(minimumHeight));
+        }
 
         Width = width;
         Height = height;
