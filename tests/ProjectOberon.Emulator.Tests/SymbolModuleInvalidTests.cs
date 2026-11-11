@@ -62,4 +62,21 @@ internal static partial class SymbolModuleTests
         TestAssertions.ThrowsInvalidData(() => OberonSymbolModuleReader.Parse(
             BuildSmb(_ => { }, new string('A', 32))));
     }
+
+    private static void RejectsOverlongNumbers()
+    {
+        var data = BuildSmb(writer =>
+        {
+            writer.AddByte(2);
+            writer.AddString("Answer");
+            writer.AddByte(0xfc);
+            writer.AddByte(0x80);
+            writer.AddByte(0x80);
+            writer.AddByte(0x80);
+            writer.AddByte(0x80);
+            writer.AddByte(0x80);
+        });
+
+        TestAssertions.ThrowsInvalidData(() => OberonSymbolModuleReader.Parse(data));
+    }
 }

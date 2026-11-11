@@ -12,5 +12,6 @@ internal static partial class SymbolModuleTests
         RejectsTrailingBytes();
         RejectsInvalidModuleNames();
         RejectsDuplicateExports();
+        RejectsOverlongNumbers();
     }
 }
