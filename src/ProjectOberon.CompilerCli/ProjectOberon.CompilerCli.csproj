@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../ProjectOberon.Compiler/ProjectOberon.Compiler.csproj" />
     <ProjectReference Include="../ProjectOberon.Emulator/ProjectOberon.Emulator.csproj" />
   </ItemGroup>
 </Project>

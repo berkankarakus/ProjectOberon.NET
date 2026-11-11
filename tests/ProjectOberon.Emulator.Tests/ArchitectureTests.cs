@@ -3,6 +3,7 @@ using System.Xml.Linq;
 internal static class ArchitectureTests
 {
     private const string CoreProject = "src/ProjectOberon.Emulator/ProjectOberon.Emulator.csproj";
+    private const string CompilerProject = "src/ProjectOberon.Compiler/ProjectOberon.Compiler.csproj";
     private const string TestProject = "tests/ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj";
 
     private static readonly string[] AdapterProjects =
@@ -17,10 +18,16 @@ internal static class ArchitectureTests
     public static void Run()
     {
         CoreHasNoProjectReferences();
+        CompilerDependsOnlyOnCore();
         AdaptersDependOnlyOnCore();
         ProductionProjectsDoNotDependOnTests();
         AdaptersDoNotDependOnEachOther();
         SolutionContainsExpectedProjectPaths();
+    }
+
+    private static void CompilerDependsOnlyOnCore()
+    {
+        TestAssertions.True(ReadReferences(CompilerProject).SetEquals([CoreProject]));
     }
 
     private static void CoreHasNoProjectReferences()
@@ -33,13 +40,16 @@ internal static class ArchitectureTests
         foreach (var adapter in AdapterProjects)
         {
             var references = ReadReferences(adapter);
-            TestAssertions.True(references.SetEquals([CoreProject]));
+            var expected = adapter == "src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj"
+                ? new[] { CoreProject, CompilerProject }
+                : new[] { CoreProject };
+            TestAssertions.True(references.SetEquals(expected));
         }
     }
 
     private static void ProductionProjectsDoNotDependOnTests()
     {
-        foreach (var project in AdapterProjects.Append(CoreProject))
+        foreach (var project in AdapterProjects.Append(CoreProject).Append(CompilerProject))
         {
             TestAssertions.False(ReadReferences(project).Contains(TestProject));
         }
@@ -57,7 +67,7 @@ internal static class ArchitectureTests
     private static void SolutionContainsExpectedProjectPaths()
     {
         var solution = File.ReadAllText(Path.Combine(RepositoryRoot(), "ProjectOberon.NET.slnx"));
-        foreach (var project in AdapterProjects.Append(CoreProject).Append(TestProject))
+        foreach (var project in AdapterProjects.Append(CoreProject).Append(CompilerProject).Append(TestProject))
         {
             TestAssertions.True(solution.Contains($"Path=\"{project}\"", StringComparison.Ordinal));
         }

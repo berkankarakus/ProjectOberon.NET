@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../ProjectOberon.Emulator/ProjectOberon.Emulator.csproj" />
+  </ItemGroup>
+</Project>
