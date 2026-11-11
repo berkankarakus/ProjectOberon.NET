@@ -276,9 +276,11 @@ dotnet run --project src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csp
   path/to/Demo.Mod --import Files=Files.smb --no-disassemble
 ```
 
-The current import slice resolves exported, zero-argument procedures. Other
-export kinds remain available to the runtime symbol loader but are not yet
-lowered into compiler types.
+The current import slice preserves exported procedure arity and validates
+qualified calls against it. Other export kinds remain available to the runtime
+symbol loader but are not yet lowered into compiler types. External procedure
+call lowering into RSC fixups is still pending, so the emitter reports that
+limitation explicitly instead of producing an invalid call.
 
 The compiler CLI now emits a minimal RSC container. Full type descriptor and
 pointer-fixup generation remains a separate compiler milestone; modules that
@@ -289,6 +291,11 @@ payloads. The reader and writer reject duplicate import or command names and
 validate command, entry, body and fixup offsets before the module reaches the
 emulator memory loader. This keeps malformed artifacts as compiler/loader
 errors instead of turning them into ambiguous runtime behavior.
+
+Compiler limitations are currently explicit for aggregate field/array loads and
+stores, record and open-array parameter lowering, pointer-fixup descriptors,
+external RSC calls, and `IS` type-test lowering. These are planned compiler
+milestones rather than silently accepted syntax.
 
 Run the fast validation suite after changing compiler or RSC code:
 
