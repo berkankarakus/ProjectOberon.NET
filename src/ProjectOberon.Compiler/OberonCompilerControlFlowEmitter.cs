@@ -37,7 +37,10 @@ public sealed class OberonCompilerControlFlowEmitter
             _generator.Bind(next);
         }
 
-        if (conditional.ElseBody is not null) _emitStatements(conditional.ElseBody);
+        if (conditional.ElseBody is not null)
+        {
+            _emitStatements(conditional.ElseBody);
+        }
         _generator.Bind(end);
     }
 
@@ -126,7 +129,10 @@ public sealed class OberonCompilerControlFlowEmitter
             }
         }
 
-        if (conditional.ElseBody is not null) _emitStatements(conditional.ElseBody);
+        if (conditional.ElseBody is not null)
+        {
+            _emitStatements(conditional.ElseBody);
+        }
         _generator.EmitBranch(end);
         for (var armIndex = 0; armIndex < conditional.Arms.Count; armIndex++)
         {
