@@ -9,6 +9,7 @@ internal static class OberonTextEditorTests
         MapsMouseToCursor();
         UndoesAndRedoesStyledEdits();
         MovesCaretBetweenLines();
+        ValidatesCursorAndViewportArguments();
     }
 
     private static void EditsAndSelectsText()
@@ -86,6 +87,16 @@ internal static class OberonTextEditorTests
         TestAssertions.Equal(0, editor.Cursor);
         editor.MoveDown(100);
         TestAssertions.Equal(3, editor.Cursor);
+    }
+
+    private static void ValidatesCursorAndViewportArguments()
+    {
+        var editor = new OberonTextEditor(new OberonTextFrame(new OberonText("abc"), CreateFont()));
+
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => editor.SetCursor(-1));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => editor.SetCursor(4));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => editor.MoveUp(0));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => editor.MoveDown(-1));
     }
 
     private static OberonFont CreateFont()
