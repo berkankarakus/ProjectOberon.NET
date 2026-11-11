@@ -1,7 +1,6 @@
 using ProjectOberon.Compiler;
 using ProjectOberon.Emulator;
 using ProjectOberon.Rsc;
-using ProjectOberon.Symbols;
 
 try
 {
@@ -13,9 +12,7 @@ try
     }
 
     var source = File.ReadAllText(options.SourcePath);
-    var importedModules = options.Imports
-        .Select(import => (import.Name, Module: OberonSymbolModuleReader.Parse(File.ReadAllBytes(import.Path))))
-        .ToDictionary(import => import.Name, import => import.Module, StringComparer.Ordinal);
+    var importedModules = CompilerImportLoader.Load(options.Imports);
     var result = new OberonCompilerParser(source, importedModules: importedModules).ParseModule();
     if (!result.Succeeded)
     {
@@ -67,7 +64,8 @@ try
         Console.WriteLine($"{index * 4:x6}: {instruction:x8} {Risc5Disassembler.Format(instruction)}");
     }
 }
-catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException
+catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException
+    or ArgumentException
     or InvalidOperationException or NotSupportedException)
 {
     Console.Error.WriteLine($"project-oberon-compiler: {error.Message}");

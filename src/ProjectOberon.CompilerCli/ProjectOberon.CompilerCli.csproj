@@ -6,5 +6,6 @@
     <ProjectReference Include="../ProjectOberon.Compiler/ProjectOberon.Compiler.csproj" />
     <ProjectReference Include="../ProjectOberon.Emulator/ProjectOberon.Emulator.csproj" />
     <ProjectReference Include="../ProjectOberon.Rsc/ProjectOberon.Rsc.csproj" />
+    <ProjectReference Include="../ProjectOberon.Symbols/ProjectOberon.Symbols.csproj" />
   </ItemGroup>
 </Project>

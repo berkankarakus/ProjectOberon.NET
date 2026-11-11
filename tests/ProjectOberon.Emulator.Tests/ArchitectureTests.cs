@@ -62,7 +62,7 @@ internal static class ArchitectureTests
         {
             var references = ReadReferences(adapter);
             var expected = adapter == "src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj"
-                ? new[] { CoreProject, CompilerProject, RscProject }
+                ? new[] { CoreProject, CompilerProject, RscProject, SymbolsProject }
                 : adapter == "src/ProjectOberon.Cli/ProjectOberon.Cli.csproj"
                     ? new[] { CoreProject, RscProject }
                 : adapter == "src/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj"

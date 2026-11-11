@@ -11,6 +11,7 @@ internal static class CompilerCliOptionTests
         RejectsDuplicateImports();
         RejectsInvalidImport();
         RejectsInvalidImportName();
+        RejectsImportAliasMismatch();
     }
 
     private static void ParsesOutputOptions()
@@ -72,5 +73,21 @@ internal static class CompilerCliOptionTests
     {
         TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse([
             "Demo.Mod", "--import", "Files.Mod=Files.smb"]));
+    }
+
+    private static void RejectsImportAliasMismatch()
+    {
+        var data = OberonCompilerSymbolFileWriter.Write("Files", []);
+        var path = Path.Combine(Path.GetTempPath(), $"project-oberon-{Guid.NewGuid():N}.smb");
+        File.WriteAllBytes(path, data);
+        try
+        {
+            TestAssertions.Throws<InvalidDataException>(() => CompilerImportLoader.Load([
+                new CompilerImport("Other", path)]));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }
