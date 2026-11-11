@@ -114,4 +114,11 @@ internal static partial class RscModuleTests
 
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
     }
+
+    private static void RejectsUnalignedDataSections()
+    {
+        var data = BuildRsc("Demo", 1, [], "Start", variableBytes: 1);
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
+    }
 }

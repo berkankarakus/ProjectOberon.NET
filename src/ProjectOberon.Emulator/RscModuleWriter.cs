@@ -126,6 +126,10 @@ public static class RscModuleWriter
             module.VariableBytes,
             module.StringBytes,
             module.PointerReferences);
+        RscModuleValidation.ValidateDataLayout(
+            module.TypeDescriptorBytes,
+            module.VariableBytes,
+            module.StringBytes);
         RscModuleValidation.ValidateCodeLayout(module.CodeWords, module.Commands, module.BodyOffset);
     }
 

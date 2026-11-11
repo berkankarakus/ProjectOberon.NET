@@ -95,6 +95,18 @@ internal static class RscModuleValidation
         }
     }
 
+    public static void ValidateDataLayout(
+        int typeDescriptorBytes,
+        int variableBytes,
+        int stringBytes)
+    {
+        var dataBytes = checked(typeDescriptorBytes + variableBytes + stringBytes);
+        if (dataBytes % sizeof(uint) != 0)
+        {
+            throw new InvalidDataException($"RSC data sections are not word-aligned: {dataBytes} bytes");
+        }
+    }
+
     private static void ValidateWordOffset(int wordCount, int offset, string name)
     {
         if (offset < 0 || (offset != 0 && offset >= wordCount))

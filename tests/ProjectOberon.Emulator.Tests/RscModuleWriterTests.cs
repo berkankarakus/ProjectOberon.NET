@@ -11,7 +11,7 @@ internal static partial class RscModuleTests
             command: "Start",
             typePayload: [1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             variableBytes: 16,
-            stringPayload: [(byte)'x', 0],
+            stringPayload: [(byte)'x', 0, 0, 0],
             code: [0xc700_0010u, 0xc700_0020u, 0],
             entries: [0, 4],
             pointerReferences: [8, 12],
