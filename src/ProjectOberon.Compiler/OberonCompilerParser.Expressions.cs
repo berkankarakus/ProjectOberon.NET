@@ -16,7 +16,10 @@ public sealed partial class OberonCompilerParser
         Func<OberonCompilerTokenKind, T, T, T> applyBinary)
     {
         var left = ParseSimpleExpression(parsePrimary, applyUnary, applyBinary);
-        if (!IsRelation(_current.Kind)) return left;
+        if (!IsRelation(_current.Kind))
+        {
+            return left;
+        }
 
         var operation = _current.Kind;
         Next();
@@ -158,7 +161,10 @@ public sealed partial class OberonCompilerParser
                     value |= 1u << element;
             }
 
-            if (_current.Kind != OberonCompilerTokenKind.Comma) break;
+            if (_current.Kind != OberonCompilerTokenKind.Comma)
+            {
+                break;
+            }
             Next();
         }
 

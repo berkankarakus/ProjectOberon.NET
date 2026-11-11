@@ -44,11 +44,30 @@ public sealed partial class OberonCompilerParser
 
     private OberonCompilerStatement? ParseStatement()
     {
-        if (_current.Kind == OberonCompilerTokenKind.If) return ParseIfStatement();
-        if (_current.Kind == OberonCompilerTokenKind.While) return ParseWhileStatement();
-        if (_current.Kind == OberonCompilerTokenKind.Repeat) return ParseRepeatStatement();
-        if (_current.Kind == OberonCompilerTokenKind.For) return ParseForStatement();
-        if (_current.Kind == OberonCompilerTokenKind.Case) return ParseCaseStatement();
+        if (_current.Kind == OberonCompilerTokenKind.If)
+        {
+            return ParseIfStatement();
+        }
+
+        if (_current.Kind == OberonCompilerTokenKind.While)
+        {
+            return ParseWhileStatement();
+        }
+
+        if (_current.Kind == OberonCompilerTokenKind.Repeat)
+        {
+            return ParseRepeatStatement();
+        }
+
+        if (_current.Kind == OberonCompilerTokenKind.For)
+        {
+            return ParseForStatement();
+        }
+
+        if (_current.Kind == OberonCompilerTokenKind.Case)
+        {
+            return ParseCaseStatement();
+        }
 
         if (_current.Kind == OberonCompilerTokenKind.Return)
         {
