@@ -5,6 +5,7 @@ internal static class CompilerCliOptionTests
         ParsesOutputOptions();
         RejectsMissingOutputValue();
         RejectsUnknownOption();
+        RejectsSharedOutputPath();
     }
 
     private static void ParsesOutputOptions()
@@ -27,5 +28,11 @@ internal static class CompilerCliOptionTests
     private static void RejectsUnknownOption()
     {
         TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse(["Demo.Mod", "--unknown"]));
+    }
+
+    private static void RejectsSharedOutputPath()
+    {
+        TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse([
+            "Demo.Mod", "--symbols", "out/Demo.bin", "--rsc", "out/./Demo.bin"]));
     }
 }

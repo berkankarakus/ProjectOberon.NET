@@ -38,3 +38,4 @@
 | CLI traces expose module state | Include r12/r13 alongside stack and return registers | `CliTraceTests.FormatsModuleAndStackRegisters` |
 | External module entry offsets are aligned | Reject host bindings that would create unaligned code targets | `OberonModuleTests.SymbolBinding` |
 | Host-call registration validates before mutation | Reject unaligned host offsets before binding or dispatcher registration | `HostCallTests.BindsExternalEntryHandlers` |
+| Compiler outputs cannot overwrite each other | Reject equivalent SMB/RSC output paths during option parsing | `CompilerCliOptionTests.RejectsSharedOutputPath` |

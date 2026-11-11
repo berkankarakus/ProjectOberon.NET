@@ -121,6 +121,13 @@ internal sealed record CompilerOptions(
             throw new ArgumentException("source file is required");
         }
 
+        if (symbolPath is not null && rscPath is not null
+            && string.Equals(Path.GetFullPath(symbolPath), Path.GetFullPath(rscPath),
+                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+        {
+            throw new ArgumentException("--symbols and --rsc must point to different files");
+        }
+
         return new CompilerOptions(source, symbolPath, rscPath, disassemble, false);
     }
 
