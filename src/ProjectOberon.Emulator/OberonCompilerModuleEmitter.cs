@@ -37,6 +37,7 @@ public sealed class OberonCompilerModuleEmitter
         ArgumentNullException.ThrowIfNull(module);
         if (!module.Succeeded) throw new InvalidOperationException("cannot emit an invalid module");
 
+        _generator.Reset();
         _procedureLabels.Clear();
         _stringAddresses.Clear();
         _moduleData.Clear();

@@ -17,6 +17,8 @@ public sealed class OberonCompilerCodeGenerator : IOberonCompilerInstructionWrit
     public IReadOnlyList<uint> Code => _code;
     public int ProgramCounter => _code.Count;
 
+    internal void Reset() => _code.Clear();
+
     public void EmitRegister(AluOperation operation, int destination, int left, int right, bool carry = false)
     {
         ValidateRegister(destination);

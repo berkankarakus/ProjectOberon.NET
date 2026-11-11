@@ -14,3 +14,4 @@
 | Minimal RSC limitation is explicit | Reject record/pointer descriptor data before producing an incomplete module | `OberonCompilerRscTests.RejectsUnsupportedMinimalRscTypes` |
 | Compiler CLI output options are stable | Parse SMB/RSC output options and reject invalid command lines | `CompilerCliOptionTests.ParsesOutputOptions`, `CompilerCliOptionTests.RejectsMissingOutputValue`, `CompilerCliOptionTests.RejectsUnknownOption` |
 | RSC reader rejects unsafe code layout | Validate command and body offsets when reading disk modules | `RscModuleTests.RejectsInvalidCodeLayout` |
+| Compiler emitter is repeatable | Reset generated code and verify repeated emission is byte-for-byte deterministic | `OberonCompilerModuleEmitterTests.EmitsSameModuleDeterministically` |

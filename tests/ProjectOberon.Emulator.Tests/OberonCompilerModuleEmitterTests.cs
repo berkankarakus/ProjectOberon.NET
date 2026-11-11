@@ -14,6 +14,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsRecordParameterPointerCall();
         EmitsPointerParameterCall();
         EmitsStringDataAndCharCopy();
+        EmitsSameModuleDeterministically();
         EmitsOpenArrayAndScalarParameterCall();
     }
 
@@ -185,5 +186,19 @@ internal static class OberonCompilerModuleEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Contains("ADD r1, r13, 0x0008"));
         TestAssertions.True(instructions.Contains("STR.B r0, [r2, 5]"));
+    }
+
+    private static void EmitsSameModuleDeterministically()
+    {
+        const string source = "MODULE Repeat; VAR value: INTEGER; BEGIN value := 42 END Repeat.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+        var emitter = new OberonCompilerModuleEmitter(generator);
+
+        var first = emitter.Emit(module).ToArray();
+        var second = emitter.Emit(module).ToArray();
+
+        TestAssertions.True(first.SequenceEqual(second));
+        TestAssertions.Equal(first.Length, generator.Code.Count);
     }
 }
