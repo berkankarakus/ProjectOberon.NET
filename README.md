@@ -296,6 +296,8 @@ tests. Shared instruction/RSC contracts are kept in
 `ProjectOberon.Contracts`; compiler implementation lives in
 `ProjectOberon.Compiler` and does not reference the emulator runtime. RSC
 serialization and validation live in `ProjectOberon.Rsc`.
+SMB symbol-module parsing lives in `ProjectOberon.Symbols` so compiler and
+runtime symbol consumers can share it without coupling to the emulator.
 
 Inspect a compiled Oberon module using the layout read by `Modules.Mod`:
 

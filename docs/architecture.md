@@ -8,6 +8,7 @@ and no production project depends on tests.
 flowchart TD
     Contracts[ProjectOberon.Contracts]
     RscLib[ProjectOberon.Rsc]
+    Symbols[ProjectOberon.Symbols]
     Core[ProjectOberon.Emulator]
     CompilerLib[ProjectOberon.Compiler]
     Cli[ProjectOberon.Cli]
@@ -20,6 +21,7 @@ flowchart TD
     Core --> Contracts
     RscLib --> Contracts
     Core --> RscLib
+    Core --> Symbols
     CompilerLib --> Contracts
     Cli --> Core
     Compiler --> Core
@@ -49,6 +51,7 @@ src/
   ProjectOberon.Emulator/       core runtime and filesystem
   ProjectOberon.Compiler/       Oberon scanner, parser and code generator
   ProjectOberon.Rsc/            RSC reader, writer and validation
+  ProjectOberon.Symbols/        SMB symbol-module model and reader
   ProjectOberon.Cli/            machine/runtime CLI
   ProjectOberon.CompilerCli/   Oberon source compiler CLI
   ProjectOberon.FsCli/          disk filesystem CLI
