@@ -13,6 +13,7 @@ public static class OberonCompilerSymbolFileWriter
     {
         ArgumentException.ThrowIfNullOrEmpty(moduleName);
         ArgumentNullException.ThrowIfNull(exports);
+        ValidateName(moduleName, "module name", allowEmpty: false, maxLength: 31);
 
         var writer = new SymbolFileWriter();
         writer.WriteInt(0);
@@ -32,6 +33,8 @@ public static class OberonCompilerSymbolFileWriter
             {
                 throw new ArgumentException($"symbol has no type: {export.Name}", nameof(exports));
             }
+
+            ValidateName(export.Name, "symbol name", allowEmpty: false, maxLength: 31);
 
             writer.WriteByte((byte)export.Class);
             writer.WriteString(export.Name);
@@ -61,6 +64,19 @@ public static class OberonCompilerSymbolFileWriter
             checksum = unchecked(checksum + BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(offset, sizeof(int))));
         BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(sizeof(int)), checksum);
         return data;
+    }
+
+    private static void ValidateName(string value, string description, bool allowEmpty, int maxLength)
+    {
+        if ((!allowEmpty && value.Length == 0) || value.Length > maxLength)
+        {
+            throw new ArgumentException($"{description} must contain 1 to {maxLength} characters");
+        }
+
+        if (value.Contains('\0') || value.Any(character => character > 0x7f))
+        {
+            throw new ArgumentException($"{description} must contain ASCII characters");
+        }
     }
 
     private sealed class TypeWriter

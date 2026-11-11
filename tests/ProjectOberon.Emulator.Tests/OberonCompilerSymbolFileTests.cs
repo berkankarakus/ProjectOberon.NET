@@ -6,6 +6,7 @@ internal static class OberonCompilerSymbolFileTests
     {
         WritesFilesAcceptedByTheExistingReader();
         RejectsUnexportedSymbols();
+        RejectsInvalidModuleNames();
     }
 
     private static void WritesFilesAcceptedByTheExistingReader()
@@ -44,5 +45,12 @@ internal static class OberonCompilerSymbolFileTests
         var local = symbols.Declare("local", OberonCompilerObjectClass.Variable, symbols.IntegerType);
 
         TestAssertions.Throws<ArgumentException>(() => OberonCompilerSymbolFileWriter.Write("Demo", [local]));
+    }
+
+    private static void RejectsInvalidModuleNames()
+    {
+        TestAssertions.Throws<ArgumentException>(() => OberonCompilerSymbolFileWriter.Write(
+            new string('D', 32), []));
+        TestAssertions.Throws<ArgumentException>(() => OberonCompilerSymbolFileWriter.Write("Démо", []));
     }
 }
