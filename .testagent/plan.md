@@ -47,3 +47,4 @@
 | Host binding assembly is shared | Centralize export, entry-offset and handler packaging for Files/Kernel/Modules | Existing host binding suites |
 | Memory map ownership is independent | Move address constants into a shared map so device code does not depend on `Memory` | `DeviceMmioTests`, `DeviceStorageTests`, `OberonModuleTests` |
 | RSC model ownership is independent | Move RSC records out of the reader so model and validation dependencies remain one-directional | `RscModuleTests`, `OberonCompilerRscTests` |
+| File-system model ownership is independent | Move directory and file-header records out of the filesystem service so the header codec does not depend on its consumer | `OberonFileSystemTests`, `OberonFileHeaderTests` |
