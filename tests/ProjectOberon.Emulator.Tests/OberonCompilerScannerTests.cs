@@ -8,6 +8,7 @@ internal static class OberonCompilerScannerTests
         ScansOberonLiterals();
         SkipsNestedCommentsAndTracksLocation();
         ReportsMalformedInput();
+        ReportsLiteralOverflowAndMalformedHex();
     }
 
     private static void ScansKeywordsAndOperators()
@@ -75,5 +76,18 @@ internal static class OberonCompilerScannerTests
 
         var invalid = new OberonCompilerScanner("\"unfinished").Scan();
         TestAssertions.Equal(OberonCompilerTokenKind.Invalid, invalid.Kind);
+    }
+
+    private static void ReportsLiteralOverflowAndMalformedHex()
+    {
+        var overflow = new OberonCompilerScanner("2147483648").Scan();
+        var characterOverflow = new OberonCompilerScanner("100X").Scan();
+        var malformedHex = new OberonCompilerScanner("$A$").Scan();
+        var unterminatedHex = new OberonCompilerScanner("$41").Scan();
+
+        TestAssertions.Equal(OberonCompilerTokenKind.Invalid, overflow.Kind);
+        TestAssertions.Equal(OberonCompilerTokenKind.Invalid, characterOverflow.Kind);
+        TestAssertions.Equal(OberonCompilerTokenKind.Invalid, malformedHex.Kind);
+        TestAssertions.Equal(OberonCompilerTokenKind.Invalid, unterminatedHex.Kind);
     }
 }
