@@ -76,6 +76,7 @@ internal static class HostCallTests
             TestAssertions.Equal("ç", context.ReadCString(0x600));
             TestAssertions.Throws<InvalidDataException>(() => context.ReadCString(0x600, 1));
             TestAssertions.Throws<InvalidDataException>(() => context.WriteCString(0x600, "123", 3));
+            TestAssertions.Throws<ArgumentOutOfRangeException>(() => context.WriteCString(0x600, "x", 0));
             context.Return();
         });
         machine.Cpu.SetRegister(15, 0x200);

@@ -56,6 +56,7 @@ public sealed class OberonHostCallContext
     public void WriteCString(uint address, string value, int maximumLength = 256)
     {
         ArgumentNullException.ThrowIfNull(value);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumLength);
         var bytes = System.Text.Encoding.Latin1.GetBytes(value);
         if (bytes.Length >= maximumLength)
         {
