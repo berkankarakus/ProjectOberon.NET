@@ -13,10 +13,7 @@ try
     var result = new OberonCompilerParser(source).ParseModule();
     if (!result.Succeeded)
     {
-        foreach (var diagnostic in result.Diagnostics)
-        {
-            Console.Error.WriteLine($"{options.SourcePath}:{diagnostic.Line}:{diagnostic.Column}: error: {diagnostic.Message}");
-        }
+        Console.Error.WriteLine(OberonCompilerDiagnostics.Format(options.SourcePath, result.Diagnostics));
 
         Environment.ExitCode = 1;
         return;
