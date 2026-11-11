@@ -83,6 +83,7 @@ internal static class SubcommandOptionTests
         var options = RscOptions.Parse(["--help", "--unknown"]);
 
         TestAssertions.True(options.Help);
+        TestAssertions.True(RscOptions.Parse(["-h", "--unknown"]).Help);
     }
 
     private static void RejectsInvalidRscOptions()

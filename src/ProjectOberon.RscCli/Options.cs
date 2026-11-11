@@ -11,7 +11,8 @@ internal sealed record RscOptions(
 {
     public static RscOptions Parse(string[] args)
     {
-        if (args.Contains("--help", StringComparer.Ordinal))
+        if (args.Contains("--help", StringComparer.Ordinal)
+            || args.Contains("-h", StringComparer.Ordinal))
         {
             return new RscOptions(null, "Oberon.rsc", false, false, ".", false, null, 32, Help: true);
         }
@@ -56,6 +57,7 @@ internal sealed record RscOptions(
                         throw new ArgumentException("--count must be a positive integer");
                     break;
                 case "--help":
+                case "-h":
                     help = true;
                     break;
                 default:

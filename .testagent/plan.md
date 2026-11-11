@@ -40,3 +40,4 @@
 | Host-call registration validates before mutation | Reject unaligned host offsets before binding or dispatcher registration | `HostCallTests.BindsExternalEntryHandlers` |
 | Compiler outputs cannot overwrite each other | Reject equivalent SMB/RSC output paths during option parsing | `CompilerCliOptionTests.RejectsSharedOutputPath` |
 | Compiler CLI accepts one source only | Reject ambiguous positional and `--source` combinations | `CompilerCliOptionTests.RejectsMultipleSourcePaths` |
+| RSC CLI supports the conventional short help flag | Treat `-h` like `--help` before parsing other options | `SubcommandOptionTests.HandlesRscHelp` |
