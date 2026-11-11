@@ -55,5 +55,11 @@ internal static partial class OberonDiskFormatTests
         BinaryPrimitives.WriteInt32LittleEndian(invalidCount, OberonDirectoryPageCodec.DirectoryMark);
         BinaryPrimitives.WriteInt32LittleEndian(invalidCount.AsSpan(4), OberonDirectoryPageCodec.MaxEntries + 1);
         TestAssertions.Throws<InvalidDataException>(() => OberonDirectoryPageCodec.Read(invalidCount, 29));
+
+        var invalidName = new byte[OberonDirectoryPageCodec.PageSize];
+        BinaryPrimitives.WriteInt32LittleEndian(invalidName, OberonDirectoryPageCodec.DirectoryMark);
+        BinaryPrimitives.WriteInt32LittleEndian(invalidName.AsSpan(4), 1);
+        invalidName[OberonDirectoryPageCodec.HeaderSize] = 0xff;
+        TestAssertions.Throws<InvalidDataException>(() => OberonDirectoryPageCodec.Read(invalidName, 29));
     }
 }
