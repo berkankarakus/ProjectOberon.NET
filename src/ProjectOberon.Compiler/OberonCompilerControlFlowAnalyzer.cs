@@ -4,11 +4,17 @@ public static class OberonCompilerControlFlowAnalyzer
 {
     public static bool CanCompleteNormally(OberonCompilerStatementSequence? sequence)
     {
-        if (sequence is null) return true;
+        if (sequence is null)
+        {
+            return true;
+        }
 
         foreach (var statement in sequence.Statements)
         {
-            if (!CanCompleteNormally(statement)) return false;
+            if (!CanCompleteNormally(statement))
+            {
+                return false;
+            }
         }
 
         return true;
@@ -24,8 +30,16 @@ public static class OberonCompilerControlFlowAnalyzer
 
     private static bool CanCompleteNormally(OberonCompilerIfStatement conditional)
     {
-        if (conditional.ElseBody is null) return true;
-        if (CanCompleteNormally(conditional.ElseBody)) return true;
+        if (conditional.ElseBody is null)
+        {
+            return true;
+        }
+
+        if (CanCompleteNormally(conditional.ElseBody))
+        {
+            return true;
+        }
+
         return conditional.Branches.Any(branch => CanCompleteNormally(branch.Body));
     }
 }

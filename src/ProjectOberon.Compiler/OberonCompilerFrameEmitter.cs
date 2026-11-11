@@ -26,8 +26,13 @@ public sealed class OberonCompilerFrameEmitter
 
     public void EmitReturn(int frameSize)
     {
-        if (frameSize == 0) _generator.EmitReturn();
-        else _generator.EmitProcedureReturn(frameSize);
+        if (frameSize == 0)
+        {
+            _generator.EmitReturn();
+            return;
+        }
+
+        _generator.EmitProcedureReturn(frameSize);
     }
 
     public void SaveParameters(OberonCompilerObject procedure)
