@@ -15,6 +15,7 @@ internal sealed record Options(
 {
     public static Options Parse(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
         if (args.Contains("--help", StringComparer.Ordinal)
             || args.Contains("-h", StringComparer.Ordinal))
         {

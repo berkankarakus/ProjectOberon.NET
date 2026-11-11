@@ -67,6 +67,7 @@ internal static class CliOptionTests
 
     private static void RejectsInvalidValues()
     {
+        TestAssertions.Throws<ArgumentNullException>(() => Options.Parse(null!));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--steps", "x"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--trace", "-1"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--breakpoint", "not-hex"]));
