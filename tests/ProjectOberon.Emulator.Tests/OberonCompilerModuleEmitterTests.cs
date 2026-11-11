@@ -14,6 +14,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsRecordParameterPointerCall();
         EmitsPointerParameterCall();
         EmitsStringDataAndCharCopy();
+        DeduplicatesRepeatedStringData();
         EmitsSameModuleDeterministically();
         EmitsOpenArrayAndScalarParameterCall();
     }
@@ -200,5 +201,19 @@ internal static class OberonCompilerModuleEmitterTests
 
         TestAssertions.True(first.SequenceEqual(second));
         TestAssertions.Equal(first.Length, generator.Code.Count);
+    }
+
+    private static void DeduplicatesRepeatedStringData()
+    {
+        const string source = "MODULE Strings; VAR first, second: ARRAY 6 OF CHAR; BEGIN first := \"hello\"; second := \"hello\"; END Strings.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var emitter = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator());
+
+        emitter.Emit(module);
+
+        TestAssertions.Equal(16, emitter.VariableBytes);
+        TestAssertions.Equal(22, emitter.ModuleData.Count);
+        TestAssertions.True(emitter.ModuleData.Skip(16).SequenceEqual(
+            new byte[] { (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o', 0 }));
     }
 }
