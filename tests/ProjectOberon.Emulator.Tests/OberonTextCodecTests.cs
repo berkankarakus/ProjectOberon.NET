@@ -46,5 +46,13 @@ internal static class OberonTextCodecTests
         var text = new OberonText("ok");
         text.ChangeLooks(0, 2, new OberonTextStyle("Bad\0Font", 1, 0));
         TestAssertions.ThrowsInvalidData(() => OberonTextCodec.Encode(text));
+
+        text = new OberonText("ok");
+        text.ChangeLooks(0, 2, new OberonTextStyle("Font", 256, 0));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => OberonTextCodec.Encode(text));
+
+        text = new OberonText("ok");
+        text.ChangeLooks(0, 2, new OberonTextStyle("Font", 1, 128));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => OberonTextCodec.Encode(text));
     }
 }
