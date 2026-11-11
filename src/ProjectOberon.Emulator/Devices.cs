@@ -81,7 +81,18 @@ public sealed class DeviceBus
     public bool HasDisk => _spi.HasDisk;
     public void EnqueueUartRx(byte value) => _uartRx.Enqueue(value);
     public void EnqueueKeyboard(byte value) => _keyboard.Enqueue(value);
-    public void SetMouse(ushort x, ushort y, byte buttons) { _mouseX = (ushort)(x & 0x03ff); _mouseY = (ushort)(y & 0x03ff); _mouseButtons = (byte)(buttons & 7); }
-    public string TakeUartOutput() { var output = _uartOutput.ToString(); _uartOutput.Clear(); return output; }
+    public void SetMouse(ushort x, ushort y, byte buttons)
+    {
+        _mouseX = (ushort)(x & 0x03ff);
+        _mouseY = (ushort)(y & 0x03ff);
+        _mouseButtons = (byte)(buttons & 7);
+    }
+
+    public string TakeUartOutput()
+    {
+        var output = _uartOutput.ToString();
+        _uartOutput.Clear();
+        return output;
+    }
     public byte Leds => _leds;
 }
