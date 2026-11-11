@@ -4,7 +4,10 @@ public sealed class MachineDebugger
 {
     private readonly HashSet<uint> _breakpoints = [];
 
-    public MachineDebugger(Machine machine) => Machine = machine ?? throw new ArgumentNullException(nameof(machine));
+    public MachineDebugger(Machine machine)
+    {
+        Machine = machine ?? throw new ArgumentNullException(nameof(machine));
+    }
 
     public Machine Machine { get; }
     public IReadOnlySet<uint> Breakpoints => _breakpoints;
@@ -15,7 +18,11 @@ public sealed class MachineDebugger
 
     public bool Step()
     {
-        if (IsAtBreakpoint) return false;
+        if (IsAtBreakpoint)
+        {
+            return false;
+        }
+
         Machine.Step();
         return true;
     }
@@ -23,7 +30,11 @@ public sealed class MachineDebugger
     public ulong Run(ulong maxSteps)
     {
         ulong executed = 0;
-        while (executed < maxSteps && Step()) executed++;
+        while (executed < maxSteps && Step())
+        {
+            executed++;
+        }
+
         return executed;
     }
 }
