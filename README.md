@@ -292,6 +292,11 @@ validate command, entry, body and fixup offsets before the module reaches the
 emulator memory loader. This keeps malformed artifacts as compiler/loader
 errors instead of turning them into ambiguous runtime behavior.
 
+Disk codecs apply the same strictness to names: directory and file-header
+names must be ASCII and fit the Oberon field width, and truncated extension
+pages are rejected before their addresses are read. Text/rider codecs reject
+NUL or unrepresentable characters instead of silently replacing data.
+
 Compiler limitations are currently explicit for aggregate field/array loads and
 stores, record and open-array parameter lowering, pointer-fixup descriptors,
 external RSC calls, and `IS` type-test lowering. These are planned compiler
