@@ -48,7 +48,7 @@ try
             if (index < (ulong)traceSteps)
             {
                 var raw = machine.Memory.ReadInstruction(machine.Cpu.PcByte);
-                Console.WriteLine($"{index} pc={machine.Cpu.PcByte:x6} ir={raw:x8} {Risc5Disassembler.Format(raw)} r14={machine.Cpu.Register(14):x8} r15={machine.Cpu.Register(15):x8}");
+                Console.WriteLine(MachineTraceFormatter.Format(index, machine.Cpu, raw));
             }
             if (!debugger.Step()) break;
         }

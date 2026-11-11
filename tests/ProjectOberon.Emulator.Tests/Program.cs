@@ -57,6 +57,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon compiler RSC output", OberonCompilerRscTests.Run),
     ("compiler CLI options", CompilerCliOptionTests.Run),
     ("compiler diagnostics", CompilerDiagnosticTests.Run),
+    ("CLI instruction trace", CliTraceTests.Run),
     ("Oberon fonts", OberonFontTests.Run),
     ("Oberon text frames", OberonTextFrameTests.Run),
     ("Oberon viewers", OberonViewerTests.Run),
