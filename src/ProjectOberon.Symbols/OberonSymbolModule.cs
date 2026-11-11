@@ -215,14 +215,14 @@ public static class OberonSymbolModuleReader
             var bits = 32;
             uint value = 0;
             var next = ReadByte();
-        var continuationCount = 0;
+            var continuationCount = 0;
             while (next >= 0x80)
             {
-            continuationCount++;
-            if (continuationCount > 4)
-            {
-                throw new InvalidDataException("SMB number is too long");
-            }
+                continuationCount++;
+                if (continuationCount > 4)
+                {
+                    throw new InvalidDataException("SMB number is too long");
+                }
 
                 value = BitOperations.RotateRight(value + next - 0x80u, 7);
                 bits -= 7;
