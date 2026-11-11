@@ -94,6 +94,11 @@ public sealed class OberonTaskScheduler
 
     public void Tick(int time)
     {
+        if (time < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(time));
+        }
+
         _currentTask = _currentTask.Next;
         if (time < _currentTask.NextTime) return;
 

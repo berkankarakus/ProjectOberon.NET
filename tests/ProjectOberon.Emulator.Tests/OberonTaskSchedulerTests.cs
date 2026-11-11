@@ -69,6 +69,7 @@ internal static class OberonTaskSchedulerTests
         var scheduler = new OberonTaskScheduler();
         TestAssertions.Throws<ArgumentNullException>(() => scheduler.NewTask(null!, 1));
         TestAssertions.Throws<ArgumentOutOfRangeException>(() => scheduler.NewTask(static () => { }, -1));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => scheduler.Tick(-1));
 
         var task = scheduler.NewTask(static () => throw new InvalidOperationException("task failure"), 1);
         scheduler.Install(task);
