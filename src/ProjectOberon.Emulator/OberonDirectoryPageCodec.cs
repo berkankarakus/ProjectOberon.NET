@@ -67,7 +67,7 @@ public static class OberonDirectoryPageCodec
         {
             var offset = HeaderSize + index * EntrySize;
             var entry = page.Entries[index];
-            Encoding.ASCII.GetBytes(entry.Name).CopyTo(data, offset);
+            EncodeName(entry.Name).CopyTo(data, offset);
             BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(offset + 32), entry.Address);
             BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(offset + 36), page.Children[index + 1]);
         }
@@ -84,5 +84,18 @@ public static class OberonDirectoryPageCodec
         }
 
         return Encoding.ASCII.GetString(data.Slice(offset, length));
+    }
+
+    private static byte[] EncodeName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        if (name.Length > 31 || name.Any(character => character > byte.MaxValue || character == '\0'))
+        {
+            throw new ArgumentException(
+                "directory entry name must be 31 ASCII characters or fewer",
+                nameof(name));
+        }
+
+        return Encoding.ASCII.GetBytes(name);
     }
 }

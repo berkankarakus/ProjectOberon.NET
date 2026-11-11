@@ -35,6 +35,16 @@ internal static partial class OberonDiskFormatTests
             Entries = [new OberonDirectoryRecord("Demo", 29, 0)],
             Children = [0]
         }));
+        TestAssertions.Throws<ArgumentException>(() => OberonDirectoryPageCodec.Write(new OberonDirectoryPage
+        {
+            Entries = [new OberonDirectoryRecord(new string('x', 32), 1, 2)],
+            Children = [0, 2]
+        }));
+        TestAssertions.Throws<ArgumentException>(() => OberonDirectoryPageCodec.Write(new OberonDirectoryPage
+        {
+            Entries = [new OberonDirectoryRecord("bad\0name", 1, 2)],
+            Children = [0, 2]
+        }));
 
         var invalidCount = new byte[OberonDirectoryPageCodec.PageSize];
         BinaryPrimitives.WriteInt32LittleEndian(invalidCount, OberonDirectoryPageCodec.DirectoryMark);
