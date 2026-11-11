@@ -44,6 +44,7 @@ internal static class SubcommandOptionTests
     {
         TestAssertions.True(FsOptions.Parse([]).Help);
         TestAssertions.True(FsOptions.Parse(["--help", "--unknown"]).Help);
+        TestAssertions.True(FsOptions.Parse(["-h", "--unknown"]).Help);
     }
 
     private static void RejectsInvalidFileSystemOptions()

@@ -41,3 +41,4 @@
 | Compiler outputs cannot overwrite each other | Reject equivalent SMB/RSC output paths during option parsing | `CompilerCliOptionTests.RejectsSharedOutputPath` |
 | Compiler CLI accepts one source only | Reject ambiguous positional and `--source` combinations | `CompilerCliOptionTests.RejectsMultipleSourcePaths` |
 | RSC CLI supports the conventional short help flag | Treat `-h` like `--help` before parsing other options | `SubcommandOptionTests.HandlesRscHelp` |
+| Filesystem CLI supports the conventional short help flag | Treat `-h` like `--help` before parsing other options | `SubcommandOptionTests.HandlesFileSystemHelp` |
