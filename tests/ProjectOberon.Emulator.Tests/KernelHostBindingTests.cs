@@ -80,6 +80,15 @@ internal static class KernelHostBindingTests
 
         TestAssertions.Equal(0xe700_008cu, machine.Memory.Read32(0x1000));
         TestAssertions.Equal(0x200u, machine.Cpu.PcByte);
+
+        machine.Cpu.SetRegister(0, 0x1235);
+        machine.Cpu.SetProgramCounter(0x4020);
+        TestAssertions.Throws<OberonHostCallException>(() => machine.Step());
+
+        machine.Cpu.SetRegister(0, 0x0200_0000);
+        machine.Cpu.SetRegister(1, 0);
+        machine.Cpu.SetProgramCounter(0x4020);
+        TestAssertions.Throws<OberonHostCallException>(() => machine.Step());
     }
 
     public static void DispatchesHeapAllocationService()

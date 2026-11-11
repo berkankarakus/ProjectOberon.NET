@@ -100,7 +100,17 @@ public static class OberonKernelHostBinding
             {
                 var procedureAddress = context.Argument(0);
                 var targetAddress = context.Argument(1);
+                if (((procedureAddress | targetAddress) & 3u) != 0)
+                {
+                    throw new OberonHostCallException("Kernel.Install addresses must be word-aligned");
+                }
+
                 var displacement = ((long)procedureAddress - targetAddress) / 4 - 1;
+                if (displacement is < -(1 << 21) or > (1 << 21) - 1)
+                {
+                    throw new OberonHostCallException("Kernel.Install target is outside branch range");
+                }
+
                 var instruction = unchecked(0xe700_0000u + (uint)displacement);
                 context.Memory.Write32(targetAddress, instruction);
                 context.Return();
