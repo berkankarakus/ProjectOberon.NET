@@ -9,7 +9,7 @@ public enum MmioRegister : uint
 
 public sealed class DeviceBus
 {
-    public const uint IoBase = 0x00ff_ffc0u;
+    public const uint IoBase = MemoryMap.IoBase;
     private readonly Queue<byte> _uartRx = new();
     private readonly Queue<byte> _keyboard = new();
     private readonly SpiDevice _spi = new();
@@ -25,7 +25,7 @@ public sealed class DeviceBus
 
     public bool Handles(uint address)
     {
-        var masked = address & Memory.AddressMask;
+        var masked = address & MemoryMap.AddressMask;
         return masked >= IoBase && masked < IoBase + 0x28;
     }
 

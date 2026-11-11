@@ -45,3 +45,4 @@
 | Main CLI help is a short-circuit | Print help even when extra arguments follow `-h` or `--help` | `CliOptionTests.UsesSafeDefaults` |
 | Compiler label ownership is independent | Move labels out of the concrete code generator file to remove the writer/generator file cycle | `OberonCompilerModuleEmitterTests` |
 | Host binding assembly is shared | Centralize export, entry-offset and handler packaging for Files/Kernel/Modules | Existing host binding suites |
+| Memory map ownership is independent | Move address constants into a shared map so device code does not depend on `Memory` | `DeviceMmioTests`, `DeviceStorageTests`, `OberonModuleTests` |

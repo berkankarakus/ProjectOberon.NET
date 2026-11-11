@@ -13,12 +13,12 @@ public interface IMemoryBus
 
 public sealed class Memory : IMemoryBus
 {
-    public const uint AddressMask = 0x00ff_ffffu;
-    public const uint RomBase = 0x00ff_c000u;
-    public const int RomWords = 512;
+    public const uint AddressMask = MemoryMap.AddressMask;
+    public const uint RomBase = MemoryMap.RomBase;
+    public const int RomWords = MemoryMap.RomWords;
 
     private readonly byte[] _ram;
-    private readonly uint[] _rom = new uint[RomWords];
+    private readonly uint[] _rom = new uint[MemoryMap.RomWords];
     private readonly DeviceBus _devices = new();
 
     public Memory(int ramBytes = 1 << 20)
@@ -32,12 +32,12 @@ public sealed class Memory : IMemoryBus
 
     public byte Read8(uint address)
     {
-        address &= AddressMask;
+        address &= MemoryMap.AddressMask;
         if (_devices.Handles(address))
             return (byte)(_devices.Read(address & ~3u) >> (int)((address & 3u) * 8));
         if (IsRom(address))
         {
-            var word = _rom[(int)((address >> 2) & (RomWords - 1))];
+            var word = _rom[(int)((address >> 2) & (MemoryMap.RomWords - 1))];
             return (byte)(word >> (int)((address & 3u) * 8));
         }
 
@@ -46,9 +46,9 @@ public sealed class Memory : IMemoryBus
 
     public uint Read32(uint address)
     {
-        address &= AddressMask;
+        address &= MemoryMap.AddressMask;
         if (_devices.Handles(address)) return _devices.Read(address & ~3u);
-        if (IsRom(address)) return _rom[(int)((address >> 2) & (RomWords - 1))];
+        if (IsRom(address)) return _rom[(int)((address >> 2) & (MemoryMap.RomWords - 1))];
 
         return (uint)(Read8(address)
             | ((uint)Read8(address + 1) << 8)
@@ -58,13 +58,13 @@ public sealed class Memory : IMemoryBus
 
     public uint ReadInstruction(uint address)
     {
-        address &= AddressMask;
-        return IsRom(address) ? _rom[(int)((address >> 2) & (RomWords - 1))] : Read32(address);
+        address &= MemoryMap.AddressMask;
+        return IsRom(address) ? _rom[(int)((address >> 2) & (MemoryMap.RomWords - 1))] : Read32(address);
     }
 
     public void Write8(uint address, byte value)
     {
-        address &= AddressMask;
+        address &= MemoryMap.AddressMask;
         if (_devices.Handles(address))
         {
             var aligned = address & ~3u;
@@ -78,7 +78,7 @@ public sealed class Memory : IMemoryBus
 
     public void Write32(uint address, uint value)
     {
-        address &= AddressMask;
+        address &= MemoryMap.AddressMask;
         if (_devices.Handles(address)) { _devices.Write(address & ~3u, value); return; }
         if (IsRom(address)) return;
         Write8(address, (byte)value);
@@ -96,7 +96,7 @@ public sealed class Memory : IMemoryBus
 
     public void LoadRomWords(ReadOnlySpan<uint> words)
     {
-        if (words.Length != RomWords) throw new ArgumentException($"ROM must contain exactly {RomWords} words", nameof(words));
+        if (words.Length != MemoryMap.RomWords) throw new ArgumentException($"ROM must contain exactly {MemoryMap.RomWords} words", nameof(words));
         words.CopyTo(_rom);
     }
 
@@ -107,7 +107,7 @@ public sealed class Memory : IMemoryBus
         var index = 0;
         foreach (var originalLine in File.ReadLines(path))
         {
-            if (index >= RomWords) throw new InvalidDataException($"ROM file contains more than {RomWords} words: {path}");
+            if (index >= MemoryMap.RomWords) throw new InvalidDataException($"ROM file contains more than {MemoryMap.RomWords} words: {path}");
             var line = originalLine;
             var comment = line.IndexOfAny(['#', ';']);
             if (comment >= 0) line = line[..comment];
@@ -127,6 +127,6 @@ public sealed class Memory : IMemoryBus
     public void SetMouse(ushort x, ushort y, byte buttons) => _devices.SetMouse(x, y, buttons);
     public string TakeUartOutput() => _devices.TakeUartOutput();
 
-    private static bool IsRom(uint address) => ((address & AddressMask) >> 14) == 0x3ffu;
-    private int RamIndex(uint address) => (int)((address & AddressMask) % (uint)_ram.Length);
+    private static bool IsRom(uint address) => ((address & MemoryMap.AddressMask) >> 14) == 0x3ffu;
+    private int RamIndex(uint address) => (int)((address & MemoryMap.AddressMask) % (uint)_ram.Length);
 }
