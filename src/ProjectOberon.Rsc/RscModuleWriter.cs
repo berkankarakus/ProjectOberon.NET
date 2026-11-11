@@ -66,6 +66,13 @@ public static class RscModuleWriter
 
     private static void ValidateModule(RscModule module)
     {
+        ArgumentNullException.ThrowIfNull(module.Imports);
+        ArgumentNullException.ThrowIfNull(module.Code);
+        ArgumentNullException.ThrowIfNull(module.Commands);
+        ArgumentNullException.ThrowIfNull(module.Entries);
+        ArgumentNullException.ThrowIfNull(module.PointerReferences);
+        ArgumentNullException.ThrowIfNull(module.TypeDescriptorPayload);
+        ArgumentNullException.ThrowIfNull(module.StringPayload);
         RscModuleValidation.ValidateModuleName(module.Name);
         ValidateString(module.Name, nameof(module.Name), allowEmpty: false);
         if (module.Version != VersionKey)

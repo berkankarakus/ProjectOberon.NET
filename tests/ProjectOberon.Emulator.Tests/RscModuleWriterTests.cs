@@ -66,4 +66,12 @@ internal static partial class RscModuleTests
 
         TestAssertions.ThrowsInvalidData(() => RscModuleWriter.Write(module));
     }
+
+    private static void RejectsNullModelCollections()
+    {
+        var module = new RscModule(
+            "Demo", 1, 1, 0, null!, 0, 0, 0, 0, [], [], [], [], 0, 0, 0, 0, (byte)'O');
+
+        TestAssertions.Throws<ArgumentNullException>(() => RscModuleWriter.Write(module));
+    }
 }
