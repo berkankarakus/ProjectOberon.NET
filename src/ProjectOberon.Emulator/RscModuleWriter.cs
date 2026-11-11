@@ -112,6 +112,8 @@ public static class RscModuleWriter
             ValidateString(command.Name, "RSC command name", allowEmpty: false);
         }
 
+        RscModuleValidation.ValidateUniqueNames(module.Imports, import => import.Name, "import");
+        RscModuleValidation.ValidateUniqueNames(module.Commands, command => command.Name, "command");
         RscModuleValidation.ValidateCodeLayout(module.CodeWords, module.Commands, module.BodyOffset);
     }
 

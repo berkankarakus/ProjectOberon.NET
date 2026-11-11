@@ -117,6 +117,8 @@ public static class RscModuleReader
             throw new InvalidDataException($"invalid RSC trailer: 0x{trailer:x2}");
         }
 
+        RscModuleValidation.ValidateUniqueNames(imports, import => import.Name, "import");
+        RscModuleValidation.ValidateUniqueNames(commands, command => command.Name, "command");
         RscModuleValidation.ValidateCodeLayout(codeWords, commands, bodyOffset);
 
         return new RscModule(name, key, version, size, imports, typeDescriptorBytes, variableBytes, stringBytes,

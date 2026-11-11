@@ -21,7 +21,8 @@ internal static partial class RscModuleTests
         int fixupProgram = 0,
         int fixupData = 0,
         int fixupTypes = 0,
-        int bodyOffset = 0)
+        int bodyOffset = 0,
+        string[]? additionalCommands = null)
     {
         typePayload ??= [];
         stringPayload ??= [];
@@ -55,6 +56,11 @@ internal static partial class RscModuleTests
 
         AddString(data, command);
         AddInt(data, commandOffset);
+        foreach (var additionalCommand in additionalCommands ?? [])
+        {
+            AddString(data, additionalCommand);
+            AddInt(data, commandOffset);
+        }
         AddString(data, string.Empty);
         AddInt(data, entryCount ?? entries.Length);
         foreach (var entry in entries)

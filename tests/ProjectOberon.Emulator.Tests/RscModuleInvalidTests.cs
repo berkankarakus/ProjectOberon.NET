@@ -67,4 +67,13 @@ internal static partial class RscModuleTests
         var data = BuildRsc("Demo", 1, [], "Start", size: -1);
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
     }
+
+    private static void RejectsDuplicateNames()
+    {
+        var duplicateImports = BuildRsc("Demo", 1, [("Files", 1), ("Files", 2)], "Start");
+        var duplicateCommands = BuildRsc("Demo", 1, [], "Start", additionalCommands: ["Start"]);
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(duplicateImports));
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(duplicateCommands));
+    }
 }

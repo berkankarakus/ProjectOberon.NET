@@ -12,6 +12,7 @@ internal static partial class RscModuleTests
         RejectsInvalidTrailer();
         RejectsInvalidCodeLayout();
         RejectsNegativeSize();
+        RejectsDuplicateNames();
         WritesRoundTripModule();
         RejectsMismatchedCodeCount();
         RejectsMismatchedPayloadCount();
