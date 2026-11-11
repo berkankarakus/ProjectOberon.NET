@@ -5,6 +5,7 @@ internal static class OberonCompilerRscTests
     public static void Run()
     {
         EmitsMinimalRscModule();
+        EmitsStringPayload();
         EmitsImportsAndExportedCommands();
         LoadsCompilerProducedRsc();
         RejectsUnsupportedMinimalRscTypes();
@@ -41,6 +42,21 @@ internal static class OberonCompilerRscTests
         TestAssertions.Equal("Start", module.Commands[0].Name);
         TestAssertions.Equal(0, module.Commands[0].CodeOffset);
         TestAssertions.True(module.BodyOffset > module.Commands[0].CodeOffset);
+    }
+
+    private static void EmitsStringPayload()
+    {
+        const string source = "MODULE Strings; VAR text: ARRAY 6 OF CHAR; BEGIN text := \"hello\"; END Strings.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(8, module.VariableBytes);
+        TestAssertions.Equal(6, module.StringBytes);
+        TestAssertions.True(module.StringPayload.SequenceEqual(
+            new byte[] { (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o', 0 }));
+
+        var parsed = RscModuleReader.Parse(RscModuleWriter.Write(module));
+        TestAssertions.True(module.StringPayload.SequenceEqual(parsed.StringPayload));
     }
 
     private static void LoadsCompilerProducedRsc()

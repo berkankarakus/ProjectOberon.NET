@@ -18,3 +18,4 @@
 | Compiler diagnostics are stable | Format source path, line, column, and multiple messages consistently | `CompilerDiagnosticTests.FormatsFileLocationAndMessage`, `CompilerDiagnosticTests.FormatsMultipleDiagnosticsOnSeparateLines` |
 | Runtime module failures expose their code | Include `OberonModuleLoadException.Code` in diagnostics | `RuntimeDiagnosticsTests.FormatsModuleLoadCode` |
 | Repeated compiler strings share one payload | Keep identical string literals from expanding module data | `OberonCompilerModuleEmitterTests.DeduplicatesRepeatedStringData` |
+| Compiler RSC preserves string data | Emit string bytes into the RSC string section and round-trip them | `OberonCompilerRscTests.EmitsStringPayload` |
