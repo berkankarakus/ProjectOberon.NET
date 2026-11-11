@@ -22,7 +22,10 @@ public sealed class SpiDevice
     public uint ReadData() => _received;
     public uint ReadStatus() => 1;
 
-    public void AttachDisk(DiskImage disk) => _disk = disk ?? throw new ArgumentNullException(nameof(disk));
+    public void AttachDisk(DiskImage disk)
+    {
+        _disk = disk ?? throw new ArgumentNullException(nameof(disk));
+    }
     public void DetachDisk() => _disk = null;
 
     public void Reset()
@@ -54,13 +57,22 @@ public sealed class SpiDevice
 
     private byte ExchangeByte(byte value)
     {
-        if (!_selected || _disk is null) return 0xff;
-        if (_response.Count > 0) return _response.Dequeue();
+        if (!_selected || _disk is null)
+        {
+            return 0xff;
+        }
+        if (_response.Count > 0)
+        {
+            return _response.Dequeue();
+        }
         if (_writeActive)
         {
             if (_writeOffset == 0)
             {
-                if (value == 0xfe) _writeOffset = 1;
+                if (value == 0xfe)
+                {
+                    _writeOffset = 1;
+                }
                 return 0xff;
             }
             if (_writeOffset <= DiskImage.SectorSize)
@@ -80,18 +92,29 @@ public sealed class SpiDevice
             return 0x05;
         }
 
-        if (_commandSize == 0 && value == 0xff) return 0xff;
+        if (_commandSize == 0 && value == 0xff)
+        {
+            return 0xff;
+        }
         _command[_commandSize++] = value;
-        if (_commandSize == _command.Length) CommandComplete();
+        if (_commandSize == _command.Length)
+        {
+            CommandComplete();
+        }
         return 0xff;
     }
 
     private uint ExchangeWord(uint value)
     {
-        if ((_control & Fast) == 0) return ExchangeByte((byte)value);
+        if ((_control & Fast) == 0)
+        {
+            return ExchangeByte((byte)value);
+        }
         uint result = 0;
         for (var index = 0; index < 4; index++)
+        {
             result |= (uint)ExchangeByte((byte)(value >> (index * 8))) << (index * 8);
+        }
         return result;
     }
 
@@ -103,16 +126,27 @@ public sealed class SpiDevice
         _commandSize = 0;
         switch (command)
         {
-            case 0: _response.Enqueue(0x01); break;
+            case 0:
+                _response.Enqueue(0x01);
+                break;
             case 8: Enqueue(0x01, 0, 0, 1, 0xaa); break;
-            case 55: _appCommand = true; _response.Enqueue(0x01); break;
-            case 41: _response.Enqueue(_appCommand ? (byte)0x00 : (byte)0x05); _appCommand = false; break;
+            case 55:
+                _appCommand = true;
+                _response.Enqueue(0x01);
+                break;
+            case 41:
+                _response.Enqueue(_appCommand ? (byte)0x00 : (byte)0x05);
+                _appCommand = false;
+                break;
             case 58: Enqueue(0x00, 0x40, 0xff, 0x80, 0x00); break;
             case 17:
                 _response.Enqueue(0x00);
                 var sector = argument < _disk!.SectorCount ? argument : 0;
                 _response.Enqueue(0xfe);
-                foreach (var value in _disk.Read(sector)) _response.Enqueue(value);
+                foreach (var value in _disk.Read(sector))
+                {
+                    _response.Enqueue(value);
+                }
                 _response.Enqueue(0xff);
                 _response.Enqueue(0xff);
                 break;
@@ -123,12 +157,17 @@ public sealed class SpiDevice
                 _writeOffset = 0;
                 Array.Clear(_writeBuffer);
                 break;
-            default: _response.Enqueue(0x04); break;
+            default:
+                _response.Enqueue(0x04);
+                break;
         }
     }
 
     private void Enqueue(params byte[] values)
     {
-        foreach (var value in values) _response.Enqueue(value);
+        foreach (var value in values)
+        {
+            _response.Enqueue(value);
+        }
     }
 }

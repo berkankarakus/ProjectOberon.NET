@@ -12,7 +12,10 @@ internal sealed class PersistentOberonFilesBackend : IOberonFilesBackend
     {
         _kernel = kernel;
         _directory = new OberonFileDirectory(kernel);
-        if (initializeDirectory) _directory.Initialize();
+        if (initializeDirectory)
+        {
+            _directory.Initialize();
+        }
         else _directory.SyncSectorMap();
     }
 
@@ -100,7 +103,10 @@ internal sealed class PersistentOberonFilesBackend : IOberonFilesBackend
     public void Purge(OberonFile file)
     {
         ArgumentNullException.ThrowIfNull(file);
-        if (file.HeaderAddress != 0) Delete(file.Name);
+        if (file.HeaderAddress != 0)
+        {
+            Delete(file.Name);
+        }
     }
 
     public void Close(OberonFile file)

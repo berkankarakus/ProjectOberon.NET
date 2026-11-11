@@ -88,7 +88,10 @@ public sealed class OberonKernel
         {
             index++;
             if (index >= limit) index = 1;
-            if (_sectorMap[index]) continue;
+            if (_sectorMap[index])
+            {
+                continue;
+            }
 
             _sectorMap[index] = true;
             AllocatedSectors++;

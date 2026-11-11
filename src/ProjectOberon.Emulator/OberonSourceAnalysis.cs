@@ -17,7 +17,13 @@ public static partial class OberonSourceAnalysis
         {
             lineNumber++;
             var match = ProcedurePattern().Match(line);
-            if (match.Success) result.Add(new OberonProcedure(match.Groups[1].Value, match.Groups[2].Success, lineNumber));
+            if (match.Success)
+            {
+                result.Add(new OberonProcedure(
+                    match.Groups[1].Value,
+                    match.Groups[2].Success,
+                    lineNumber));
+            }
         }
         return result;
     }

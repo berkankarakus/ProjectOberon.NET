@@ -72,7 +72,10 @@ public sealed class OberonFile
         {
             throw new ArgumentOutOfRangeException(nameof(position));
         }
-        if (position >= _content.Length) Array.Resize(ref _content, position + 1);
+        if (position >= _content.Length)
+        {
+            Array.Resize(ref _content, position + 1);
+        }
         _content[position] = value;
     }
 

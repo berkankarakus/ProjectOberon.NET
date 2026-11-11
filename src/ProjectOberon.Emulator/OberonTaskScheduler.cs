@@ -86,7 +86,10 @@ public sealed class OberonTaskScheduler
         while (!ReferenceEquals(previous.Next, task))
         {
             previous = previous.Next;
-            if (ReferenceEquals(previous, task)) return false;
+            if (ReferenceEquals(previous, task))
+            {
+                return false;
+            }
         }
 
         previous.Next = task.Next;
@@ -110,7 +113,10 @@ public sealed class OberonTaskScheduler
         }
 
         _currentTask = _currentTask.Next;
-        if (time < _currentTask.NextTime) return;
+        if (time < _currentTask.NextTime)
+        {
+            return;
+        }
 
         _currentTask.NextTime = checked(time + _currentTask.Period);
         _currentTask.State = OberonTaskState.Active;

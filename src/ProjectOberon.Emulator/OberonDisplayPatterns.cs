@@ -6,7 +6,10 @@ public sealed partial class OberonDisplay
     {
         var width = _memory.Read8(patternAddress);
         var height = _memory.Read8(patternAddress + 1);
-        if (width is 0 or > 32 || height == 0) return;
+        if (width is 0 or > 32 || height == 0)
+        {
+            return;
+        }
         ValidateRectangle(x, y, width, height);
 
         for (var row = 0; row < height; row++)
@@ -14,7 +17,10 @@ public sealed partial class OberonDisplay
             var pattern = ReadPatternWord(patternAddress + 2u + (uint)(row * ((width + 7) / 8)), width);
             for (var column = 0; column < width; column++)
             {
-                if ((pattern & (1u << column)) == 0) continue;
+                if ((pattern & (1u << column)) == 0)
+                {
+                    continue;
+                }
                 ApplyPixel(x + column, y + row, color, mode);
             }
         }
@@ -24,7 +30,10 @@ public sealed partial class OberonDisplay
     {
         ValidateRectangle(sourceX, sourceY, width, height);
         ValidateRectangle(destinationX, destinationY, width, height);
-        if (mode != Display.Replace) return;
+        if (mode != Display.Replace)
+        {
+            return;
+        }
 
         var snapshot = new bool[height, width];
         for (var row = 0; row < height; row++)
@@ -39,16 +48,25 @@ public sealed partial class OberonDisplay
     public void ReplPattern(int color, uint patternAddress, int x, int y, int width, int height, int mode)
     {
         ValidateRectangle(x, y, width, height);
-        if (mode != Display.Invert) return;
+        if (mode != Display.Invert)
+        {
+            return;
+        }
         var patternHeight = _memory.Read8(patternAddress + 1);
-        if (patternHeight == 0) return;
+        if (patternHeight == 0)
+        {
+            return;
+        }
 
         for (var row = 0; row < height; row++)
         {
             var pattern = _memory.Read32(patternAddress + 4u + (uint)((row % patternHeight) * 4));
             for (var column = 0; column < width; column++)
             {
-                if ((pattern & (1u << ((x + column) & 31))) != 0) TogglePixel(x + column, y + row);
+                if ((pattern & (1u << ((x + column) & 31))) != 0)
+                {
+                    TogglePixel(x + column, y + row);
+                }
             }
         }
     }
@@ -57,7 +75,9 @@ public sealed partial class OberonDisplay
     {
         var word = 0u;
         for (var index = 0; index < (width + 7) / 8; index++)
+        {
             word |= (uint)_memory.Read8(address + (uint)index) << (index * 8);
+        }
         return word;
     }
 }

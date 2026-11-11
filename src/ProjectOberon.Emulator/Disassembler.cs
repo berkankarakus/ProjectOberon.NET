@@ -47,7 +47,10 @@ public static class Risc5Disassembler
 
         if (!u && !v && (raw & 0x30u) != 0)
         {
-            if ((raw & 0x10u) != 0) return "RTI";
+            if ((raw & 0x10u) != 0)
+            {
+                return "RTI";
+            }
             var state = (raw & 1u) != 0 ? "ON" : "OFF";
             return $"IE {state}";
         }

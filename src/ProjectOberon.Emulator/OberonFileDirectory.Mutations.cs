@@ -133,7 +133,10 @@ public sealed partial class OberonFileDirectory
             var predecessor = Rightmost(page.Children[index]);
             page.Entries[index] = predecessor.Entry with { Child = page.Entries[index].Child };
             var result = DeletePage(page.Children[index], predecessor.Entry.Name);
-            if (result.Underflow) Rebalance(page, index);
+            if (result.Underflow)
+            {
+                Rebalance(page, index);
+            }
             WritePage(address, page);
             return new DeleteResult(true, removed, page.Entries.Count < MinEntries);
         }
@@ -144,7 +147,10 @@ public sealed partial class OberonFileDirectory
             return new DeleteResult(false, 0, false);
         }
         var deleted = DeletePage(child, name);
-        if (deleted.Underflow) Rebalance(page, index);
+        if (deleted.Underflow)
+        {
+            Rebalance(page, index);
+        }
         WritePage(address, page);
         return new DeleteResult(deleted.Found, deleted.Address, page.Entries.Count < MinEntries);
     }

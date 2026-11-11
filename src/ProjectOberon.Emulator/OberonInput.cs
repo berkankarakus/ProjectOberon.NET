@@ -33,7 +33,10 @@ public sealed class OberonKeyboard
 
         var tableIndex = (byte)(_keyCode | (_shift || _ctrl ? 0x80 : 0));
         character = (char)TranslationTable[tableIndex];
-        if (_ctrl) character = (char)(character % 0x20);
+        if (_ctrl)
+        {
+            character = (char)(character % 0x20);
+        }
         _received = false;
         return true;
     }

@@ -11,7 +11,10 @@ public sealed class OberonFileSystem
 
     private readonly DiskImage _disk;
 
-    public OberonFileSystem(DiskImage disk) => _disk = disk ?? throw new ArgumentNullException(nameof(disk));
+    public OberonFileSystem(DiskImage disk)
+    {
+        _disk = disk ?? throw new ArgumentNullException(nameof(disk));
+    }
 
     public IEnumerable<OberonDirectoryEntry> Enumerate(string prefix = "")
     {
@@ -64,11 +67,19 @@ public sealed class OberonFileSystem
         for (var index = 0; index < page.Entries.Count; index++)
         {
             var child = page.Children[index];
-            if (child != 0) EnumeratePage(child, prefix, entries, visited);
+            if (child != 0)
+            {
+                EnumeratePage(child, prefix, entries, visited);
+            }
             var entry = page.Entries[index];
             if (entry.Name.StartsWith(prefix, StringComparison.Ordinal))
+            {
                 entries.Add(new OberonDirectoryEntry(entry.Name, entry.Address));
+            }
         }
-        if (page.Children[^1] != 0) EnumeratePage(page.Children[^1], prefix, entries, visited);
+        if (page.Children[^1] != 0)
+        {
+            EnumeratePage(page.Children[^1], prefix, entries, visited);
+        }
     }
 }

@@ -40,8 +40,14 @@ internal ref struct OberonTextBlockReader
     public string ReadString()
     {
         var start = Position;
-        while (Position < _data.Length && _data[Position] != 0) Position++;
-        if (Position >= _data.Length) throw new InvalidDataException("unterminated Oberon font name");
+        while (Position < _data.Length && _data[Position] != 0)
+        {
+            Position++;
+        }
+        if (Position >= _data.Length)
+        {
+            throw new InvalidDataException("unterminated Oberon font name");
+        }
         var result = Encoding.Latin1.GetString(_data[start..Position]);
         Position++;
         return result;
