@@ -26,3 +26,4 @@
 | RSC files end at their trailer | Reject appended bytes that are not part of the encoded module | `RscModuleTests.RejectsTrailingBytes` |
 | RSC fixup validation is overflow-safe | Reject extreme type fixup values without arithmetic overflow | `RscModuleTests.RejectsInvalidEntriesAndFixups` |
 | Unsupported `IS` syntax is diagnosed explicitly | Parse the relation and report the missing runtime type-test lowering | `OberonCompilerParserTests.ReportsUnsupportedTypeTests` |
+| Compiler RSC body uses the module data base | Execute a minimal compiled assignment through the runtime loader | `OberonCompilerRscTests.ExecutesCompilerProducedBody` |
