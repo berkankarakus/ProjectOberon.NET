@@ -67,3 +67,8 @@
 | Kernel branch installation is safe | Reject unaligned addresses and out-of-range branch displacements | `KernelHostBindingTests.DispatchesInstallService` |
 | Memory and disk lifecycles are covered | Validate ROM parsing, reset behavior, closed disks, and invalid sectors | `MemoryTests`, `CpuTests.ResetsStateAndValidatesAddresses`, `DeviceTests.DiskImageValidatesLifecycle` |
 | Release verification is repeatable | Run the same Release build and deterministic test flow locally and in CI | `scripts/verify-dotnet.sh` |
+| Host-call strings have explicit limits | Validate Latin-1 round-trips, NUL termination, and positive maximum lengths | `HostCallTests.ValidatesHostCallStrings` |
+| Host-call registrations are unique | Reject duplicate, masked-collision, and unaligned dispatcher addresses | `HostCallTests.ValidatesHostCallRegistration` |
+| Module loader failures rollback cleanly | Report missing/invalid modules without leaving loaded state behind | `OberonModuleTests.LoaderGraph` |
+| RSC writer validates encoded text | Reject non-ASCII, NUL-containing names, and invalid trailers before serialization | `RscModuleTests.RejectsInvalidNamesAndTrailer` |
+| Core memory control flow stays readable | Keep Memory guards explicit while preserving ROM/RAM/MMIO behavior | `MemoryTests`, solution build |
