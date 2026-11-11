@@ -23,9 +23,13 @@ flowchart TD
     Core --> RscLib
     Core --> Symbols
     CompilerLib --> Contracts
+    CompilerLib --> Symbols
     Cli --> Core
+    Cli --> RscLib
     Compiler --> Core
     Compiler --> CompilerLib
+    Compiler --> RscLib
+    Compiler --> Symbols
     Fs --> Core
     Rsc --> Core
     Sdl --> Core
