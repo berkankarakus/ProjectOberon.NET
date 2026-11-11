@@ -68,29 +68,35 @@ public sealed class OberonModuleMemoryLoader
             return existing;
         }
 
-        if (module.IsExternal)
-        {
-            if (!_externalBindings.TryGetValue(module.Name, out var binding))
-            {
-                throw new OberonModuleLoadException(5,
-                    $"external Oberon module requires a host memory binding: {module.Name}");
-            }
+        var image = module.IsExternal
+            ? LoadExternal(module)
+            : LoadManaged(module);
+        _images.Add(module.Name, image);
+        return image;
+    }
 
-            var externalImage = AllocateExternal(module, binding);
-            _images.Add(module.Name, externalImage);
-            return externalImage;
+    private OberonModuleImage LoadExternal(LoadedOberonModule module)
+    {
+        if (!_externalBindings.TryGetValue(module.Name, out var binding))
+        {
+            throw new OberonModuleLoadException(5,
+                $"external Oberon module requires a host memory binding: {module.Name}");
         }
 
+        return AllocateExternal(module, binding);
+    }
+
+    private OberonModuleImage LoadManaged(LoadedOberonModule module)
+    {
         var imports = new OberonModuleImage[module.Imports.Count];
         for (var index = 0; index < imports.Length; index++)
         {
             imports[index] = Load(module.Imports[index].Name);
         }
 
-        OberonModuleImage image;
         try
         {
-            image = Allocate(module, imports);
+            return Allocate(module, imports);
         }
         catch (OberonModuleLoadException)
         {
@@ -101,9 +107,6 @@ public sealed class OberonModuleMemoryLoader
             throw new OberonModuleLoadException(5,
                 $"could not materialize Oberon module {module.Name}: {error.Message}");
         }
-
-        _images.Add(module.Name, image);
-        return image;
     }
 
     private OberonModuleImage AllocateExternal(
