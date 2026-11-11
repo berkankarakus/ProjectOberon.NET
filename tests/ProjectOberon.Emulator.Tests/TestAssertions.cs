@@ -29,15 +29,15 @@ internal static class TestAssertions
         Throws<InvalidDataException>(action);
     }
 
-    public static void Throws<TException>(Action action) where TException : Exception
+    public static TException Throws<TException>(Action action) where TException : Exception
     {
         try
         {
             action();
         }
-        catch (TException)
+        catch (TException error)
         {
-            return;
+            return error;
         }
 
         throw new InvalidOperationException($"expected {typeof(TException).Name}");

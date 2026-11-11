@@ -29,6 +29,7 @@ internal static partial class OberonModuleTests
             ? BuildRsc("Broken", 300, [], "Start", code: [0, 0], fixupProgram: 1)
             : null);
         var brokenMemoryLoader = new OberonModuleMemoryLoader(new Memory(64 * 1024), brokenLoader);
-        TestAssertions.Throws<OberonModuleLoadException>(() => brokenMemoryLoader.Load("Broken"));
+        var error = TestAssertions.Throws<OberonModuleLoadException>(() => brokenMemoryLoader.Load("Broken"));
+        TestAssertions.Equal(5, error.Code);
     }
 }

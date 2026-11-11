@@ -34,3 +34,4 @@
 | RSC module names fit runtime descriptors | Reject names that cannot fit the 32-byte Oberon descriptor field | `RscModuleTests.RejectsLongModuleNames` |
 | RSC writer mirrors module name validation | Reject oversized module names before serialization | `RscModuleTests.RejectsLongModuleName` |
 | Memory materialization failures carry module-load codes | Wrap malformed fixup-chain failures with module context | `OberonModuleTests.Fixups` |
+| Test exceptions can be inspected | Return the captured exception from the assertion helper | `OberonModuleTests.Fixups` |
