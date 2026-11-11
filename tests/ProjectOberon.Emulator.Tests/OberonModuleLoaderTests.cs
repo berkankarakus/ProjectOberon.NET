@@ -27,5 +27,10 @@ internal static partial class OberonModuleTests
         var cycle = new OberonModuleLoader(name => name == "A" ? BuildRsc("A", 100, [("B", 200)], "Start") : BuildRsc("B", 200, [("A", 100)], "Run"));
         TestAssertions.Throws<OberonModuleLoadException>(() => cycle.Load("A"));
         TestAssertions.Equal(0, cycle.LoadedModules.Count);
+
+        var missing = new OberonModuleLoader(_ => null);
+        TestAssertions.Throws<OberonModuleLoadException>(() => missing.Load("Missing"));
+        TestAssertions.Equal(0, missing.LoadedModules.Count);
+        TestAssertions.Throws<ArgumentException>(() => missing.Load("A/B"));
     }
 }
