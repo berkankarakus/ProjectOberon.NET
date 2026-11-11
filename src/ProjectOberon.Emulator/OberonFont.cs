@@ -154,7 +154,11 @@ public sealed class OberonFont
 
         public byte[] ReadBytes(int count)
         {
-            if (count < 0) throw new InvalidDataException("invalid Oberon glyph raster size");
+            if (count < 0)
+            {
+                throw new InvalidDataException("invalid Oberon glyph raster size");
+            }
+
             Ensure(count);
             var result = _data.Slice(_position, count).ToArray();
             _position += count;
