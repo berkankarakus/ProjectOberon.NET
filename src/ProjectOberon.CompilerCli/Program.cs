@@ -84,6 +84,7 @@ internal sealed record CompilerOptions(
 {
     public static CompilerOptions Parse(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
         if (args.Length == 0)
         {
             return new CompilerOptions(string.Empty, null, null, [], true, true);

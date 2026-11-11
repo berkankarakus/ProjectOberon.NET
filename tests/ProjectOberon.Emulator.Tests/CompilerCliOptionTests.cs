@@ -30,6 +30,7 @@ internal static class CompilerCliOptionTests
 
     private static void RejectsMissingOutputValue()
     {
+        TestAssertions.Throws<ArgumentNullException>(() => CompilerOptions.Parse(null!));
         TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse(["Demo.Mod", "--rsc"]));
     }
 
