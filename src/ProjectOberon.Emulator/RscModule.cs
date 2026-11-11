@@ -112,7 +112,7 @@ public static class RscModuleReader
             throw new InvalidDataException($"invalid RSC trailer: 0x{trailer:x2}");
         }
 
-        ValidateCodeLayout(codeWords, commands, bodyOffset);
+        RscModuleValidation.ValidateCodeLayout(codeWords, commands, bodyOffset);
 
         return new RscModule(name, key, version, size, imports, typeDescriptorBytes, variableBytes, stringBytes,
             codeWords, code, commands, entries, pointerReferences, fixupProgram, fixupData, fixupTypes, bodyOffset, trailer)
@@ -122,27 +122,6 @@ public static class RscModuleReader
         };
     }
 
-    private static void ValidateCodeLayout(
-        int codeWords,
-        IReadOnlyList<RscCommand> commands,
-        int bodyOffset)
-    {
-        var codeBytes = checked(codeWords * sizeof(uint));
-        if (bodyOffset < 0 || bodyOffset > codeBytes || bodyOffset % sizeof(uint) != 0)
-        {
-            throw new InvalidDataException($"invalid RSC body offset: {bodyOffset}");
-        }
-
-        foreach (var command in commands)
-        {
-            if (command.CodeOffset < 0 || command.CodeOffset >= codeBytes
-                || command.CodeOffset % sizeof(uint) != 0)
-            {
-                throw new InvalidDataException(
-                    $"invalid RSC command offset: {command.Name}={command.CodeOffset}");
-            }
-        }
-    }
 
     private static IReadOnlyList<int> ReadIntArray(ref RscReader reader, int count, string name)
     {
