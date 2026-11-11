@@ -1,11 +1,14 @@
 # ProjectOberon.NET architecture
 
-The repository uses a one-way dependency graph. Production adapters depend on
-the emulator core; the core does not depend on an adapter or on tests.
+The repository uses a one-way dependency graph. Shared contracts sit below the
+emulator core and compiler; production adapters depend on the layers they use,
+and no production project depends on tests.
 
 ```mermaid
 flowchart TD
+    Contracts[ProjectOberon.Contracts]
     Core[ProjectOberon.Emulator]
+    CompilerLib[ProjectOberon.Compiler]
     Cli[ProjectOberon.Cli]
     Compiler[ProjectOberon.CompilerCli]
     Fs[ProjectOberon.FsCli]
@@ -13,12 +16,17 @@ flowchart TD
     Sdl[ProjectOberon.SdlUi]
     Tests[ProjectOberon.Emulator.Tests]
 
+    Core --> Contracts
+    CompilerLib --> Contracts
     Cli --> Core
     Compiler --> Core
+    Compiler --> CompilerLib
     Fs --> Core
     Rsc --> Core
     Sdl --> Core
+    Tests --> Contracts
     Tests --> Core
+    Tests --> CompilerLib
     Tests --> Cli
     Tests --> Compiler
     Tests --> Fs
@@ -28,13 +36,15 @@ flowchart TD
 
 The arrows mean “references”. The test project is intentionally the only
 consumer of the adapters, because the repository uses one executable test
-runner for emulator, CLI, RSC, filesystem, and SDL helper coverage.
+runner for emulator, compiler, CLI, RSC, filesystem, and SDL helper coverage.
 
 ## Folder hierarchy
 
 ```text
 src/
-  ProjectOberon.Emulator/       core runtime, compiler, filesystem, RSC
+  ProjectOberon.Contracts/      instruction and RSC data contracts
+  ProjectOberon.Emulator/       core runtime, filesystem, RSC loading
+  ProjectOberon.Compiler/       Oberon scanner, parser and code generator
   ProjectOberon.Cli/            machine/runtime CLI
   ProjectOberon.CompilerCli/   Oberon source compiler CLI
   ProjectOberon.FsCli/          disk filesystem CLI

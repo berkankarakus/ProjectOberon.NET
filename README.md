@@ -292,7 +292,9 @@ RSC boundary validation, runtime diagnostics and dependency-direction tests.
 
 The project layout and dependency direction are documented in
 [`docs/architecture.md`](docs/architecture.md) and enforced by the architecture
-tests.
+tests. Shared instruction/RSC contracts are kept in
+`ProjectOberon.Contracts`; compiler implementation lives in
+`ProjectOberon.Compiler` and does not reference the emulator runtime.
 
 Inspect a compiled Oberon module using the layout read by `Modules.Mod`:
 
