@@ -19,6 +19,8 @@ public static class OberonTextCodec
         foreach (var piece in text.Pieces)
         {
             var fontName = piece.Style.Font ?? string.Empty;
+            ValidateLatin1(fontName, "font name");
+            ValidateLatin1(piece.Text, "text");
             var isNewFont = false;
             if (!fonts.TryGetValue(fontName, out var fontNumber))
             {
@@ -150,6 +152,14 @@ public static class OberonTextCodec
     {
         data.AddRange(Encoding.Latin1.GetBytes(value));
         data.Add(0);
+    }
+
+    private static void ValidateLatin1(string value, string description)
+    {
+        if (value.Contains('\0') || value.Any(character => character > byte.MaxValue))
+        {
+            throw new InvalidDataException($"Oberon {description} must fit Latin-1 and cannot contain NUL");
+        }
     }
 
 }

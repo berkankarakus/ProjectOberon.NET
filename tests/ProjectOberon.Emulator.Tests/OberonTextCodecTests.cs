@@ -7,6 +7,7 @@ internal static class OberonTextCodecTests
         RoundTripsStyledText();
         CreatesAndLoadsTextFiles();
         RejectsInvalidTextBlocks();
+        RejectsUnrepresentableLatin1Text();
     }
 
     private static void RoundTripsStyledText()
@@ -36,5 +37,14 @@ internal static class OberonTextCodecTests
     {
         TestAssertions.ThrowsInvalidData(() => OberonTextCodec.Decode([0, 0, 0, 0, 0]));
         TestAssertions.ThrowsInvalidData(() => OberonTextCodec.Decode([OberonTextCodec.TextTag, 0, 0, 0, 0, 1]));
+    }
+
+    private static void RejectsUnrepresentableLatin1Text()
+    {
+        TestAssertions.ThrowsInvalidData(() => OberonTextCodec.Encode(new OberonText("😀")));
+
+        var text = new OberonText("ok");
+        text.ChangeLooks(0, 2, new OberonTextStyle("Bad\0Font", 1, 0));
+        TestAssertions.ThrowsInvalidData(() => OberonTextCodec.Encode(text));
     }
 }
