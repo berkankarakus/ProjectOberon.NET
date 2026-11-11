@@ -18,30 +18,44 @@ internal static class ArchitectureTests
         "src/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj"
     ];
 
+    private static readonly string[] TestReferences =
+    [
+        CompilerProject,
+        CoreProject,
+        RscProject,
+        SymbolsProject,
+        "src/ProjectOberon.Cli/ProjectOberon.Cli.csproj",
+        "src/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj",
+        "src/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj",
+        "src/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj",
+        "src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj"
+    ];
+
     public static void Run()
     {
-        CoreHasNoProjectReferences();
+        ContractsHaveNoProjectReferences();
         SymbolsHaveNoProjectReferences();
         RscDependsOnlyOnContracts();
-        CoreDependsOnlyOnContracts();
-        CompilerDependsOnlyOnContracts();
+        CoreDependsOnContractsRscAndSymbols();
+        CompilerDependsOnContractsAndSymbols();
         AdaptersDependOnlyOnCore();
         ProductionProjectsDoNotDependOnTests();
         AdaptersDoNotDependOnEachOther();
+        TestProjectHasExpectedReferences();
         SolutionContainsExpectedProjectPaths();
     }
 
-    private static void CompilerDependsOnlyOnContracts()
+    private static void CompilerDependsOnContractsAndSymbols()
     {
         TestAssertions.True(ReadReferences(CompilerProject).SetEquals([ContractsProject, SymbolsProject]));
     }
 
-    private static void CoreHasNoProjectReferences()
+    private static void ContractsHaveNoProjectReferences()
     {
         TestAssertions.True(ReadReferences(ContractsProject).Count == 0);
     }
 
-    private static void CoreDependsOnlyOnContracts()
+    private static void CoreDependsOnContractsRscAndSymbols()
     {
         TestAssertions.True(ReadReferences(CoreProject).SetEquals([ContractsProject, RscProject, SymbolsProject]));
     }
@@ -87,6 +101,11 @@ internal static class ArchitectureTests
             var references = ReadReferences(adapter);
             TestAssertions.True(!references.Intersect(AdapterProjects).Any());
         }
+    }
+
+    private static void TestProjectHasExpectedReferences()
+    {
+        TestAssertions.True(ReadReferences(TestProject).SetEquals(TestReferences));
     }
 
     private static void SolutionContainsExpectedProjectPaths()
