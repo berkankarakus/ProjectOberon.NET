@@ -43,7 +43,17 @@ public static class InputMapping
 
     public static ushort ScaleCoordinate(int coordinate, int extent, int maximum)
     {
-        if (extent <= 1) return 0;
+        if (extent <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(extent));
+        }
+
+        if (maximum <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximum));
+        }
+
+        if (extent == 1) return 0;
         var clamped = Math.Clamp(coordinate, 0, extent - 1);
         return (ushort)(clamped * (long)(maximum - 1) / (extent - 1));
     }

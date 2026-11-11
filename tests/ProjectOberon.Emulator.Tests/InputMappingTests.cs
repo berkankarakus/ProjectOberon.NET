@@ -34,5 +34,7 @@ internal static class InputMappingTests
         TestAssertions.Equal((ushort)1023, InputMapping.ScaleCoordinate(200, 100, 1024));
         TestAssertions.Equal((ushort)516, InputMapping.ScaleCoordinate(50, 100, 1024));
         TestAssertions.Equal((ushort)0, InputMapping.ScaleCoordinate(10, 1, 1024));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => InputMapping.ScaleCoordinate(0, 0, 1024));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => InputMapping.ScaleCoordinate(0, 100, 0));
     }
 }
