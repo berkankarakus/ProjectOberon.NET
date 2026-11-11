@@ -43,6 +43,8 @@ internal static class OberonBootSessionTests
         TestAssertions.True(descriptor != 0);
         TestAssertions.Equal(descriptor, image.DescriptorAddress);
         TestAssertions.Equal(image.BodyAddress, machine.Cpu.PcByte);
+        TestAssertions.Throws<ArgumentException>(() => boot.Initialize("Démö"));
+        TestAssertions.Throws<ArgumentException>(() => boot.Initialize(new string('x', 32)));
     }
 
     public static void BootsDependenciesBeforeRoot()

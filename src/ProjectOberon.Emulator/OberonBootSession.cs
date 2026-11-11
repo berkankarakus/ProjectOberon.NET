@@ -155,6 +155,11 @@ public sealed class OberonBootSession
 
     private void WriteCString(uint address, string value)
     {
+        if (value.Any(character => character > 0x7f || character == '\0'))
+        {
+            throw new ArgumentException("Oberon module name must contain ASCII characters", nameof(value));
+        }
+
         var bytes = Encoding.ASCII.GetBytes(value);
         if (bytes.Length >= ModuleNameLength)
         {
