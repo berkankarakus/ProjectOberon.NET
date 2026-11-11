@@ -61,7 +61,10 @@ public sealed class OberonCompilerStatementEmitter
     public void EmitStatementSequence(OberonCompilerStatementSequence sequence)
     {
         ArgumentNullException.ThrowIfNull(sequence);
-        foreach (var statement in sequence.Statements) EmitStatement(statement);
+        foreach (var statement in sequence.Statements)
+        {
+            EmitStatement(statement);
+        }
     }
 
     private void EmitStatement(OberonCompilerStatement statement)
@@ -72,7 +75,10 @@ public sealed class OberonCompilerStatementEmitter
                 _assignments.EmitAssignment(assignment);
                 break;
             case OberonCompilerReturnStatement { Value: var value }:
-                if (value is not null) _expressions.EmitExpression(value);
+                if (value is not null)
+                {
+                    _expressions.EmitExpression(value);
+                }
                 _frames.EmitReturn(_frameSize);
                 break;
             case OberonCompilerIfStatement conditional:

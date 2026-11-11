@@ -157,10 +157,22 @@ public sealed class OberonCompilerScanner
         }
 
         var current = Peek();
-        if (IsLetter(current)) return ScanIdentifier(start, line, column);
-        if (IsDigit(current)) return ScanNumber(start, line, column);
-        if (current == '"') return ScanString(start, line, column);
-        if (current == '$') return ScanHexString(start, line, column);
+        if (IsLetter(current))
+        {
+            return ScanIdentifier(start, line, column);
+        }
+        if (IsDigit(current))
+        {
+            return ScanNumber(start, line, column);
+        }
+        if (current == '"')
+        {
+            return ScanString(start, line, column);
+        }
+        if (current == '$')
+        {
+            return ScanHexString(start, line, column);
+        }
 
         Advance();
         return current switch
@@ -233,14 +245,23 @@ public sealed class OberonCompilerScanner
 
         if (!IsEnd && Peek() == '.')
         {
-            if (Peek(1) == '.') return DecimalInteger(start, line, column);
+            if (Peek(1) == '.')
+            {
+                return DecimalInteger(start, line, column);
+            }
             Advance();
             while (!IsEnd && IsDigit(Peek())) Advance();
             if (!IsEnd && Peek() is 'E' or 'D')
             {
                 Advance();
-                if (!IsEnd && Peek() is '+' or '-') Advance();
-                if (IsEnd || !IsDigit(Peek())) return Invalid(start, line, column, "digit expected in exponent");
+                if (!IsEnd && Peek() is '+' or '-')
+                {
+                    Advance();
+                }
+                if (IsEnd || !IsDigit(Peek()))
+                {
+                    return Invalid(start, line, column, "digit expected in exponent");
+                }
                 while (!IsEnd && IsDigit(Peek())) Advance();
             }
 
@@ -277,7 +298,10 @@ public sealed class OberonCompilerScanner
             value.Append(Advance());
         }
 
-        if (IsEnd || Peek() != '"') return Invalid(start, line, column, "unterminated string literal");
+        if (IsEnd || Peek() != '"')
+        {
+            return Invalid(start, line, column, "unterminated string literal");
+        }
         Advance();
         return new OberonCompilerToken(OberonCompilerTokenKind.String, _source[start.._position], start, line, column,
             StringValue: value.ToString());
@@ -290,7 +314,10 @@ public sealed class OberonCompilerScanner
         while (!IsEnd && Peek() != '$')
         {
             while (!IsEnd && char.IsWhiteSpace(Peek())) Advance();
-            if (IsEnd || Peek() == '$') break;
+            if (IsEnd || Peek() == '$')
+            {
+                break;
+            }
             var high = ReadHexDigit();
             while (!IsEnd && char.IsWhiteSpace(Peek())) Advance();
             var low = ReadHexDigit();
@@ -302,7 +329,10 @@ public sealed class OberonCompilerScanner
             value.Append((char)((high << 4) | low));
         }
 
-        if (IsEnd) return Invalid(start, line, column, "unterminated hexadecimal string");
+        if (IsEnd)
+        {
+            return Invalid(start, line, column, "unterminated hexadecimal string");
+        }
         Advance();
         return new OberonCompilerToken(OberonCompilerTokenKind.String, _source[start.._position], start, line, column,
             StringValue: value.ToString());
@@ -310,7 +340,10 @@ public sealed class OberonCompilerScanner
 
     private int ReadHexDigit()
     {
-        if (IsEnd) return -1;
+        if (IsEnd)
+        {
+            return -1;
+        }
         var value = Peek();
         if (value is >= '0' and <= '9')
         {
@@ -357,7 +390,10 @@ public sealed class OberonCompilerScanner
             {
                 Advance();
                 Advance();
-                if (--depth == 0) return;
+                if (--depth == 0)
+                {
+                    return;
+                }
             }
             else Advance();
         }
@@ -378,7 +414,10 @@ public sealed class OberonCompilerScanner
 
     private bool Match(char expected)
     {
-        if (IsEnd || Peek() != expected) return false;
+        if (IsEnd || Peek() != expected)
+        {
+            return false;
+        }
         Advance();
         return true;
     }

@@ -95,8 +95,14 @@ public sealed class OberonCompilerAddressEmitter
     public int EmitStorageBase(OberonCompilerObject symbol, int destination)
     {
         ArgumentNullException.ThrowIfNull(symbol);
-        if (symbol.Level == 1) return OberonCompilerCallingConvention.ModuleDataBase;
-        if (symbol.Level == _currentLevel) return OberonCompilerCallingConvention.StackPointer;
+        if (symbol.Level == 1)
+        {
+            return OberonCompilerCallingConvention.ModuleDataBase;
+        }
+        if (symbol.Level == _currentLevel)
+        {
+            return OberonCompilerCallingConvention.StackPointer;
+        }
         if (symbol.Level > _currentLevel)
             throw new InvalidOperationException($"symbol '{symbol.Name}' is in a deeper scope");
 

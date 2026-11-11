@@ -35,7 +35,10 @@ public sealed class OberonCompilerModuleEmitter
     public IReadOnlyList<uint> Emit(OberonCompilerModuleParseResult module)
     {
         ArgumentNullException.ThrowIfNull(module);
-        if (!module.Succeeded) throw new InvalidOperationException("cannot emit an invalid module");
+        if (!module.Succeeded)
+        {
+            throw new InvalidOperationException("cannot emit an invalid module");
+        }
 
         _generator.Reset();
         _procedureLabels.Clear();
@@ -60,7 +63,10 @@ public sealed class OberonCompilerModuleEmitter
                 ResolveProcedureLabel,
                 currentLevel: procedure.Symbol.Level + 1,
                 stringAddressResolver: ResolveStringAddress);
-            if (procedure.Body is not null) procedureStatements.EmitStatementSequence(procedure.Body);
+            if (procedure.Body is not null)
+            {
+                procedureStatements.EmitStatementSequence(procedure.Body);
+            }
             if (OberonCompilerControlFlowAnalyzer.CanCompleteNormally(procedure.Body))
                 _frames.EmitProcedureReturn(procedure.FrameSize);
         }
@@ -72,7 +78,10 @@ public sealed class OberonCompilerModuleEmitter
                 checked(GetLabelPosition(procedure.Symbol) * 4)))
             .ToArray();
         _bodyOffset = checked(_generator.ProgramCounter * 4);
-        if (module.Body is not null) _statements.EmitStatementSequence(module.Body);
+        if (module.Body is not null)
+        {
+            _statements.EmitStatementSequence(module.Body);
+        }
         return _generator.Code;
     }
 
@@ -127,7 +136,10 @@ public sealed class OberonCompilerModuleEmitter
 
     private int ResolveStringAddress(string value)
     {
-        if (_stringAddresses.TryGetValue(value, out var address)) return address;
+        if (_stringAddresses.TryGetValue(value, out var address))
+        {
+            return address;
+        }
 
         address = _nextStringOffset;
         var bytes = Encoding.Latin1.GetBytes(value);
@@ -156,7 +168,10 @@ public sealed class OberonCompilerModuleEmitter
         OberonCompilerType type,
         HashSet<OberonCompilerType> visited)
     {
-        if (!visited.Add(type)) return false;
+        if (!visited.Add(type))
+        {
+            return false;
+        }
         return type.Form switch
         {
             OberonCompilerTypeForm.Pointer or OberonCompilerTypeForm.Record => true,
@@ -171,7 +186,10 @@ public sealed class OberonCompilerModuleEmitter
         var end = 0;
         foreach (var symbol in module.ModuleScope?.Objects ?? [])
         {
-            if (symbol.Class != OberonCompilerObjectClass.Variable) continue;
+            if (symbol.Class != OberonCompilerObjectClass.Variable)
+            {
+                continue;
+            }
             end = Math.Max(end, checked((int)symbol.Value + (symbol.Type?.Size ?? 0)));
         }
 

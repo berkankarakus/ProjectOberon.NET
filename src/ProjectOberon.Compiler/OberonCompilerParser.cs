@@ -50,7 +50,10 @@ public sealed partial class OberonCompilerParser
         else
         {
             RecoverTo(OberonCompilerTokenKind.Semicolon, OberonCompilerTokenKind.EndOfText);
-            if (_current.Kind == OberonCompilerTokenKind.Semicolon) Next();
+            if (_current.Kind == OberonCompilerTokenKind.Semicolon)
+            {
+                Next();
+            }
         }
 
         ParseImports();
@@ -73,7 +76,10 @@ public sealed partial class OberonCompilerParser
         }
         Expect(OberonCompilerTokenKind.Period, ". expected after module");
 
-        foreach (var diagnostic in _scanner.Diagnostics) _diagnostics.Add(diagnostic);
+        foreach (var diagnostic in _scanner.Diagnostics)
+        {
+            _diagnostics.Add(diagnostic);
+        }
         if (_diagnostics.Count == 0)
         {
             var semanticChecker = new OberonCompilerSemanticChecker(_symbols.BooleanType);
@@ -95,9 +101,15 @@ public sealed partial class OberonCompilerParser
         var names = new List<(string Name, bool Exported)>();
         while (true)
         {
-            if (!TryIdentifier(out var name)) break;
+            if (!TryIdentifier(out var name))
+            {
+                break;
+            }
             names.Add((name, TakeExportMarker()));
-            if (_current.Kind != OberonCompilerTokenKind.Comma) break;
+            if (_current.Kind != OberonCompilerTokenKind.Comma)
+            {
+                break;
+            }
             Next();
         }
         return names;
@@ -105,13 +117,19 @@ public sealed partial class OberonCompilerParser
 
     private void CheckDeclarationOrder(int section)
     {
-        if (section < _declarationSection) AddDiagnostic("declaration in bad order");
+        if (section < _declarationSection)
+        {
+            AddDiagnostic("declaration in bad order");
+        }
         _declarationSection = Math.Max(_declarationSection, section);
     }
 
     private bool TakeExportMarker()
     {
-        if (_current.Kind != OberonCompilerTokenKind.Multiply) return false;
+        if (_current.Kind != OberonCompilerTokenKind.Multiply)
+        {
+            return false;
+        }
         Next();
         return true;
     }
@@ -145,8 +163,14 @@ public sealed partial class OberonCompilerParser
 
     private void Expect(OberonCompilerTokenKind kind, string message)
     {
-        if (_current.Kind == kind) Next();
-        else AddDiagnostic(message);
+        if (_current.Kind == kind)
+        {
+            Next();
+        }
+        else
+        {
+            AddDiagnostic(message);
+        }
     }
 
     private void RecoverTo(params OberonCompilerTokenKind[] kinds)

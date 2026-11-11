@@ -19,7 +19,10 @@ public sealed partial class OberonCompilerParser
             }
 
             var statement = ParseStatement();
-            if (statement is not null) statements.Add(statement);
+            if (statement is not null)
+            {
+                statements.Add(statement);
+            }
             if (_current.Kind == OberonCompilerTokenKind.Semicolon)
             {
                 Next();
@@ -35,7 +38,10 @@ public sealed partial class OberonCompilerParser
                 RecoverTo(OberonCompilerTokenKind.Semicolon,
                     OberonCompilerTokenKind.End,
                     OberonCompilerTokenKind.EndOfText);
-                if (_current.Kind == OberonCompilerTokenKind.Semicolon) Next();
+                if (_current.Kind == OberonCompilerTokenKind.Semicolon)
+                {
+                    Next();
+                }
             }
         }
 
@@ -167,7 +173,10 @@ public sealed partial class OberonCompilerParser
         var control = controlToken.Kind == OberonCompilerTokenKind.Identifier
             ? ResolveRuntimeName(controlToken)
             : new OberonCompilerNameExpression(string.Empty, null);
-        if (controlToken.Kind == OberonCompilerTokenKind.Identifier) Next();
+        if (controlToken.Kind == OberonCompilerTokenKind.Identifier)
+        {
+            Next();
+        }
         else AddDiagnostic("FOR control variable expected");
         Expect(OberonCompilerTokenKind.Becomes, ":= expected after FOR control variable");
         var start = ParseRuntimeExpression();
@@ -205,18 +214,27 @@ public sealed partial class OberonCompilerParser
                 {
                     Next();
                     end = ParseCaseLabelValue();
-                    if (start > end) AddDiagnostic("CASE label range must be ascending");
+                    if (start > end)
+                    {
+                        AddDiagnostic("CASE label range must be ascending");
+                    }
                 }
 
                 labels.Add(new OberonCompilerCaseLabel(start, end));
 
-                if (_current.Kind != OberonCompilerTokenKind.Comma) break;
+                if (_current.Kind != OberonCompilerTokenKind.Comma)
+                {
+                    break;
+                }
                 Next();
             }
 
             Expect(OberonCompilerTokenKind.Colon, ": expected after CASE labels");
             arms.Add(new OberonCompilerCaseArm(labels, ParseStatementSequence()));
-            if (_current.Kind != OberonCompilerTokenKind.Bar) break;
+            if (_current.Kind != OberonCompilerTokenKind.Bar)
+            {
+                break;
+            }
             Next();
         }
 

@@ -180,12 +180,17 @@ public static class OberonCompilerSymbolFileWriter
 
             if (type.Form == OberonCompilerTypeForm.Record)
             {
-                foreach (var field in type.Fields) WriteHiddenPointers(field.Type, offset + field.Value);
+                foreach (var field in type.Fields)
+                {
+                    WriteHiddenPointers(field.Type, offset + field.Value);
+                }
             }
             else if (type.Form == OberonCompilerTypeForm.Array && type.Length >= 0 && type.Base is not null)
             {
                 for (var index = 0; index < type.Length; index++)
+                {
                     WriteHiddenPointers(type.Base, offset + (long)type.Base.Size * index);
+                }
             }
         }
 

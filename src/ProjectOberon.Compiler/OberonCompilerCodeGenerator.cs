@@ -50,7 +50,10 @@ public sealed class OberonCompilerCodeGenerator : IOberonCompilerInstructionWrit
         var unsigned = unchecked((uint)value);
         EmitUpperMove(destination, (int)(unsigned >> 16));
         var lower = (int)(unsigned & 0xffff);
-        if (lower != 0) EmitImmediate(AluOperation.Ior, destination, destination, lower);
+        if (lower != 0)
+        {
+            EmitImmediate(AluOperation.Ior, destination, destination, lower);
+        }
     }
 
     public void EmitMoveFromHigh(int destination)
@@ -116,17 +119,29 @@ public sealed class OberonCompilerCodeGenerator : IOberonCompilerInstructionWrit
     {
         ArgumentNullException.ThrowIfNull(label);
         var instruction = EmitBranch(condition, link, invert);
-        if (label.Position is int position) PatchBranch(instruction, position);
-        else label.Fixups.Add(instruction);
+        if (label.Position is int position)
+        {
+            PatchBranch(instruction, position);
+        }
+        else
+        {
+            label.Fixups.Add(instruction);
+        }
         return instruction;
     }
 
     public void Bind(OberonCompilerLabel label)
     {
         ArgumentNullException.ThrowIfNull(label);
-        if (label.Position is not null) throw new InvalidOperationException("label is already bound");
+        if (label.Position is not null)
+        {
+            throw new InvalidOperationException("label is already bound");
+        }
         label.Position = ProgramCounter;
-        foreach (var fixup in label.Fixups) PatchBranch(fixup, ProgramCounter);
+        foreach (var fixup in label.Fixups)
+        {
+            PatchBranch(fixup, ProgramCounter);
+        }
         label.Fixups.Clear();
     }
 
@@ -177,7 +192,10 @@ public sealed class OberonCompilerCodeGenerator : IOberonCompilerInstructionWrit
 
     private void PatchBranch(int instruction, int target)
     {
-        if ((uint)instruction >= (uint)_code.Count) throw new ArgumentOutOfRangeException(nameof(instruction));
+        if ((uint)instruction >= (uint)_code.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(instruction));
+        }
         var displacement = target - instruction - 1;
         if (displacement is < -0x20_0000 or > 0x1f_ffff)
             throw new InvalidOperationException("branch target is outside the RISC5 displacement range");
@@ -187,7 +205,10 @@ public sealed class OberonCompilerCodeGenerator : IOberonCompilerInstructionWrit
 
     private static void ValidateRegister(int register)
     {
-        if (register is < 0 or > 15) throw new ArgumentOutOfRangeException(nameof(register));
+        if (register is < 0 or > 15)
+        {
+            throw new ArgumentOutOfRangeException(nameof(register));
+        }
     }
 
     private static void ValidateFrameSize(int frameSize)

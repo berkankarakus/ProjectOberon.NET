@@ -65,13 +65,19 @@ public sealed class OberonCompilerCallEmitter
         var target = ResolveProcedureLabel(procedure) ?? throw new InvalidOperationException(
             $"function '{call.Procedure.Name}' has no code label");
         _generator.EmitCall(target);
-        if (destination != 0) _generator.EmitRegister(AluOperation.Mov, destination, 0, 0);
+        if (destination != 0)
+        {
+            _generator.EmitRegister(AluOperation.Mov, destination, 0, 0);
+        }
         return destination;
     }
 
     private void EmitStaticLink(OberonCompilerObject procedure)
     {
-        if (procedure.Level <= 1) return;
+        if (procedure.Level <= 1)
+        {
+            return;
+        }
 
         _generator.EmitRegister(
             AluOperation.Mov,
@@ -107,8 +113,14 @@ public sealed class OberonCompilerCallEmitter
             using var preservedArguments = _registers.ReserveRange(0, register);
             if (OberonCompilerTypeRules.IsScalar(parameter.Type))
             {
-                if (parameter.ReadOnly) _emitExpression(arguments[index], register);
-                else _addresses.EmitAddress(arguments[index], register);
+                if (parameter.ReadOnly)
+                {
+                    _emitExpression(arguments[index], register);
+                }
+                else
+                {
+                    _addresses.EmitAddress(arguments[index], register);
+                }
                 continue;
             }
 

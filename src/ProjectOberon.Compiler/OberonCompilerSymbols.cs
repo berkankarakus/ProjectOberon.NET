@@ -85,7 +85,10 @@ public sealed class OberonCompilerObject
 
     internal bool AddMember(OberonCompilerObject member)
     {
-        if (!_memberMap.TryAdd(member.Name, member)) return false;
+        if (!_memberMap.TryAdd(member.Name, member))
+        {
+            return false;
+        }
         _members.Add(member);
         return true;
     }
@@ -108,7 +111,10 @@ public sealed class OberonCompilerScope
 
     internal bool TryAdd(OberonCompilerObject obj)
     {
-        if (!_objectMap.TryAdd(obj.Name, obj)) return false;
+        if (!_objectMap.TryAdd(obj.Name, obj))
+        {
+            return false;
+        }
         _objects.Add(obj);
         return true;
     }
@@ -193,7 +199,10 @@ public sealed class OberonCompilerSymbols
         {
             Base = resultType
         };
-        foreach (var parameter in parameters) type.AddParameter(parameter);
+        foreach (var parameter in parameters)
+        {
+            type.AddParameter(parameter);
+        }
         type.ParameterCount = type.Parameters.Count;
         return type;
     }
@@ -259,7 +268,10 @@ public sealed class OberonCompilerSymbols
         for (var scope = _currentScope; scope is not null; scope = scope.Parent)
         {
             var result = scope.FindLocal(name);
-            if (result is not null) return result;
+            if (result is not null)
+            {
+                return result;
+            }
         }
 
         return null;
@@ -270,7 +282,10 @@ public sealed class OberonCompilerSymbols
         for (var type = recordType; type is not null; type = type.Base)
         {
             var field = type.Fields.FirstOrDefault(candidate => candidate.Name == name);
-            if (field is not null) return field;
+            if (field is not null)
+            {
+                return field;
+            }
         }
 
         return null;
@@ -328,7 +343,10 @@ public sealed class OberonCompilerSymbols
 
     public void CloseScope()
     {
-        if (_currentScope.Parent is null) throw new InvalidOperationException("cannot close the universe scope");
+        if (_currentScope.Parent is null)
+        {
+            throw new InvalidOperationException("cannot close the universe scope");
+        }
         _currentScope = _currentScope.Parent;
     }
 

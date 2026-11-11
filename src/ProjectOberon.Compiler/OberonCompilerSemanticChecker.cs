@@ -17,8 +17,14 @@ public sealed class OberonCompilerSemanticChecker
     {
         ArgumentNullException.ThrowIfNull(procedures);
 
-        if (moduleBody is not null) CheckStatements(moduleBody, expectedReturnType: null, procedureName: null);
-        foreach (var procedure in procedures) CheckProcedure(procedure);
+        if (moduleBody is not null)
+        {
+            CheckStatements(moduleBody, expectedReturnType: null, procedureName: null);
+        }
+        foreach (var procedure in procedures)
+        {
+            CheckProcedure(procedure);
+        }
         return _diagnostics;
     }
 
@@ -32,7 +38,10 @@ public sealed class OberonCompilerSemanticChecker
             AddDiagnostic($"function '{procedure.Symbol.Name}' may complete without returning a value");
         }
 
-        foreach (var nested in procedure.NestedProcedures) CheckProcedure(nested);
+        foreach (var nested in procedure.NestedProcedures)
+        {
+            CheckProcedure(nested);
+        }
     }
 
     private void CheckStatements(
@@ -40,7 +49,10 @@ public sealed class OberonCompilerSemanticChecker
         OberonCompilerType? expectedReturnType,
         string? procedureName)
     {
-        if (sequence is null) return;
+        if (sequence is null)
+        {
+            return;
+        }
 
         foreach (var statement in sequence.Statements)
         {
@@ -219,7 +231,10 @@ public sealed class OberonCompilerSemanticChecker
             return operandType;
         }
 
-        if (!IsNumeric(operandType)) AddDiagnostic("numeric operand expected");
+        if (!IsNumeric(operandType))
+        {
+            AddDiagnostic("numeric operand expected");
+        }
         return operandType;
     }
 
