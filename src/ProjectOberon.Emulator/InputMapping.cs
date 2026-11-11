@@ -8,7 +8,10 @@ public static class InputMapping
 
     public static KeyboardKey? KeyboardKey(int key)
     {
-        if (key is >= 'a' and <= 'z') return new KeyboardKey(LetterCodes[key - 'a'], false);
+        if (key is >= 'a' and <= 'z')
+        {
+            return new KeyboardKey(LetterCodes[key - 'a'], false);
+        }
         return key switch
         {
             '1' => new(0x16, false), '2' => new(0x1e, false), '3' => new(0x26, false), '4' => new(0x25, false),
@@ -37,7 +40,14 @@ public static class InputMapping
         };
     }
 
-    public static byte MouseButtonsFromState(uint state) => (byte)(((state & 1) != 0 ? 0x04 : 0) | ((state & 2) != 0 ? 0x02 : 0) | ((state & 4) != 0 ? 0x01 : 0));
+    public static byte MouseButtonsFromState(uint state)
+    {
+        var buttons = 0;
+        if ((state & 1) != 0) buttons |= 0x04;
+        if ((state & 2) != 0) buttons |= 0x02;
+        if ((state & 4) != 0) buttons |= 0x01;
+        return (byte)buttons;
+    }
 
     public static byte MouseButtonMask(byte button) => button switch { 1 => 0x04, 2 => 0x02, 3 => 0x01, _ => 0 };
 
@@ -53,7 +63,10 @@ public static class InputMapping
             throw new ArgumentOutOfRangeException(nameof(maximum));
         }
 
-        if (extent == 1) return 0;
+        if (extent == 1)
+        {
+            return 0;
+        }
         var clamped = Math.Clamp(coordinate, 0, extent - 1);
         return (ushort)(clamped * (long)(maximum - 1) / (extent - 1));
     }
