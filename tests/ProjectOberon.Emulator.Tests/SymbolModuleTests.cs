@@ -10,5 +10,6 @@ internal static partial class SymbolModuleTests
         RejectsInvalidTypeForm();
         RejectsNonAsciiStrings();
         RejectsTrailingBytes();
+        RejectsInvalidModuleNames();
     }
 }

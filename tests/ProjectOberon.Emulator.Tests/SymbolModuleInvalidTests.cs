@@ -55,4 +55,11 @@ internal static partial class SymbolModuleTests
 
         TestAssertions.ThrowsInvalidData(() => OberonSymbolModuleReader.Parse(data));
     }
+
+    private static void RejectsInvalidModuleNames()
+    {
+        TestAssertions.ThrowsInvalidData(() => OberonSymbolModuleReader.Parse(BuildSmb(_ => { }, "")));
+        TestAssertions.ThrowsInvalidData(() => OberonSymbolModuleReader.Parse(
+            BuildSmb(_ => { }, new string('A', 32))));
+    }
 }

@@ -2,12 +2,12 @@ using System.Buffers.Binary;
 
 internal static partial class SymbolModuleTests
 {
-    private static byte[] BuildSmb(Action<SymbolWriter> writeExports)
+    private static byte[] BuildSmb(Action<SymbolWriter> writeExports, string name = "Kernel")
     {
         var writer = new SymbolWriter();
         writer.AddInt(0);
         writer.AddInt(0x1234_5678);
-        writer.AddString("Kernel");
+        writer.AddString(name);
         writer.AddByte(1);
         writeExports(writer);
         writer.AddByte(0);

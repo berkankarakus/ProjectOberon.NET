@@ -27,6 +27,7 @@ public static class OberonSymbolModuleReader
         reader.ReadInt32();
         var key = reader.ReadInt32();
         var name = reader.ReadString();
+        ValidateModuleName(name);
         var version = reader.ReadByte();
         if (version != VersionKey)
         {
@@ -154,6 +155,14 @@ public static class OberonSymbolModuleReader
     {
         while (reader.ReadSignedByte() != 0)
         {
+        }
+    }
+
+    private static void ValidateModuleName(string name)
+    {
+        if (name.Length == 0 || name.Length >= 32)
+        {
+            throw new InvalidDataException("SMB module name must be between 1 and 31 characters");
         }
     }
 
