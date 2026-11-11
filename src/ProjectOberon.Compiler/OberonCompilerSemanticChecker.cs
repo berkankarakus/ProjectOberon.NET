@@ -313,7 +313,10 @@ public sealed class OberonCompilerSemanticChecker
         if (symbol?.Class is not (OberonCompilerObjectClass.Procedure or OberonCompilerObjectClass.Function))
         {
             AddDiagnostic($"'{procedure.Name}' is not callable");
-            foreach (var argument in arguments) CheckExpression(argument);
+            foreach (var argument in arguments)
+            {
+                CheckExpression(argument);
+            }
             return null;
         }
 
@@ -342,7 +345,10 @@ public sealed class OberonCompilerSemanticChecker
     {
         var actualType = CheckExpression(argument);
         var expectedType = parameter.Type;
-        if (actualType is null || expectedType is null) return;
+        if (actualType is null || expectedType is null)
+        {
+            return;
+        }
 
         if (expectedType.Form == OberonCompilerTypeForm.Array && expectedType.Length < 0)
         {
@@ -411,10 +417,16 @@ public sealed class OberonCompilerSemanticChecker
 
     private static bool AreAssignable(OberonCompilerType expected, OberonCompilerType actual)
     {
-        if (ReferenceEquals(expected, actual)) return true;
+        if (ReferenceEquals(expected, actual))
+        {
+            return true;
+        }
         if (expected.Form == OberonCompilerTypeForm.Pointer
             && actual.Form == OberonCompilerTypeForm.Nil) return true;
-        if (IsNumeric(expected) && IsNumeric(actual)) return true;
+        if (IsNumeric(expected) && IsNumeric(actual))
+        {
+            return true;
+        }
         return expected.Form == OberonCompilerTypeForm.Array
             && expected.Base?.Form == OberonCompilerTypeForm.Character
             && actual.Form == OberonCompilerTypeForm.String;

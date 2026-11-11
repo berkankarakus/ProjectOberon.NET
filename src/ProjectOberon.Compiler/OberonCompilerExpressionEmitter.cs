@@ -166,7 +166,10 @@ public sealed class OberonCompilerExpressionEmitter
         {
             EmitExpression(binary.Left, destination);
             EmitExpression(binary.Right, temporary);
-            if (IsRelation(binary.Operator)) return EmitComparison(binary, destination, temporary);
+            if (IsRelation(binary.Operator))
+            {
+                return EmitComparison(binary, destination, temporary);
+            }
             if (binary.Operator == OberonCompilerTokenKind.Mod)
             {
                 if (IsReal(binary))

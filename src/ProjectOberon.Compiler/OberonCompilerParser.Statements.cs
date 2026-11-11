@@ -271,7 +271,10 @@ public sealed partial class OberonCompilerParser
             && _current.Kind != OberonCompilerTokenKind.EndOfText)
         {
             arguments.Add(ParseRuntimeExpression());
-            if (_current.Kind != OberonCompilerTokenKind.Comma) break;
+            if (_current.Kind != OberonCompilerTokenKind.Comma)
+            {
+                break;
+            }
             Next();
         }
 

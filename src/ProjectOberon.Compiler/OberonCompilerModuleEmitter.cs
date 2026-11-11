@@ -210,7 +210,10 @@ public sealed class OberonCompilerModuleEmitter
         foreach (var procedure in procedures)
         {
             yield return procedure;
-            foreach (var nested in Flatten(procedure.NestedProcedures)) yield return nested;
+            foreach (var nested in Flatten(procedure.NestedProcedures))
+            {
+                yield return nested;
+            }
         }
     }
 

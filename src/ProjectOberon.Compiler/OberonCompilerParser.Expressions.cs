@@ -35,10 +35,16 @@ public sealed partial class OberonCompilerParser
         var unary = _current.Kind is OberonCompilerTokenKind.Plus or OberonCompilerTokenKind.Minus
             ? _current.Kind
             : (OberonCompilerTokenKind?)null;
-        if (unary is not null) Next();
+        if (unary is not null)
+        {
+            Next();
+        }
 
         var expression = ParseTerm(parsePrimary, applyUnary, applyBinary);
-        if (unary is not null) expression = applyUnary(unary.Value, expression);
+        if (unary is not null)
+        {
+            expression = applyUnary(unary.Value, expression);
+        }
 
         while (IsSimpleOperator(_current.Kind))
         {
@@ -202,7 +208,10 @@ public sealed partial class OberonCompilerParser
             return ConstantValue.Boolean(_symbols, value.IntegerValue == 0);
         }
 
-        if (!value.IsNumeric) AddDiagnostic("numeric expression expected");
+        if (!value.IsNumeric)
+        {
+            AddDiagnostic("numeric expression expected");
+        }
         return operation == OberonCompilerTokenKind.Minus ? value.Negate() : value;
     }
 
@@ -316,7 +325,10 @@ public sealed partial class OberonCompilerParser
     private OberonCompilerNameExpression ResolveRuntimeName(OberonCompilerToken token)
     {
         var symbol = _symbols.Lookup(token.Lexeme);
-        if (symbol is null) AddDiagnostic($"identifier '{token.Lexeme}' is not defined");
+        if (symbol is null)
+        {
+            AddDiagnostic($"identifier '{token.Lexeme}' is not defined");
+        }
         return new OberonCompilerNameExpression(token.Lexeme, symbol);
     }
 
@@ -399,7 +411,10 @@ public sealed partial class OberonCompilerParser
 
         if (operation == OberonCompilerTokenKind.RealDivide)
         {
-            if (right.NumericValue == 0) AddDiagnostic("division by zero");
+            if (right.NumericValue == 0)
+            {
+                AddDiagnostic("division by zero");
+            }
             return ConstantValue.Real(_symbols, left.NumericValue / right.NumericValue);
         }
 

@@ -4,7 +4,10 @@ public sealed partial class OberonCompilerParser
 {
     private void ParseImports()
     {
-        if (_current.Kind != OberonCompilerTokenKind.Import) return;
+        if (_current.Kind != OberonCompilerTokenKind.Import)
+        {
+            return;
+        }
         Next();
         while (_current.Kind == OberonCompilerTokenKind.Identifier)
         {
@@ -26,7 +29,10 @@ public sealed partial class OberonCompilerParser
             {
                 _symbols.OpenModule(alias, originalName, 0);
             }
-            if (_current.Kind != OberonCompilerTokenKind.Comma) break;
+            if (_current.Kind != OberonCompilerTokenKind.Comma)
+            {
+                break;
+            }
             Next();
         }
         Expect(OberonCompilerTokenKind.Semicolon, "; expected after IMPORT");
@@ -62,7 +68,10 @@ public sealed partial class OberonCompilerParser
         while (_current.Kind == OberonCompilerTokenKind.Procedure)
         {
             var procedure = ParseProcedureDeclaration();
-            if (procedure is not null) procedures.Add(procedure);
+            if (procedure is not null)
+            {
+                procedures.Add(procedure);
+            }
             Expect(OberonCompilerTokenKind.Semicolon, "; expected after procedure declaration");
         }
 
@@ -134,7 +143,10 @@ public sealed partial class OberonCompilerParser
 
     private void ParseFormalParameters(OberonCompilerType procedureType, int parameterOffset)
     {
-        if (_current.Kind != OberonCompilerTokenKind.LeftParenthesis) return;
+        if (_current.Kind != OberonCompilerTokenKind.LeftParenthesis)
+        {
+            return;
+        }
         Next();
         if (_current.Kind == OberonCompilerTokenKind.RightParenthesis)
         {
@@ -168,7 +180,10 @@ public sealed partial class OberonCompilerParser
                 offset += ParameterSlotSize(type);
             }
 
-            if (_current.Kind != OberonCompilerTokenKind.Semicolon) break;
+            if (_current.Kind != OberonCompilerTokenKind.Semicolon)
+            {
+                break;
+            }
             Next();
         }
 
@@ -183,7 +198,10 @@ public sealed partial class OberonCompilerParser
 
     private OberonCompilerType ParseFormalType()
     {
-        if (_current.Kind != OberonCompilerTokenKind.Array) return ParseType();
+        if (_current.Kind != OberonCompilerTokenKind.Array)
+        {
+            return ParseType();
+        }
 
         Next();
         Expect(OberonCompilerTokenKind.Of, "OF expected in open array parameter");
@@ -258,7 +276,10 @@ public sealed partial class OberonCompilerParser
             var name = _current.Lexeme;
             Next();
             var obj = _symbols.Lookup(name);
-            if (obj?.Class == OberonCompilerObjectClass.Type && obj.Type is not null) return obj.Type;
+            if (obj?.Class == OberonCompilerObjectClass.Type && obj.Type is not null)
+            {
+                return obj.Type;
+            }
             AddDiagnostic($"type '{name}' is not defined");
             return _symbols.NoneType;
         }
