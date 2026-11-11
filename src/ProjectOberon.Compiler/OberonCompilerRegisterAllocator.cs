@@ -26,24 +26,42 @@ public sealed class OberonCompilerRegisterAllocator
     {
         ValidateExpressionRegister(register);
         if (_reservations[register] == 0)
+        {
             throw new InvalidOperationException("expression register is not allocated");
+        }
+
         _reservations[register]--;
     }
 
     public IDisposable ReserveRange(int firstRegister, int count)
     {
-        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
-        if (count == 0) return NoopDisposable.Instance;
+        if (count < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count));
+        }
+
+        if (count == 0)
+        {
+            return NoopDisposable.Instance;
+        }
+
         ValidateExpressionRegister(firstRegister);
         ValidateExpressionRegister(firstRegister + count - 1);
         for (var register = firstRegister; register < firstRegister + count; register++)
+        {
             _reservations[register]++;
+        }
+
         return new Reservation(this, firstRegister, count);
     }
 
     public static void ValidateExpressionRegister(int register, bool allowExcluded = false)
     {
-        if (allowExcluded && register == -1) return;
+        if (allowExcluded && register == -1)
+        {
+            return;
+        }
+
         if (register is < FirstExpressionRegister or > LastExpressionRegister)
             throw new ArgumentOutOfRangeException(nameof(register),
                 "expression registers must not overlap module base, stack pointer, or link register");
@@ -64,7 +82,11 @@ public sealed class OberonCompilerRegisterAllocator
 
         public void Dispose()
         {
-            if (_disposed) return;
+            if (_disposed)
+            {
+                return;
+            }
+
             _disposed = true;
             allocator.ReleaseRange(firstRegister, count);
         }
