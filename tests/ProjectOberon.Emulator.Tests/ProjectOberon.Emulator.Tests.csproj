@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/ProjectOberon.Emulator/ProjectOberon.Emulator.csproj" />
+    <ProjectReference Include="../../src/ProjectOberon.Cli/ProjectOberon.Cli.csproj" />
+    <ProjectReference Include="../../src/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj" />
+    <ProjectReference Include="../../src/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj" />
+    <ProjectReference Include="../../src/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj" />
+    <ProjectReference Include="../../src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj" />
+  </ItemGroup>
+</Project>

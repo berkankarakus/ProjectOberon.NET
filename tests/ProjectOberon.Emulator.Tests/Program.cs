@@ -70,7 +70,8 @@ var tests = new (string Name, Action Test)[]
     ("Oberon symbol module binding", OberonModuleTests.SymbolBinding),
     ("CLI options", CliOptionTests.Run),
     ("SDL UI helpers", SdlUiTests.Run),
-    ("subcommand options", SubcommandOptionTests.Run)
+    ("subcommand options", SubcommandOptionTests.Run),
+    ("architecture dependencies", ArchitectureTests.Run)
 };
 
 foreach (var (name, test) in tests)
