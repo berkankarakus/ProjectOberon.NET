@@ -33,8 +33,9 @@ flowchart TD
     Fs --> Core
     Rsc --> Core
     Sdl --> Core
-    Tests --> Contracts
     Tests --> Core
+    Tests --> RscLib
+    Tests --> Symbols
     Tests --> CompilerLib
     Tests --> Cli
     Tests --> Compiler
