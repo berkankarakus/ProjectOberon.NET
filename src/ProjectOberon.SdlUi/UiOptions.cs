@@ -20,6 +20,7 @@ internal sealed record UiOptions(
 {
     public static UiOptions Parse(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
         string? rom = null, disk = null;
         var writable = true;
         var steps = 100_000UL;

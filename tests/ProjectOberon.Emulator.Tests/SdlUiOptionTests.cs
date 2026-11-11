@@ -24,6 +24,7 @@ internal static partial class SdlUiTests
 
     private static void RejectsInvalidUiOptions()
     {
+        TestAssertions.Throws<ArgumentNullException>(() => UiOptions.Parse(null!));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--read-only"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--scale", "0.4"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--scale", "4.1"]));
