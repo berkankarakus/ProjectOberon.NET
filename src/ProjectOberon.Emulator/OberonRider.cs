@@ -75,6 +75,7 @@ public sealed class OberonRider
     {
         var bits = 32;
         uint packed = 0;
+        var continuationCount = 0;
         if (!ReadByte(out var current))
         {
             value = 0;
@@ -82,6 +83,11 @@ public sealed class OberonRider
         }
         while (current >= 0x80)
         {
+            if (++continuationCount > 4)
+            {
+                throw new InvalidDataException("Oberon number is too long");
+            }
+
             packed = BitOperations.RotateRight(packed + (uint)(current - 0x80), 7);
             bits -= 7;
             if (!ReadByte(out current))
@@ -113,6 +119,11 @@ public sealed class OberonRider
 
     public void Write(char character)
     {
+        if (character > byte.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(character), "Oberon characters must fit one byte");
+        }
+
         WriteByte((byte)character);
     }
 
@@ -125,6 +136,12 @@ public sealed class OberonRider
 
     public void WriteString(string value)
     {
+        ArgumentNullException.ThrowIfNull(value);
+        if (value.Contains('\0'))
+        {
+            throw new ArgumentException("Oberon strings cannot contain NUL", nameof(value));
+        }
+
         foreach (var character in value)
         {
             Write(character);
