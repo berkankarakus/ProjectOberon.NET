@@ -83,3 +83,11 @@ references and runtime behavior.
 Shared SDK settings (`net10.0`, nullable analysis, implicit usings, and warnings
 as errors) live in the repository-level `Directory.Build.props`; individual
 projects keep only project-specific settings and references.
+
+## Boundary rules
+
+Binary codecs validate representability before writing: directory and boot
+names are ASCII, text and rider payloads reject NUL or non-Latin-1 characters,
+and file page tables cannot address more pages than the on-disk extension
+table supports. UI input helpers validate dimensions before scaling. These
+checks keep malformed host input from becoming silently corrupted Oberon data.
