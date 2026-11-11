@@ -40,8 +40,15 @@ public sealed class DiskImage : IDisposable
     public void Write(uint sector, ReadOnlySpan<byte> data)
     {
         CheckSector(sector);
-        if (!_writable) throw new InvalidOperationException("disk image is read-only");
-        if (data.Length != SectorSize) throw new ArgumentException($"sector must contain {SectorSize} bytes", nameof(data));
+        if (!_writable)
+        {
+            throw new InvalidOperationException("disk image is read-only");
+        }
+
+        if (data.Length != SectorSize)
+        {
+            throw new ArgumentException($"sector must contain {SectorSize} bytes", nameof(data));
+        }
         _file!.Seek((long)sector * SectorSize, SeekOrigin.Begin);
         _file.Write(data);
         _file.Flush();
@@ -60,7 +67,14 @@ public sealed class DiskImage : IDisposable
 
     private void CheckSector(uint sector)
     {
-        if (_file is null) throw new InvalidOperationException("disk image is not open");
-        if (sector >= _sectorCount) throw new ArgumentOutOfRangeException(nameof(sector));
+        if (_file is null)
+        {
+            throw new InvalidOperationException("disk image is not open");
+        }
+
+        if (sector >= _sectorCount)
+        {
+            throw new ArgumentOutOfRangeException(nameof(sector));
+        }
     }
 }

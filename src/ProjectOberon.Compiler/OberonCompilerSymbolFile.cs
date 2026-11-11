@@ -23,8 +23,15 @@ public static class OberonCompilerSymbolFileWriter
         var types = new TypeWriter(writer);
         foreach (var export in exports)
         {
-            if (!export.Exported) throw new ArgumentException($"symbol is not exported: {export.Name}", nameof(exports));
-            if (export.Type is null) throw new ArgumentException($"symbol has no type: {export.Name}", nameof(exports));
+            if (!export.Exported)
+            {
+                throw new ArgumentException($"symbol is not exported: {export.Name}", nameof(exports));
+            }
+
+            if (export.Type is null)
+            {
+                throw new ArgumentException($"symbol has no type: {export.Name}", nameof(exports));
+            }
 
             writer.WriteByte((byte)export.Class);
             writer.WriteString(export.Name);
@@ -74,7 +81,10 @@ public static class OberonCompilerSymbolFileWriter
 
             if (type.TypeObject is not null)
             {
-                if (_nextReference > 63) throw new InvalidDataException("too many exported symbol types");
+                if (_nextReference > 63)
+                {
+                    throw new InvalidDataException("too many exported symbol types");
+                }
                 reference = _nextReference++;
                 _references[type] = reference;
                 _writer.WriteByte((byte)reference);
@@ -140,7 +150,10 @@ public static class OberonCompilerSymbolFileWriter
 
         private void WriteHiddenPointers(OberonCompilerType? type, long offset)
         {
-            if (type is null) return;
+            if (type is null)
+            {
+                return;
+            }
             if (type.Form is OberonCompilerTypeForm.Pointer or OberonCompilerTypeForm.Nil)
             {
                 _writer.WriteByte((byte)OberonCompilerObjectClass.Field);
