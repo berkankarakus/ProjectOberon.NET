@@ -24,11 +24,18 @@ try
 
     var generator = new OberonCompilerCodeGenerator();
     var emitter = new OberonCompilerModuleEmitter(generator);
-    var code = emitter.Emit(result);
+    var rsc = options.RscPath is null ? null : emitter.EmitRsc(result);
+    var code = rsc?.Code ?? emitter.Emit(result);
 
     Console.WriteLine($"module {result.ModuleName}");
     Console.WriteLine($"instructions: {code.Count}");
     Console.WriteLine($"module data: {emitter.ModuleData.Count} bytes");
+
+    if (rsc is not null)
+    {
+        File.WriteAllBytes(options.RscPath!, RscModuleWriter.Write(rsc));
+        Console.WriteLine($"rsc: {options.RscPath}");
+    }
 
     if (options.SymbolPath is not null)
     {
@@ -63,17 +70,23 @@ catch (Exception error) when (error is IOException or UnauthorizedAccessExceptio
     Environment.ExitCode = 1;
 }
 
-internal sealed record CompilerOptions(string SourcePath, string? SymbolPath, bool Disassemble, bool Help)
+internal sealed record CompilerOptions(
+    string SourcePath,
+    string? SymbolPath,
+    string? RscPath,
+    bool Disassemble,
+    bool Help)
 {
     public static CompilerOptions Parse(string[] args)
     {
         if (args.Length == 0)
         {
-            return new CompilerOptions(string.Empty, null, true, true);
+            return new CompilerOptions(string.Empty, null, null, true, true);
         }
 
         string? source = null;
         string? symbolPath = null;
+        string? rscPath = null;
         var disassemble = true;
         for (var index = 0; index < args.Length; index++)
         {
@@ -81,12 +94,15 @@ internal sealed record CompilerOptions(string SourcePath, string? SymbolPath, bo
             {
                 case "--help":
                 case "-h":
-                    return new CompilerOptions(string.Empty, null, true, true);
+                    return new CompilerOptions(string.Empty, null, null, true, true);
                 case "--source":
                     source = ReadValue(args, ref index, "--source");
                     break;
                 case "--symbols":
                     symbolPath = ReadValue(args, ref index, "--symbols");
+                    break;
+                case "--rsc":
+                    rscPath = ReadValue(args, ref index, "--rsc");
                     break;
                 case "--no-disassemble":
                     disassemble = false;
@@ -107,14 +123,14 @@ internal sealed record CompilerOptions(string SourcePath, string? SymbolPath, bo
             throw new ArgumentException("source file is required");
         }
 
-        return new CompilerOptions(source, symbolPath, disassemble, false);
+        return new CompilerOptions(source, symbolPath, rscPath, disassemble, false);
     }
 
     public static void PrintUsage()
     {
-        Console.WriteLine("usage: project-oberon-compiler SOURCE.Mod [--symbols FILE] [--no-disassemble]");
-        Console.WriteLine("       project-oberon-compiler --source SOURCE.Mod [--symbols FILE] [--no-disassemble]");
-        Console.WriteLine("compiles an Oberon module, prints its RISC5 listing, and optionally writes SMB symbols");
+        Console.WriteLine("usage: project-oberon-compiler SOURCE.Mod [--symbols FILE] [--rsc FILE] [--no-disassemble]");
+        Console.WriteLine("       project-oberon-compiler --source SOURCE.Mod [--symbols FILE] [--rsc FILE] [--no-disassemble]");
+        Console.WriteLine("compiles an Oberon module, prints its RISC5 listing, and optionally writes SMB/RSC files");
     }
 
     private static string ReadValue(string[] args, ref int index, string option)

@@ -261,9 +261,16 @@ dotnet run --project src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csp
   path/to/Demo.Mod --symbols Demo.smb --no-disassemble
 ```
 
-The compiler CLI currently emits a host-side instruction listing. RSC packaging
-and loader integration are tracked separately because they also require the
-module type descriptor and pointer-fixup tables.
+Emit a minimal RSC module for modules whose type descriptor and pointer-fixup
+tables are not required:
+
+```sh
+dotnet run --project src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csproj -- \
+  path/to/Demo.Mod --rsc Demo.rsc --no-disassemble
+```
+
+The compiler CLI now emits a minimal RSC container. Full type descriptor and
+pointer-fixup generation remains a separate compiler milestone.
 
 The project layout and dependency direction are documented in
 [`docs/architecture.md`](docs/architecture.md) and enforced by the architecture

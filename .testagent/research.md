@@ -30,3 +30,9 @@ project-reference declarations.
 4. Move production projects under `src/` and tests under `tests/`, updating all
    solution, project-reference, CI, and README paths.
 5. Build the solution and run the complete repository test runner.
+
+## Follow-up batch
+
+The compiler emitter now exposes a minimal RSC artifact: code, variable/string
+data, imports, exported top-level procedure commands, and body offset. Type
+descriptor and pointer-fixup generation are intentionally not claimed yet.

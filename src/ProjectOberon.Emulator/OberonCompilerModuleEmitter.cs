@@ -10,6 +10,9 @@ public sealed class OberonCompilerModuleEmitter
     private readonly Dictionary<OberonCompilerObject, OberonCompilerLabel> _procedureLabels = [];
     private readonly Dictionary<string, int> _stringAddresses = new(StringComparer.Ordinal);
     private readonly List<byte> _moduleData = [];
+    private IReadOnlyList<RscCommand> _commands = [];
+    private int _variableBytes;
+    private int _bodyOffset;
     private int _nextStringOffset;
 
     public OberonCompilerModuleEmitter(OberonCompilerCodeGenerator generator)
@@ -25,6 +28,9 @@ public sealed class OberonCompilerModuleEmitter
     }
 
     public IReadOnlyList<byte> ModuleData => _moduleData;
+    public IReadOnlyList<RscCommand> Commands => _commands;
+    public int VariableBytes => _variableBytes;
+    public int BodyOffset => _bodyOffset;
 
     public IReadOnlyList<uint> Emit(OberonCompilerModuleParseResult module)
     {
@@ -34,7 +40,8 @@ public sealed class OberonCompilerModuleEmitter
         _procedureLabels.Clear();
         _stringAddresses.Clear();
         _moduleData.Clear();
-        _nextStringOffset = Align(ModuleVariableDataSize(module), 4);
+        _variableBytes = Align(ModuleVariableDataSize(module), 4);
+        _nextStringOffset = _variableBytes;
         EnsureModuleData(_nextStringOffset);
         var procedures = module.Procedures ?? [];
         var allProcedures = Flatten(procedures).ToArray();
@@ -57,12 +64,62 @@ public sealed class OberonCompilerModuleEmitter
                 _frames.EmitProcedureReturn(procedure.FrameSize);
         }
 
+        _commands = procedures
+            .Where(procedure => procedure.Symbol.Exported)
+            .Select(procedure => new RscCommand(
+                procedure.Symbol.Name,
+                checked(GetLabelPosition(procedure.Symbol) * 4)))
+            .ToArray();
+        _bodyOffset = checked(_generator.ProgramCounter * 4);
         if (module.Body is not null) _statements.EmitStatementSequence(module.Body);
         return _generator.Code;
     }
 
+    public RscModule EmitRsc(OberonCompilerModuleParseResult module)
+    {
+        ArgumentNullException.ThrowIfNull(module);
+        var code = Emit(module);
+        var imports = (module.ModuleScope?.Objects ?? [])
+            .Where(symbol => symbol.Class == OberonCompilerObjectClass.Module)
+            .Select(symbol => new RscImport(symbol.OriginalName ?? symbol.Name, symbol.Key))
+            .ToArray();
+        var stringPayload = _moduleData.Skip(_variableBytes).ToArray();
+        return new RscModule(
+            module.ModuleName ?? throw new InvalidOperationException("module name is missing"),
+            0,
+            1,
+            0,
+            imports,
+            0,
+            _variableBytes,
+            stringPayload.Length,
+            code.Count,
+            code,
+            _commands,
+            [],
+            [],
+            0,
+            0,
+            0,
+            _bodyOffset,
+            (byte)'O')
+        {
+            StringPayload = stringPayload
+        };
+    }
+
     private OberonCompilerLabel? ResolveProcedureLabel(OberonCompilerObject procedure) =>
         _procedureLabels.TryGetValue(procedure, out var label) ? label : null;
+
+    private int GetLabelPosition(OberonCompilerObject procedure)
+    {
+        if (!_procedureLabels.TryGetValue(procedure, out var label) || label.Position is not int position)
+        {
+            throw new InvalidOperationException($"procedure label is not bound: {procedure.Name}");
+        }
+
+        return position;
+    }
 
     private int ResolveStringAddress(string value)
     {
