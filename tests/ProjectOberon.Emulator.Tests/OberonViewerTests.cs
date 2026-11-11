@@ -7,5 +7,6 @@ internal static partial class OberonViewerTests
         ChangesViewerHeightWithoutOverlappingNextViewer();
         DispatchesInputAndBroadcastsMessages();
         ClosesWholeTrack();
+        ValidatesViewerSystemBounds();
     }
 }
