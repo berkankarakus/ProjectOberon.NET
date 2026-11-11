@@ -86,7 +86,10 @@ public sealed partial class Risc5Cpu
         var irqRising = irq && !_irqLevel;
         _irqLevel = irq;
 
-        if (irqRising) _interruptPending = true;
+        if (irqRising)
+        {
+            _interruptPending = true;
+        }
         _pc = nextPc;
 
         if (!instruction.P)
@@ -103,8 +106,15 @@ public sealed partial class Risc5Cpu
         }
         else
         {
-            if ((instruction.Raw & 0x10u) != 0 && _interruptMode) RestoreInterruptState();
-            if ((instruction.Raw & 0x20u) != 0) _interruptEnabled = (instruction.Raw & 1u) != 0;
+            if ((instruction.Raw & 0x10u) != 0 && _interruptMode)
+            {
+                RestoreInterruptState();
+            }
+
+            if ((instruction.Raw & 0x20u) != 0)
+            {
+                _interruptEnabled = (instruction.Raw & 1u) != 0;
+            }
         }
 
         if (interruptAck)
