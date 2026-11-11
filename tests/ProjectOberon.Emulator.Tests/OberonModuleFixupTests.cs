@@ -24,5 +24,11 @@ internal static partial class OberonModuleTests
         var importedOffset = 4u + imported.CodeAddress - imported.DataAddress;
         TestAssertions.Equal(importedOffset, memory.Read32(dataFixup + 4));
         TestAssertions.Equal(image.DataAddress, memory.Read32(image.DataAddress + 4));
+
+        var brokenLoader = new OberonModuleLoader(name => name == "Broken"
+            ? BuildRsc("Broken", 300, [], "Start", code: [0, 0], fixupProgram: 1)
+            : null);
+        var brokenMemoryLoader = new OberonModuleMemoryLoader(new Memory(64 * 1024), brokenLoader);
+        TestAssertions.Throws<OberonModuleLoadException>(() => brokenMemoryLoader.Load("Broken"));
     }
 }

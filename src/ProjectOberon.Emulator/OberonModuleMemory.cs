@@ -85,7 +85,21 @@ public sealed class OberonModuleMemoryLoader
             imports[index] = Load(module.Imports[index].Name);
         }
 
-        var image = Allocate(module, imports);
+        OberonModuleImage image;
+        try
+        {
+            image = Allocate(module, imports);
+        }
+        catch (OberonModuleLoadException)
+        {
+            throw;
+        }
+        catch (InvalidDataException error)
+        {
+            throw new OberonModuleLoadException(5,
+                $"could not materialize Oberon module {module.Name}: {error.Message}");
+        }
+
         _images.Add(module.Name, image);
         return image;
     }
