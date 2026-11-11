@@ -28,8 +28,5 @@ jobs:
 
       - name: Run deterministic tests
         run: >-
-          dotnet run
-          --project tests/ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj
-          --no-build
-          --configuration Release
-          -- --skip-disk-tests
+          ./tests/ProjectOberon.Emulator.Tests/bin/Release/net10.0/ProjectOberon.Emulator.Tests
+          --skip-disk-tests
