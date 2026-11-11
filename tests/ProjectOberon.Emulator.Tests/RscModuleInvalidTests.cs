@@ -38,6 +38,15 @@ internal static partial class RscModuleTests
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
     }
 
+    private static void RejectsCodeAndEntryCountsLargerThanThePayload()
+    {
+        var code = BuildRsc("Demo", 1, [], "Start", codeWordCount: int.MaxValue);
+        var entries = BuildRsc("Demo", 1, [], "Start", entryCount: int.MaxValue);
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(code));
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(entries));
+    }
+
     private static void RejectsNegativeEntryCount()
     {
         var data = BuildRsc("Demo", 1, [], "Start", entryCount: -1);

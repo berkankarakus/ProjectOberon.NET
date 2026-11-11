@@ -8,6 +8,7 @@ internal static partial class RscModuleTests
         RejectsNegativeVariableSpace();
         RejectsNegativeStringSpace();
         RejectsNegativeCodeWordCount();
+        RejectsCodeAndEntryCountsLargerThanThePayload();
         RejectsNegativeEntryCount();
         RejectsInvalidTrailer();
         RejectsInvalidCodeLayout();

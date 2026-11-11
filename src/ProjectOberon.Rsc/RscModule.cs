@@ -50,6 +50,7 @@ public static class RscModuleReader
         {
             throw new InvalidDataException($"invalid code word count: {codeWords}");
         }
+        reader.EnsureIntCount(codeWords, "code word");
         var code = new uint[codeWords];
         for (var index = 0; index < code.Length; index++)
         {
@@ -125,6 +126,8 @@ public static class RscModuleReader
             throw new InvalidDataException($"invalid {name} count: {count}");
         }
 
+        reader.EnsureIntCount(count, name);
+
         var result = new int[count];
         for (var index = 0; index < result.Length; index++)
         {
@@ -138,6 +141,8 @@ public static class RscModuleReader
     {
         private readonly ReadOnlySpan<byte> _data;
         private int _position;
+
+        public int Remaining => _data.Length - _position;
 
         public RscReader(ReadOnlySpan<byte> data) { _data = data; _position = 0; }
 
@@ -199,6 +204,15 @@ public static class RscModuleReader
             var result = _data.Slice(_position, count).ToArray();
             _position += count;
             return result;
+        }
+
+        public void EnsureIntCount(int count, string name)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (count > Remaining / sizeof(int))
+            {
+                throw new InvalidDataException($"invalid {name} count: {count}");
+            }
         }
 
         public void Align(int alignment)
