@@ -71,6 +71,15 @@ The dependency rules are enforced by `ArchitectureTests` in the test runner.
 Adding a project-to-project reference requires updating that test intentionally
 instead of silently creating a reverse or adapter-to-adapter dependency.
 
+Refresh the source dependency index after structural changes with:
+
+```sh
+codegraph sync .
+```
+
+Then run the solution build and the fast test binary to verify both project
+references and runtime behavior.
+
 Shared SDK settings (`net10.0`, nullable analysis, implicit usings, and warnings
 as errors) live in the repository-level `Directory.Build.props`; individual
 projects keep only project-specific settings and references.
