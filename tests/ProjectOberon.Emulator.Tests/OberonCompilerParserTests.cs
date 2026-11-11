@@ -15,6 +15,7 @@ internal static class OberonCompilerParserTests
         ParsesCaseLabelRanges();
         ParsesSetMembership();
         ReportsUnsupportedTypeTests();
+        ImportsExternalProcedures();
         ParsesSetLiteral();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
@@ -362,6 +363,22 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Any(diagnostic =>
             diagnostic.Message.Contains("IS expressions", StringComparison.Ordinal)));
+    }
+
+    private static void ImportsExternalProcedures()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Run", 1, 7) { IsProcedure = true }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; BEGIN IO.Run; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        TestAssertions.True(result.ModuleScope!.Objects.Any(obj => obj.Name == "IO"));
     }
 
     private static void ParsesControlFlowStatements()

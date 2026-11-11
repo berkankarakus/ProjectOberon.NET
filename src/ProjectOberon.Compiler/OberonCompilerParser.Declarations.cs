@@ -18,7 +18,14 @@ public sealed partial class OberonCompilerParser
                 else AddDiagnostic("module identifier expected after :=");
             }
 
-            _symbols.OpenModule(alias, originalName, 0);
+            if (_importedModules.TryGetValue(originalName, out var imported))
+            {
+                _symbols.ImportModule(alias, imported);
+            }
+            else
+            {
+                _symbols.OpenModule(alias, originalName, 0);
+            }
             if (_current.Kind != OberonCompilerTokenKind.Comma) break;
             Next();
         }

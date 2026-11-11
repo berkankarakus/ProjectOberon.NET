@@ -285,6 +285,28 @@ public sealed class OberonCompilerSymbols
         return module;
     }
 
+    public OberonCompilerObject ImportModule(string alias, OberonSymbolModule module)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(alias);
+        ArgumentNullException.ThrowIfNull(module);
+
+        var imported = OpenModule(alias, module.Name, module.Key);
+        foreach (var export in module.Exports.Where(export => export.IsProcedure == true))
+        {
+            var procedure = new OberonCompilerObject(export.Name, OberonCompilerObjectClass.Procedure)
+            {
+                Type = CreateProcedure(NoneType, []),
+                Value = export.Value,
+                ReadOnly = true,
+                OriginalName = export.Name,
+                Key = module.Key
+            };
+            imported.AddMember(procedure);
+        }
+
+        return imported;
+    }
+
     public OberonCompilerScope OpenScope()
     {
         _currentScope = new OberonCompilerScope(_currentScope, _currentScope.Level + 1);

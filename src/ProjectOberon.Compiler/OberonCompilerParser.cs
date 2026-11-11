@@ -15,15 +15,20 @@ public sealed partial class OberonCompilerParser
 {
     private readonly OberonCompilerScanner _scanner;
     private readonly OberonCompilerSymbols _symbols;
+    private readonly IReadOnlyDictionary<string, OberonSymbolModule> _importedModules;
     private readonly List<OberonCompilerDiagnostic> _diagnostics = [];
     private OberonCompilerToken _current;
     private int _declarationSection;
     private int _dataOffset;
 
-    public OberonCompilerParser(string source, OberonCompilerSymbols? symbols = null)
+    public OberonCompilerParser(
+        string source,
+        OberonCompilerSymbols? symbols = null,
+        IReadOnlyDictionary<string, OberonSymbolModule>? importedModules = null)
     {
         _scanner = new OberonCompilerScanner(source);
         _symbols = symbols ?? new OberonCompilerSymbols();
+        _importedModules = importedModules ?? new Dictionary<string, OberonSymbolModule>(StringComparer.Ordinal);
         _current = _scanner.Scan();
     }
 

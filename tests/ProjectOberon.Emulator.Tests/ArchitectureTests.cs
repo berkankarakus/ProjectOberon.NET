@@ -33,7 +33,7 @@ internal static class ArchitectureTests
 
     private static void CompilerDependsOnlyOnContracts()
     {
-        TestAssertions.True(ReadReferences(CompilerProject).SetEquals([ContractsProject]));
+        TestAssertions.True(ReadReferences(CompilerProject).SetEquals([ContractsProject, SymbolsProject]));
     }
 
     private static void CoreHasNoProjectReferences()

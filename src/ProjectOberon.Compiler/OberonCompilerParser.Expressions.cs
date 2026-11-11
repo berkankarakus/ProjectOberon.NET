@@ -254,6 +254,23 @@ public sealed partial class OberonCompilerParser
 
             var fieldName = _current.Lexeme;
             Next();
+
+            if (expression is OberonCompilerNameExpression moduleName
+                && moduleName.Symbol?.Class == OberonCompilerObjectClass.Module)
+            {
+                var member = moduleName.Symbol.FindMember(fieldName);
+                if (member is null)
+                {
+                    AddDiagnostic($"module member '{fieldName}' is not defined");
+                    continue;
+                }
+
+                expression = new OberonCompilerNameExpression(
+                    $"{moduleName.Name}.{fieldName}",
+                    member);
+                continue;
+            }
+
             var receiverType = ExpressionType(expression);
             if (receiverType?.Form != OberonCompilerTypeForm.Record)
             {
