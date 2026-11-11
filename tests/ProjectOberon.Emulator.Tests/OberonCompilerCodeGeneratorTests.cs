@@ -7,6 +7,7 @@ internal static class OberonCompilerCodeGeneratorTests
         EmitsRegisterImmediateAndMemoryInstructions();
         PatchesForwardBranches();
         EmitsFullWidthImmediateValues();
+        RejectsInvalidInstructionOperands();
     }
 
     private static void EmitsRegisterImmediateAndMemoryInstructions()
@@ -44,5 +45,20 @@ internal static class OberonCompilerCodeGeneratorTests
         TestAssertions.Equal("MOV r3, 0x12340000", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("IOR r3, r3, 0x5678", Risc5Disassembler.Format(generator.Code[1]));
         TestAssertions.Equal("BT r15", Risc5Disassembler.Format(generator.Code[2]));
+    }
+
+    private static void RejectsInvalidInstructionOperands()
+    {
+        var generator = new OberonCompilerCodeGenerator();
+
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => generator.EmitRegister(
+            AluOperation.Add, 16, 0, 0));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => generator.EmitLoad(
+            0, 0, 0x80_000));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => generator.EmitProcedurePrologue(0));
+
+        var label = new OberonCompilerLabel();
+        generator.Bind(label);
+        TestAssertions.Throws<InvalidOperationException>(() => generator.Bind(label));
     }
 }
