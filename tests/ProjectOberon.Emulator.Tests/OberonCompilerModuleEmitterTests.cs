@@ -17,6 +17,7 @@ internal static class OberonCompilerModuleEmitterTests
         DeduplicatesRepeatedStringData();
         EmitsSameModuleDeterministically();
         EmitsOpenArrayAndScalarParameterCall();
+        ReportsExternalProcedureLoweringGap();
     }
 
     private static void EmitsParameterlessProcedureCall()
@@ -121,6 +122,22 @@ internal static class OberonCompilerModuleEmitterTests
 
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Contains("MOV r2, 0x0003"));
+    }
+
+    private static void ReportsExternalProcedureLoweringGap()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Run", 1, 7) { IsProcedure = true }]);
+        var parsed = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; BEGIN IO.Run; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+
+        TestAssertions.Throws<NotSupportedException>(() =>
+            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).Emit(parsed));
     }
 
     private static void EmitsStaticLinkForNestedProcedure()

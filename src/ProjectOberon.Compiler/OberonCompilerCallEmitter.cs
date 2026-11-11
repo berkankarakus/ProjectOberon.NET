@@ -37,8 +37,17 @@ public sealed class OberonCompilerCallEmitter
             $"procedure '{call.Procedure.Name}' is not defined");
         EmitCallArguments(procedure, call.Arguments);
         EmitStaticLink(procedure);
-        var target = ResolveProcedureLabel(procedure) ?? throw new InvalidOperationException(
-            $"procedure '{call.Procedure.Name}' has no code label");
+        var target = ResolveProcedureLabel(procedure);
+        if (target is null)
+        {
+            if (procedure.Level == 0 && procedure.Key != 0)
+            {
+                throw new NotSupportedException(
+                    $"external procedure '{call.Procedure.Name}' requires RSC import lowering");
+            }
+
+            throw new InvalidOperationException($"procedure '{call.Procedure.Name}' has no code label");
+        }
         _generator.EmitCall(target);
     }
 
