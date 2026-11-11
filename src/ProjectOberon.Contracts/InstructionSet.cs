@@ -1,4 +1,4 @@
-namespace ProjectOberon.Emulator;
+namespace ProjectOberon.Contracts;
 
 public enum AluOperation : byte
 {

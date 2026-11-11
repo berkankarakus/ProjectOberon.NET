@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="../ProjectOberon.Emulator/ProjectOberon.Emulator.csproj" />
+    <ProjectReference Include="../ProjectOberon.Contracts/ProjectOberon.Contracts.csproj" />
   </ItemGroup>
 </Project>

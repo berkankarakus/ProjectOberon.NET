@@ -1,1 +1,1 @@
-global using ProjectOberon.Emulator;
+global using ProjectOberon.Contracts;

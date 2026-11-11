@@ -1,4 +1,4 @@
-namespace ProjectOberon.Emulator;
+namespace ProjectOberon.Contracts;
 
 public sealed record RscImport(string Name, int Key);
 public sealed record RscCommand(string Name, int CodeOffset);
