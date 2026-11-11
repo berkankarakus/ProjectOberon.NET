@@ -49,10 +49,14 @@
 | Shared contracts have no runtime dependency | Keep instruction encoding and RSC model contracts below both emulator and compiler assemblies | `ArchitectureTests.CoreDependsOnlyOnContracts`, `ArchitectureTests.CompilerDependsOnlyOnContracts` |
 | RSC format assembly is independent | Keep RSC reader, writer and validation above contracts and separate from runtime implementation | `ArchitectureTests.RscDependsOnlyOnContracts`, solution build |
 | SMB format assembly is independent | Keep symbol-module models and reader reusable without runtime dependencies | `ArchitectureTests.SymbolsHaveNoProjectReferences`, solution build |
-| Compiler can consume external SMB procedures | Load imported symbol modules and resolve exported zero-argument procedures in qualified calls | `OberonCompilerParserTests.ImportsExternalProcedures`, `CompilerCliOptionTests.ParsesImportedSymbols` |
+| Compiler can consume external SMB procedures | Load imported symbol modules, preserve procedure arity, and resolve qualified calls | `OberonCompilerParserTests.ImportsExternalProcedures`, `OberonCompilerParserTests.RejectsWrongExternalProcedureArity`, `CompilerCliOptionTests.ParsesImportedSymbols` |
 | External compiler calls fail explicitly | Report the pending RSC import lowering instead of a missing internal code label | `OberonCompilerModuleEmitterTests.ReportsExternalProcedureLoweringGap` |
 | Compiler label ownership is independent | Move labels out of the concrete code generator file to remove the writer/generator file cycle | `OberonCompilerModuleEmitterTests` |
 | Host binding assembly is shared | Centralize export, entry-offset and handler packaging for Files/Kernel/Modules | Existing host binding suites |
 | Memory map ownership is independent | Move address constants into a shared map so device code does not depend on `Memory` | `DeviceMmioTests`, `DeviceStorageTests`, `OberonModuleTests` |
 | RSC model ownership is independent | Move RSC records out of the reader so model and validation dependencies remain one-directional | `RscModuleTests`, `OberonCompilerRscTests` |
 | File-system model ownership is independent | Move directory and file-header records out of the filesystem service so the header codec does not depend on its consumer | `OberonFileSystemTests`, `OberonFileHeaderTests` |
+| Compiler import names are validated early | Reject non-identifier SMB aliases during option parsing | `CompilerCliOptionTests.RejectsInvalidImportName` |
+| Compiler import aliases are trustworthy | Reject an alias that does not match the SMB module descriptor | `CompilerCliOptionTests.RejectsImportAliasMismatch`, `CompilerCliOptionTests.LoadsMatchingImport` |
+| SMB exports are unique | Reject duplicate export names instead of silently shadowing them | `SymbolModuleTests.RejectsDuplicateExports` |
+| Compiler CLI declares its format dependency | Reference the standalone Symbols assembly directly and enforce it in architecture tests | `ArchitectureTests.AdaptersDependOnlyOnCore`, solution build |
