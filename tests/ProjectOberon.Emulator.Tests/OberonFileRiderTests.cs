@@ -26,7 +26,7 @@ internal static partial class OberonPersistenceTests
         TestAssertions.True(reader.Eof);
         TestAssertions.Equal(16, reader.Position);
 
-        TestAssertions.Throws<ArgumentOutOfRangeException>(() => writer.Write('😀'));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => writer.Write('\uD83D'));
         TestAssertions.Throws<ArgumentException>(() => writer.WriteString("bad\0string"));
 
         var malformed = new OberonFile("Malformed.Mod", [0x80, 0x80, 0x80, 0x80, 0x80]);

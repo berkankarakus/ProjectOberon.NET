@@ -29,5 +29,27 @@ internal static partial class OberonModuleTests
         TestAssertions.Equal(0x4000u, boundKernel.CodeAddress);
         TestAssertions.Equal(0x20u, boundMemory.Read32(boundKernel.EntryAddress + 12));
         TestAssertions.Equal(boundKernel.DescriptorAddress, boundMemory.Read32(boundImage.ImportAddress));
+
+        var procedures = OberonSymbolBinding.Procedures(new OberonSymbolModule(
+            "Demo", 1, 1,
+            [
+                new OberonSymbolExport("Run", 1, 3) { IsProcedure = true },
+                new OberonSymbolExport("Value", 2, 4),
+                new OberonSymbolExport("Type", 5, 5)
+            ]));
+        TestAssertions.Equal(1, procedures.Count);
+        TestAssertions.Equal(12u, OberonSymbolBinding.ScaleOffset(3, 4));
+        TestAssertions.Throws<InvalidDataException>(() => OberonSymbolBinding.ScaleOffset(-1, 1));
+        TestAssertions.Throws<OverflowException>(() => OberonSymbolBinding.ScaleOffset(2, uint.MaxValue));
+        TestAssertions.Throws<InvalidDataException>(() => OberonSymbolBinding.EntryOffsets(
+            new OberonSymbolModule(
+                "Bad",
+                1,
+                1,
+                [
+                    new OberonSymbolExport("Run", 1, -1),
+                    new OberonSymbolExport("Other", 1, 2)
+                ]),
+            1));
     }
 }
