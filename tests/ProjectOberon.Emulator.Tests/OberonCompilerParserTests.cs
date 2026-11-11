@@ -16,6 +16,7 @@ internal static class OberonCompilerParserTests
         ParsesSetMembership();
         ReportsUnsupportedTypeTests();
         ImportsExternalProcedures();
+        RejectsWrongExternalProcedureArity();
         ParsesSetLiteral();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
@@ -379,6 +380,23 @@ internal static class OberonCompilerParserTests
 
         TestAssertions.True(result.Succeeded);
         TestAssertions.True(result.ModuleScope!.Objects.Any(obj => obj.Name == "IO"));
+    }
+
+    private static void RejectsWrongExternalProcedureArity()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Run", 1, 7) { IsProcedure = true, ParameterCount = 1 }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; BEGIN IO.Run; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("expects 1 arguments", StringComparison.Ordinal)));
     }
 
     private static void ParsesControlFlowStatements()
