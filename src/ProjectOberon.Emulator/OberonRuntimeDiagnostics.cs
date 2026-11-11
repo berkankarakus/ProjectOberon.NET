@@ -12,6 +12,11 @@ public static class OberonRuntimeDiagnostics
         var output = new StringBuilder();
         output.AppendLine($"{applicationName}: unhandled runtime error");
         output.AppendLine($"exception: {error.GetType().FullName}: {error.Message}");
+        if (error is OberonModuleLoadException moduleError)
+        {
+            output.AppendLine($"module-load: code={moduleError.Code}");
+        }
+
         if (machine is not null)
         {
             var cpu = machine.Cpu;

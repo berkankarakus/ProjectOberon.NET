@@ -20,4 +20,15 @@ internal static class RuntimeDiagnosticsTests
         TestAssertions.True(output.Contains("r14=0x00000700", StringComparison.Ordinal));
         TestAssertions.True(output.Contains("r15=0x00000800", StringComparison.Ordinal));
     }
+
+    public static void FormatsModuleLoadCode()
+    {
+        var output = OberonRuntimeDiagnostics.Format(
+            "test-app",
+            machine: null,
+            new OberonModuleLoadException(5, "corrupted module Demo"));
+
+        TestAssertions.True(output.Contains("module-load: code=5", StringComparison.Ordinal));
+        TestAssertions.True(output.Contains("corrupted module Demo", StringComparison.Ordinal));
+    }
 }

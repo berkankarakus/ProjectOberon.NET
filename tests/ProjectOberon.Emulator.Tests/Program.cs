@@ -32,6 +32,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon boot consumes keyboard", OberonBootSessionTests.BootConsumesKeyboardInput),
     ("core host binding composition", CoreHostBindingTests.BindsCoreExternalModules),
     ("runtime diagnostics", RuntimeDiagnosticsTests.FormatsMachineState),
+    ("module load diagnostics", RuntimeDiagnosticsTests.FormatsModuleLoadCode),
     ("disassembler and breakpoint", DeviceTests.DisassemblerAndBreakpoint),
     ("display and input mapping", DeviceTests.DisplayAndInputMapping),
     ("Oberon input decoder", DeviceTests.OberonInputDecoder),

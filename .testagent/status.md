@@ -15,6 +15,7 @@
 - Compiler CLI option tests cover successful SMB/RSC parsing and both missing
   value and unknown-option failures.
 - RSC reader tests now cover invalid command/body layout before module loading.
+- Runtime diagnostics now expose module-load error codes for actionable logs.
 - No assertion-free or always-true assertions were added.
 - The tests intentionally do not claim type descriptor or pointer-fixup
   coverage; those remain an explicit compiler gap.

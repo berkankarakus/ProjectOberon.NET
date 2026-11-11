@@ -16,3 +16,4 @@
 | RSC reader rejects unsafe code layout | Validate command and body offsets when reading disk modules | `RscModuleTests.RejectsInvalidCodeLayout` |
 | Compiler emitter is repeatable | Reset generated code and verify repeated emission is byte-for-byte deterministic | `OberonCompilerModuleEmitterTests.EmitsSameModuleDeterministically` |
 | Compiler diagnostics are stable | Format source path, line, column, and multiple messages consistently | `CompilerDiagnosticTests.FormatsFileLocationAndMessage`, `CompilerDiagnosticTests.FormatsMultipleDiagnosticsOnSeparateLines` |
+| Runtime module failures expose their code | Include `OberonModuleLoadException.Code` in diagnostics | `RuntimeDiagnosticsTests.FormatsModuleLoadCode` |
