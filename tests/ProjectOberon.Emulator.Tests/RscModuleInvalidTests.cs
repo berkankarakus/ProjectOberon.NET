@@ -82,10 +82,12 @@ internal static partial class RscModuleTests
         var invalidEntry = BuildRsc("Demo", 1, [], "Start", entries: [8]);
         var invalidProgramFixup = BuildRsc("Demo", 1, [], "Start", fixupProgram: 1);
         var invalidTypeFixup = BuildRsc("Demo", 1, [], "Start", typePayload: [0, 0, 0, 0], fixupTypes: 1);
+        var overflowingTypeFixup = BuildRsc("Demo", 1, [], "Start", typePayload: [0, 0, 0, 0], fixupTypes: int.MaxValue);
 
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidEntry));
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidProgramFixup));
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidTypeFixup));
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(overflowingTypeFixup));
     }
 
     private static void RejectsInvalidPointerReferences()

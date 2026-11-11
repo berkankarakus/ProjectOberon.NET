@@ -68,7 +68,10 @@ internal static class RscModuleValidation
         ValidateWordOffset(codeWords, fixupProgram, "program");
         ValidateWordOffset(codeWords, fixupData, "data");
 
-        if (fixupTypes < 0 || (fixupTypes != 0 && fixupTypes * sizeof(uint) >= typeDescriptorBytes))
+        if (fixupTypes < 0
+            || (fixupTypes != 0
+                && (typeDescriptorBytes < sizeof(uint)
+                    || fixupTypes > (typeDescriptorBytes - 1) / sizeof(uint))))
         {
             throw new InvalidDataException($"invalid RSC types fixup offset: {fixupTypes}");
         }
