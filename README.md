@@ -294,7 +294,8 @@ The project layout and dependency direction are documented in
 [`docs/architecture.md`](docs/architecture.md) and enforced by the architecture
 tests. Shared instruction/RSC contracts are kept in
 `ProjectOberon.Contracts`; compiler implementation lives in
-`ProjectOberon.Compiler` and does not reference the emulator runtime.
+`ProjectOberon.Compiler` and does not reference the emulator runtime. RSC
+serialization and validation live in `ProjectOberon.Rsc`.
 
 Inspect a compiled Oberon module using the layout read by `Modules.Mod`:
 

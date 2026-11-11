@@ -47,6 +47,7 @@
 | Compiler assembly is independent | Keep compiler implementation out of the emulator assembly while depending only on runtime instruction and RSC contracts | `ArchitectureTests.CompilerDependsOnlyOnContracts`, solution build |
 | Compiler namespace matches assembly ownership | Expose compiler symbols from `ProjectOberon.Compiler` instead of the emulator namespace | compiler build and compiler tests |
 | Shared contracts have no runtime dependency | Keep instruction encoding and RSC model contracts below both emulator and compiler assemblies | `ArchitectureTests.CoreDependsOnlyOnContracts`, `ArchitectureTests.CompilerDependsOnlyOnContracts` |
+| RSC format assembly is independent | Keep RSC reader, writer and validation above contracts and separate from runtime implementation | `ArchitectureTests.RscDependsOnlyOnContracts`, solution build |
 | Compiler label ownership is independent | Move labels out of the concrete code generator file to remove the writer/generator file cycle | `OberonCompilerModuleEmitterTests` |
 | Host binding assembly is shared | Centralize export, entry-offset and handler packaging for Files/Kernel/Modules | Existing host binding suites |
 | Memory map ownership is independent | Move address constants into a shared map so device code does not depend on `Memory` | `DeviceMmioTests`, `DeviceStorageTests`, `OberonModuleTests` |

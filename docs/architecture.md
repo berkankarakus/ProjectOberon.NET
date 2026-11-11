@@ -7,6 +7,7 @@ and no production project depends on tests.
 ```mermaid
 flowchart TD
     Contracts[ProjectOberon.Contracts]
+    RscLib[ProjectOberon.Rsc]
     Core[ProjectOberon.Emulator]
     CompilerLib[ProjectOberon.Compiler]
     Cli[ProjectOberon.Cli]
@@ -17,6 +18,8 @@ flowchart TD
     Tests[ProjectOberon.Emulator.Tests]
 
     Core --> Contracts
+    RscLib --> Contracts
+    Core --> RscLib
     CompilerLib --> Contracts
     Cli --> Core
     Compiler --> Core
@@ -43,8 +46,9 @@ runner for emulator, compiler, CLI, RSC, filesystem, and SDL helper coverage.
 ```text
 src/
   ProjectOberon.Contracts/      instruction and RSC data contracts
-  ProjectOberon.Emulator/       core runtime, filesystem, RSC loading
+  ProjectOberon.Emulator/       core runtime and filesystem
   ProjectOberon.Compiler/       Oberon scanner, parser and code generator
+  ProjectOberon.Rsc/            RSC reader, writer and validation
   ProjectOberon.Cli/            machine/runtime CLI
   ProjectOberon.CompilerCli/   Oberon source compiler CLI
   ProjectOberon.FsCli/          disk filesystem CLI
