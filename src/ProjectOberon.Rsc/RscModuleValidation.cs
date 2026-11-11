@@ -1,4 +1,4 @@
-namespace ProjectOberon.Emulator;
+namespace ProjectOberon.Rsc;
 
 internal static class RscModuleValidation
 {

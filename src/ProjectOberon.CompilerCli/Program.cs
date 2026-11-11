@@ -1,5 +1,6 @@
 using ProjectOberon.Compiler;
 using ProjectOberon.Emulator;
+using ProjectOberon.Rsc;
 
 try
 {

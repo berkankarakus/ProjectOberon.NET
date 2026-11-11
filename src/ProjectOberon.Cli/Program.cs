@@ -1,4 +1,5 @@
 using ProjectOberon.Emulator;
+using ProjectOberon.Rsc;
 
 Machine? machine = null;
 try

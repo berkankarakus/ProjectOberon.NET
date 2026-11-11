@@ -5,6 +5,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/ProjectOberon.Compiler/ProjectOberon.Compiler.csproj" />
     <ProjectReference Include="../../src/ProjectOberon.Emulator/ProjectOberon.Emulator.csproj" />
+    <ProjectReference Include="../../src/ProjectOberon.Rsc/ProjectOberon.Rsc.csproj" />
     <ProjectReference Include="../../src/ProjectOberon.Cli/ProjectOberon.Cli.csproj" />
     <ProjectReference Include="../../src/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj" />
     <ProjectReference Include="../../src/ProjectOberon.RscCli/ProjectOberon.RscCli.csproj" />

@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 
-namespace ProjectOberon.Emulator;
+namespace ProjectOberon.Rsc;
 
 public static class RscModuleWriter
 {

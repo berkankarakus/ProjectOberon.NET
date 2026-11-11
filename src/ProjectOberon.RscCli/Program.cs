@@ -1,4 +1,5 @@
 using ProjectOberon.Emulator;
+using ProjectOberon.Rsc;
 
 var options = RscOptions.Parse(args);
 if (options.Help)

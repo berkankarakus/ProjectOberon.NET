@@ -1,4 +1,4 @@
-namespace ProjectOberon.Emulator;
+namespace ProjectOberon.Rsc;
 
 public static class RscModuleReader
 {
