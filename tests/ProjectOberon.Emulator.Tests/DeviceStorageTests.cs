@@ -11,10 +11,17 @@ internal static partial class DeviceTests
             using (var disk = new DiskImage())
             {
                 disk.Open(path);
+                var reads = 0;
+                disk.SectorRead += sectorNumber =>
+                {
+                    TestAssertions.Equal(1u, sectorNumber);
+                    reads++;
+                };
                 var sector = new byte[DiskImage.SectorSize];
                 sector[0] = 0xa5;
                 disk.Write(1, sector);
                 TestAssertions.Equal(0xa5, disk.Read(1)[0]);
+                TestAssertions.Equal(1, reads);
             }
             using (var readOnly = new DiskImage())
             {
