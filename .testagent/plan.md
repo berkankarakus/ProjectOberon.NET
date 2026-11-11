@@ -10,3 +10,4 @@
 | Minimal compiler RSC output is round-trippable | Build `RscModule` from compiler output and parse the writer result | `OberonCompilerRscTests.EmitsMinimalRscModule` |
 | Imports and exported commands survive compilation | Map imports and top-level exported procedure labels to RSC metadata | `OberonCompilerRscTests.EmitsImportsAndExportedCommands` |
 | Compiler output is accepted by the runtime loader | Materialize generated RSC and resolve an exported command address | `OberonCompilerRscTests.LoadsCompilerProducedRsc` |
+| RSC code offsets are safe | Reject unaligned and out-of-range command/body offsets before writing | `RscModuleTests.RejectsInvalidCodeOffsets` |

@@ -13,5 +13,6 @@ internal static partial class RscModuleTests
         WritesRoundTripModule();
         RejectsMismatchedCodeCount();
         RejectsMismatchedPayloadCount();
+        RejectsInvalidCodeOffsets();
     }
 }

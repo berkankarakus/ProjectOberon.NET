@@ -47,4 +47,15 @@ internal static partial class RscModuleTests
         var module = new RscModule("Demo", 1, 1, 0, [], 1, 0, 0, 0, [], [], [], [], 0, 0, 0, 0, (byte)'O');
         TestAssertions.ThrowsInvalidData(() => RscModuleWriter.Write(module));
     }
+
+    private static void RejectsInvalidCodeOffsets()
+    {
+        var command = new RscModule(
+            "Demo", 1, 1, 0, [], 0, 0, 0, 1, [0], [new RscCommand("Start", 4)], [], [], 0, 0, 0, 0, (byte)'O');
+        var body = new RscModule(
+            "Demo", 1, 1, 0, [], 0, 0, 0, 1, [0], [], [], [], 0, 0, 0, 2, (byte)'O');
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleWriter.Write(command));
+        TestAssertions.ThrowsInvalidData(() => RscModuleWriter.Write(body));
+    }
 }

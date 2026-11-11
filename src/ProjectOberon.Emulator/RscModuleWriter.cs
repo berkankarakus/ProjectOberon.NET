@@ -92,6 +92,12 @@ public static class RscModuleWriter
             throw new InvalidDataException("RSC code word count does not match its code");
         }
 
+        var codeBytes = checked(module.CodeWords * sizeof(uint));
+        if (module.BodyOffset < 0 || module.BodyOffset > codeBytes || module.BodyOffset % sizeof(uint) != 0)
+        {
+            throw new InvalidDataException($"invalid RSC body offset: {module.BodyOffset}");
+        }
+
         if (module.Trailer != Trailer)
         {
             throw new InvalidDataException($"invalid RSC trailer: 0x{module.Trailer:x2}");
@@ -105,6 +111,10 @@ public static class RscModuleWriter
         foreach (var command in module.Commands)
         {
             ValidateString(command.Name, "RSC command name", allowEmpty: false);
+            if (command.CodeOffset < 0 || command.CodeOffset >= codeBytes || command.CodeOffset % sizeof(uint) != 0)
+            {
+                throw new InvalidDataException($"invalid RSC command offset: {command.Name}={command.CodeOffset}");
+            }
         }
     }
 
