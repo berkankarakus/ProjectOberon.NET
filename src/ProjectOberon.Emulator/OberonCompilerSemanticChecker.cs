@@ -227,6 +227,18 @@ public sealed class OberonCompilerSemanticChecker
     {
         var leftType = CheckExpression(binary.Left);
         var rightType = CheckExpression(binary.Right);
+        if (binary.Operator == OberonCompilerTokenKind.Is)
+        {
+            if (leftType?.Form != OberonCompilerTypeForm.Pointer
+                || rightType?.Form != OberonCompilerTypeForm.Record)
+            {
+                AddDiagnostic("IS requires a POINTER and a RECORD type");
+            }
+
+            AddDiagnostic("IS expressions are not supported by the compiler yet");
+            return _booleanType;
+        }
+
         if (binary.Operator == OberonCompilerTokenKind.In)
         {
             if (leftType?.Form is not (OberonCompilerTypeForm.Byte

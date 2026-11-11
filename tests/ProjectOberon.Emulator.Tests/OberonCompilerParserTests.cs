@@ -14,6 +14,7 @@ internal static class OberonCompilerParserTests
         ParsesCaseStatements();
         ParsesCaseLabelRanges();
         ParsesSetMembership();
+        ReportsUnsupportedTypeTests();
         ParsesSetLiteral();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
@@ -351,6 +352,16 @@ internal static class OberonCompilerParserTests
         var literal = (OberonCompilerIntegerLiteralExpression)assignment.Value;
         TestAssertions.Equal(unchecked((int)0x8000_001d), checked((int)literal.Value));
         TestAssertions.Equal(OberonCompilerTypeForm.Set, literal.Type.Form);
+    }
+
+    private static void ReportsUnsupportedTypeTests()
+    {
+        const string source = "MODULE Types; TYPE Node = RECORD value: INTEGER; END; Ref = POINTER TO Node; VAR node: Ref; BEGIN IF node IS Node THEN END; END Types.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("IS expressions", StringComparison.Ordinal)));
     }
 
     private static void ParsesControlFlowStatements()

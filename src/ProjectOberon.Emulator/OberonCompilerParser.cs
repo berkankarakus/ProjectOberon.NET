@@ -1073,7 +1073,7 @@ public sealed class OberonCompilerParser
         OberonCompilerTokenKind.Equal or OberonCompilerTokenKind.NotEqual or
         OberonCompilerTokenKind.Less or OberonCompilerTokenKind.LessOrEqual or
         OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual or
-        OberonCompilerTokenKind.In;
+        OberonCompilerTokenKind.In or OberonCompilerTokenKind.Is;
 
     private ConstantValue InvalidConstant()
     {
