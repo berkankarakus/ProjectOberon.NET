@@ -20,6 +20,7 @@ var tests = new (string Name, Action Test)[]
     ("machine timer", DeviceTests.MachineTimer),
     ("host call dispatcher", HostCallTests.DispatchesRegisteredHostCalls),
     ("external host binding", HostCallTests.BindsExternalEntryHandlers),
+    ("host call argument validation", HostCallTests.ValidatesHostCallContextArguments),
     ("Kernel host binding", KernelHostBindingTests.DispatchesClockAndSectorMapServices),
     ("Kernel install host binding", KernelHostBindingTests.DispatchesInstallService),
     ("Kernel heap host binding", KernelHostBindingTests.DispatchesHeapAllocationService),

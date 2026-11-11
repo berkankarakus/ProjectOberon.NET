@@ -51,4 +51,19 @@ internal static class HostCallTests
         var invalidBinding = binding with { HostCallOffsets = [2] };
         TestAssertions.Throws<ArgumentException>(() => runtime.BindExternal(invalidBinding, dispatcher));
     }
+
+    public static void ValidatesHostCallContextArguments()
+    {
+        using var machine = new Machine();
+        machine.HostCalls.Register(0x100, context =>
+        {
+            TestAssertions.Throws<ArgumentOutOfRangeException>(() => context.Argument(-1));
+            TestAssertions.Throws<ArgumentOutOfRangeException>(() => context.Argument(16));
+            context.Return();
+        });
+        machine.Cpu.SetRegister(15, 0x200);
+        machine.Cpu.SetProgramCounter(0x100);
+
+        machine.Step();
+    }
 }

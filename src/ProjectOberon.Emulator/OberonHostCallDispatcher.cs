@@ -14,6 +14,12 @@ public sealed class OberonHostCallContext
 
     public uint Argument(int register)
     {
+        if (register is < 0 or > 15)
+        {
+            throw new ArgumentOutOfRangeException(nameof(register),
+                "host-call arguments must use a RISC5 register from r0 to r15");
+        }
+
         return Cpu.Register(register);
     }
 
