@@ -28,6 +28,7 @@ internal static class OberonCompilerParserTests
         ReportsCallTypeErrors();
         ReportsReturnTypeErrors();
         ReportsConditionTypeErrors();
+        ReportsModuleNameErrors();
     }
 
     private static void ParsesModuleDeclarations()
@@ -146,6 +147,15 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Any(diagnostic =>
             diagnostic.Message.Contains("IF condition must be BOOLEAN", StringComparison.Ordinal)));
+    }
+
+    private static void ReportsModuleNameErrors()
+    {
+        var result = new OberonCompilerParser("MODULE Demo; END Other.").ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("module name", StringComparison.OrdinalIgnoreCase)));
     }
 
     private static void ParsesProcedureDeclarations()
