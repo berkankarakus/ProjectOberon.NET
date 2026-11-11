@@ -52,9 +52,9 @@ internal static class OberonCompilerRscTests
         var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
 
         TestAssertions.Equal(8, module.VariableBytes);
-        TestAssertions.Equal(6, module.StringBytes);
+        TestAssertions.Equal(8, module.StringBytes);
         TestAssertions.True(module.StringPayload.SequenceEqual(
-            new byte[] { (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o', 0 }));
+            new byte[] { (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o', 0, 0, 0 }));
 
         var parsed = RscModuleReader.Parse(RscModuleWriter.Write(module));
         TestAssertions.True(module.StringPayload.SequenceEqual(parsed.StringPayload));

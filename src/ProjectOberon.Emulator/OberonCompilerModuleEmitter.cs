@@ -85,7 +85,9 @@ public sealed class OberonCompilerModuleEmitter
             .Where(symbol => symbol.Class == OberonCompilerObjectClass.Module)
             .Select(symbol => new RscImport(symbol.OriginalName ?? symbol.Name, symbol.Key))
             .ToArray();
-        var stringPayload = _moduleData.Skip(_variableBytes).ToArray();
+        var stringBytes = Align(_moduleData.Count - _variableBytes, 4);
+        EnsureModuleData(_variableBytes + stringBytes);
+        var stringPayload = _moduleData.Skip(_variableBytes).Take(stringBytes).ToArray();
         return new RscModule(
             module.ModuleName ?? throw new InvalidOperationException("module name is missing"),
             0,
@@ -94,7 +96,7 @@ public sealed class OberonCompilerModuleEmitter
             imports,
             0,
             _variableBytes,
-            stringPayload.Length,
+            stringBytes,
             code.Count,
             code,
             _commands,
