@@ -9,6 +9,7 @@ internal static class OberonCompilerRscTests
         EmitsImportsAndExportedCommands();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
+        ExecutesCompilerProducedStringBody();
         RejectsUnsupportedMinimalRscTypes();
     }
 
@@ -106,5 +107,38 @@ internal static class OberonCompilerRscTests
 
         TestAssertions.Throws<NotSupportedException>(() =>
             new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
+    }
+
+    private static void ExecutesCompilerProducedStringBody()
+    {
+        const string source = "MODULE Strings; VAR text: ARRAY 6 OF CHAR; BEGIN text := \"hello\"; END Strings.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == "Strings" ? bytes : null);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+        var image = runtime.Start("Strings");
+
+        for (var step = 0; step < 64; step++)
+        {
+            if (memory.Read8(image.DataAddress) == 'h'
+                && memory.Read8(image.DataAddress + 1) == 'e'
+                && memory.Read8(image.DataAddress + 2) == 'l'
+                && memory.Read8(image.DataAddress + 3) == 'l'
+                && memory.Read8(image.DataAddress + 4) == 'o'
+                && memory.Read8(image.DataAddress + 5) == 0)
+            {
+                break;
+            }
+
+            cpu.Step();
+        }
+
+        var text = Enumerable.Range(0, 6)
+            .Select(offset => (char)memory.Read8(image.DataAddress + (uint)offset))
+            .ToArray();
+        TestAssertions.Equal("hello\0", new string(text));
     }
 }
