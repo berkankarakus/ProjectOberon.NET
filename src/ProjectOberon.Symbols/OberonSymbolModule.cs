@@ -9,6 +9,7 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     // Hand-built symbols historically treated class 1 exports as procedures.
     // The reader overrides this for constants, whose type is not a procedure.
     public bool? IsProcedure { get; init; }
+    public int ParameterCount { get; init; }
 }
 
 public sealed record OberonSymbolModule(
@@ -44,11 +45,12 @@ public static class OberonSymbolModuleReader
             }
 
             var exportName = reader.ReadString();
-            var isProcedure = SkipType(ref reader);
+            var typeInfo = SkipType(ref reader);
             var value = symbolClass is 1 or 2 ? reader.ReadNum() : 0;
             exports.Add(new OberonSymbolExport(exportName, symbolClass, value)
             {
-                IsProcedure = isProcedure
+                IsProcedure = typeInfo.IsProcedure,
+                ParameterCount = typeInfo.ParameterCount
             });
 
             if (symbolClass == 5)
@@ -61,16 +63,17 @@ public static class OberonSymbolModuleReader
         return new OberonSymbolModule(name, key, version, exports);
     }
 
-    private static bool SkipType(ref SymbolReader reader)
+    private static SymbolTypeInfo SkipType(ref SymbolReader reader)
     {
         var reference = reader.ReadSignedByte();
         if (reference < 0)
         {
-            return false;
+            return new SymbolTypeInfo(false, 0);
         }
 
         var form = reader.ReadSignedByte();
         var isProcedure = form == 10;
+        var parameterCount = 0;
         switch (form)
         {
             case 7:
@@ -90,7 +93,7 @@ public static class OberonSymbolModuleReader
                 break;
             case 10:
                 SkipType(ref reader);
-                SkipProcedureParameters(ref reader);
+                parameterCount = SkipProcedureParameters(ref reader);
                 break;
             case 1:
             case 2:
@@ -113,7 +116,7 @@ public static class OberonSymbolModuleReader
             reader.ReadString();
         }
 
-        return isProcedure;
+        return new SymbolTypeInfo(isProcedure, parameterCount);
     }
 
     private static void SkipRecordFields(ref SymbolReader reader)
@@ -136,18 +139,20 @@ public static class OberonSymbolModuleReader
         }
     }
 
-    private static void SkipProcedureParameters(ref SymbolReader reader)
+    private static int SkipProcedureParameters(ref SymbolReader reader)
     {
+        var count = 0;
         while (true)
         {
             var parameterClass = reader.ReadSignedByte();
             if (parameterClass == 0)
             {
-                return;
+                return count;
             }
 
             reader.ReadSignedByte();
             SkipType(ref reader);
+            count++;
         }
     }
 
@@ -165,6 +170,8 @@ public static class OberonSymbolModuleReader
             throw new InvalidDataException("SMB module name must be between 1 and 31 characters");
         }
     }
+
+    private readonly record struct SymbolTypeInfo(bool IsProcedure, int ParameterCount);
 
     private ref struct SymbolReader
     {

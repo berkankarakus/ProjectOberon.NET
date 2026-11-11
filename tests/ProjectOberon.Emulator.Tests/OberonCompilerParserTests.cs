@@ -371,7 +371,7 @@ internal static class OberonCompilerParserTests
             "IO",
             0x1234,
             1,
-            [new OberonSymbolExport("Run", 1, 7) { IsProcedure = true }]);
+            [new OberonSymbolExport("Run", 1, 7) { IsProcedure = true, ParameterCount = 0 }]);
         var result = new OberonCompilerParser(
             "MODULE Demo; IMPORT IO; BEGIN IO.Run; END Demo.",
             importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })

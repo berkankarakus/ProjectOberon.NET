@@ -295,7 +295,10 @@ public sealed class OberonCompilerSymbols
         {
             var procedure = new OberonCompilerObject(export.Name, OberonCompilerObjectClass.Procedure)
             {
-                Type = CreateProcedure(NoneType, []),
+                Type = CreateProcedure(
+                    NoneType,
+                    Enumerable.Range(0, export.ParameterCount)
+                        .Select(index => DeclareImportedParameter(export.Name, index))),
                 Value = export.Value,
                 ReadOnly = true,
                 OriginalName = export.Name,
@@ -305,6 +308,16 @@ public sealed class OberonCompilerSymbols
         }
 
         return imported;
+    }
+
+    private OberonCompilerObject DeclareImportedParameter(string procedureName, int index)
+    {
+        return new OberonCompilerObject($"arg{index}", OberonCompilerObjectClass.Parameter)
+        {
+            Type = IntegerType,
+            ReadOnly = true,
+            OriginalName = procedureName
+        };
     }
 
     public OberonCompilerScope OpenScope()
