@@ -12,6 +12,8 @@ internal static class InputMappingTests
     private static void MapsLettersAndSpecialKeys()
     {
         TestAssertions.Equal(new KeyboardKey(0x1c, false), InputMapping.KeyboardKey('a'));
+        TestAssertions.Equal(new KeyboardKey(0x1a, false), InputMapping.KeyboardKey('z'));
+        TestAssertions.Equal(new KeyboardKey(0x16, false), InputMapping.KeyboardKey('1'));
         TestAssertions.Equal(new KeyboardKey(0x29, false), InputMapping.KeyboardKey(' '));
         TestAssertions.Equal(new KeyboardKey(0x75, true), InputMapping.KeyboardKey(0x40000052));
         TestAssertions.True(InputMapping.KeyboardKey('A') is null);
