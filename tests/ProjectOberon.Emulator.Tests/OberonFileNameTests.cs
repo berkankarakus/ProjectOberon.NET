@@ -18,7 +18,10 @@ internal static class OberonFileNameTests
 
     private static void RejectsInvalidNamesConsistently()
     {
-        foreach (var name in new[] { "", ".Mod", "A/B", "A B", new string('x', 32) })
+        foreach (var name in new[]
+        {
+            "", ".Mod", "1Module", "A/B", "A B", "A\nB", "Módulo", new string('x', 32)
+        })
         {
             TestAssertions.Throws<ArgumentException>(() => OberonFiles.ValidateName(name));
         }
