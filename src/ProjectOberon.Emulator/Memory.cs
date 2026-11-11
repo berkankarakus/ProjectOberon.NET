@@ -23,7 +23,11 @@ public sealed class Memory : IMemoryBus
 
     public Memory(int ramBytes = 1 << 20)
     {
-        if (ramBytes <= 0) throw new ArgumentOutOfRangeException(nameof(ramBytes));
+        if (ramBytes <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ramBytes));
+        }
+
         _ram = new byte[ramBytes];
     }
 
@@ -47,8 +51,15 @@ public sealed class Memory : IMemoryBus
     public uint Read32(uint address)
     {
         address &= MemoryMap.AddressMask;
-        if (_devices.Handles(address)) return _devices.Read(address & ~3u);
-        if (IsRom(address)) return _rom[(int)((address >> 2) & (MemoryMap.RomWords - 1))];
+        if (_devices.Handles(address))
+        {
+            return _devices.Read(address & ~3u);
+        }
+
+        if (IsRom(address))
+        {
+            return _rom[(int)((address >> 2) & (MemoryMap.RomWords - 1))];
+        }
 
         return (uint)(Read8(address)
             | ((uint)Read8(address + 1) << 8)
@@ -73,14 +84,20 @@ public sealed class Memory : IMemoryBus
             _devices.Write(aligned, (old & ~(0xffu << shift)) | ((uint)value << shift));
             return;
         }
-        if (!IsRom(address)) _ram[RamIndex(address)] = value;
+        if (!IsRom(address))
+        {
+            _ram[RamIndex(address)] = value;
+        }
     }
 
     public void Write32(uint address, uint value)
     {
         address &= MemoryMap.AddressMask;
         if (_devices.Handles(address)) { _devices.Write(address & ~3u, value); return; }
-        if (IsRom(address)) return;
+        if (IsRom(address))
+        {
+            return;
+        }
         Write8(address, (byte)value);
         Write8(address + 1, (byte)(value >> 8));
         Write8(address + 2, (byte)(value >> 16));
@@ -110,8 +127,15 @@ public sealed class Memory : IMemoryBus
             if (index >= MemoryMap.RomWords) throw new InvalidDataException($"ROM file contains more than {MemoryMap.RomWords} words: {path}");
             var line = originalLine;
             var comment = line.IndexOfAny(['#', ';']);
-            if (comment >= 0) line = line[..comment];
-            if (string.IsNullOrWhiteSpace(line)) continue;
+            if (comment >= 0)
+            {
+                line = line[..comment];
+            }
+
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
             if (!uint.TryParse(line.Trim(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var word))
                 throw new InvalidDataException($"Invalid ROM word at line {index + 1}: {path}");
             _rom[index++] = word;
