@@ -69,6 +69,9 @@ internal static partial class DeviceTests
         TestAssertions.Equal(0, kernel.AllocatedSectors);
         TestAssertions.Equal(0x80000u, OberonKernel.PhysicalSector(0));
         TestAssertions.Equal(0x80002u, OberonKernel.PhysicalSector(29));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => kernel.MarkSector(-29));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => kernel.MarkSector(1));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => kernel.MarkSector(OberonKernel.MapSize * 29));
         TestAssertions.Equal(64 * 29, kernel.AllocSector(0));
         TestAssertions.Equal(1, kernel.AllocatedSectors);
         kernel.MarkSector(100 * 29);
