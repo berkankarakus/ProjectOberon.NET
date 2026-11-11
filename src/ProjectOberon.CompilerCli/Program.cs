@@ -111,7 +111,12 @@ internal sealed record CompilerOptions(
                         throw new ArgumentException($"unknown option: {args[index]}");
                     }
 
-                    source ??= args[index];
+                    if (source is not null)
+                    {
+                        throw new ArgumentException("source file specified more than once");
+                    }
+
+                    source = args[index];
                     break;
             }
         }

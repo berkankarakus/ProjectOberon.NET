@@ -39,3 +39,4 @@
 | External module entry offsets are aligned | Reject host bindings that would create unaligned code targets | `OberonModuleTests.SymbolBinding` |
 | Host-call registration validates before mutation | Reject unaligned host offsets before binding or dispatcher registration | `HostCallTests.BindsExternalEntryHandlers` |
 | Compiler outputs cannot overwrite each other | Reject equivalent SMB/RSC output paths during option parsing | `CompilerCliOptionTests.RejectsSharedOutputPath` |
+| Compiler CLI accepts one source only | Reject ambiguous positional and `--source` combinations | `CompilerCliOptionTests.RejectsMultipleSourcePaths` |

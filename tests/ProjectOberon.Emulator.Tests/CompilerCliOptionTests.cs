@@ -6,6 +6,7 @@ internal static class CompilerCliOptionTests
         RejectsMissingOutputValue();
         RejectsUnknownOption();
         RejectsSharedOutputPath();
+        RejectsMultipleSourcePaths();
     }
 
     private static void ParsesOutputOptions()
@@ -34,5 +35,12 @@ internal static class CompilerCliOptionTests
     {
         TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse([
             "Demo.Mod", "--symbols", "out/Demo.bin", "--rsc", "out/./Demo.bin"]));
+    }
+
+    private static void RejectsMultipleSourcePaths()
+    {
+        TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse(["First.Mod", "Second.Mod"]));
+        TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse([
+            "--source", "First.Mod", "Second.Mod"]));
     }
 }
