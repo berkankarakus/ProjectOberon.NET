@@ -8,6 +8,7 @@ internal static class OberonFontTests
         ParsesFontRunsAndGlyphs();
         RendersGlyphsToDisplayMemory();
         RejectsTruncatedFonts();
+        RejectsInvalidGlyphRanges();
     }
 
     private static void ParsesFontRunsAndGlyphs()
@@ -40,6 +41,14 @@ internal static class OberonFontTests
     private static void RejectsTruncatedFonts()
     {
         TestAssertions.ThrowsInvalidData(() => OberonFont.Parse([0xdb, 0, 0]));
+    }
+
+    private static void RejectsInvalidGlyphRanges()
+    {
+        var data = BuildFont();
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(18, 2), 129);
+
+        TestAssertions.ThrowsInvalidData(() => OberonFont.Parse(data));
     }
 
     private static byte[] BuildFont()
