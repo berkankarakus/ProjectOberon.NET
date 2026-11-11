@@ -104,4 +104,12 @@ internal static partial class RscModuleTests
 
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
     }
+
+    private static void RejectsTrailingBytes()
+    {
+        var data = BuildRsc("Demo", 1, [], "Start");
+        Array.Resize(ref data, data.Length + 1);
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
+    }
 }

@@ -23,3 +23,4 @@
 | Runtime exposes the active module data base | Initialize r13 alongside the module table and stack registers | `OberonModuleTests.MemoryImage` |
 | RSC pointer tables stay inside module data | Reject negative, unaligned and out-of-range pointer slots | `RscModuleTests.RejectsInvalidPointerReferences` |
 | RSC names remain ASCII | Reject non-ASCII bytes instead of silently replacing them | `RscModuleTests.RejectsNonAsciiStrings` |
+| RSC files end at their trailer | Reject appended bytes that are not part of the encoded module | `RscModuleTests.RejectsTrailingBytes` |

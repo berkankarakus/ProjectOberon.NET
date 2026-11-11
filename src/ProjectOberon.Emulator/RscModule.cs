@@ -116,6 +116,7 @@ public static class RscModuleReader
         {
             throw new InvalidDataException($"invalid RSC trailer: 0x{trailer:x2}");
         }
+        reader.EnsureEnd();
 
         RscModuleValidation.ValidateUniqueNames(imports, import => import.Name, "import");
         RscModuleValidation.ValidateUniqueNames(commands, command => command.Name, "command");
@@ -229,6 +230,14 @@ public static class RscModuleReader
         {
             var aligned = (_position + alignment - 1) / alignment * alignment;
             Skip(aligned - _position);
+        }
+
+        public void EnsureEnd()
+        {
+            if (_position != _data.Length)
+            {
+                throw new InvalidDataException("unexpected trailing bytes in RSC module");
+            }
         }
 
         private void Ensure(int count)
