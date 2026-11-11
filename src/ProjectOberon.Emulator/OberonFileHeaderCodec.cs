@@ -57,6 +57,11 @@ public static class OberonFileHeaderCodec
                 }
 
                 var extension = readSector(header.ExtensionAddresses[extensionIndex]);
+                if (extension.Length < OberonDiskLayout.SectorLength)
+                {
+                    throw new InvalidDataException("Oberon file header extension page is too small");
+                }
+
                 pages[index] = ReadInt32(extension, entry * 4);
             }
 
