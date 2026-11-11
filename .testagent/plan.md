@@ -72,3 +72,7 @@
 | Module loader failures rollback cleanly | Report missing/invalid modules without leaving loaded state behind | `OberonModuleTests.LoaderGraph` |
 | RSC writer validates encoded text | Reject non-ASCII, NUL-containing names, and invalid trailers before serialization | `RscModuleTests.RejectsInvalidNamesAndTrailer` |
 | Core memory control flow stays readable | Keep Memory guards explicit while preserving ROM/RAM/MMIO behavior | `MemoryTests`, solution build |
+| Directory names do not lose data during serialization | Reject oversized, NUL-containing and non-Latin-1 directory names | `OberonDiskFormatTests.RejectsInvalidDirectoryPageShape` |
+| File page tables remain bounded | Reject allocated-page counts beyond the header extension table | `OberonDiskFormatTests.RejectsMissingFilePages` |
+| Boot names remain representable | Reject non-ASCII and overlong module names before writing the boot buffer | `OberonBootSessionTests.InitializesAndStartsModule` |
+| Input coordinates have valid dimensions | Reject non-positive source extents and output maxima | `InputMappingTests.ScalesAndClampsCoordinates` |
