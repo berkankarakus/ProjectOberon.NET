@@ -34,3 +34,9 @@
 with 0 warnings and 0 errors.
 
 `dotnet run --project tests/ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj --no-restore --disable-build-servers -- --skip-disk-tests` passed all tests.
+
+The repository-wide static pairing scan completed with 154 source files, 99
+test files, 94 direct pairings, and 60 conservative unpaired reports. The
+reported compiler/Symbols false negatives are caused by shared global usings;
+the corresponding test suites already exist and were reviewed. No duplicate
+test files were added based on this heuristic result.

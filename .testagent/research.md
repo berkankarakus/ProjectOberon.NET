@@ -36,3 +36,26 @@ project-reference declarations.
 The compiler emitter now exposes a minimal RSC artifact: code, variable/string
 data, imports, exported top-level procedure commands, and body offset. Type
 descriptor and pointer-fixup generation are intentionally not claimed yet.
+
+## Repository-wide pairing scan
+
+The static `Find-UntestedSources` scan was rerun after the refactor batch:
+
+- 154 production C# files and 99 test files were discovered.
+- 94 production files were paired directly and 60 were reported as unpaired.
+- The unpaired list is conservative rather than a coverage measurement. The
+  test project centralizes compiler, RSC, and Symbols namespaces in
+  `CompilerGlobalUsings.cs`, while the scanner only considers `using` directives
+  inside each individual test file. Consequently, existing suites such as
+  `OberonCompilerSymbolsTests`, `OberonCompilerScannerTests`,
+  `OberonCompilerSymbolFileTests`, and `SymbolModuleTests` appear in the
+  unpaired list even though they exercise the corresponding source types.
+- The scan was used as a review aid, not as an instruction to add duplicate
+  test files. Existing test suites were checked for the highest-declaration
+  candidates, and no new untested production surface was identified from this
+  report alone.
+
+Architecture tests and the executable test runner remain the authoritative
+verification for this repository because they compile against the actual
+project references and execute behavior rather than inferring pairing from
+syntax alone.
