@@ -13,6 +13,7 @@ internal static class CompilerCliOptionTests
         RejectsInvalidImportName();
         RejectsImportAliasMismatch();
         LoadsMatchingImport();
+        RejectsBlankImportPath();
     }
 
     private static void ParsesOutputOptions()
@@ -109,5 +110,11 @@ internal static class CompilerCliOptionTests
         {
             File.Delete(path);
         }
+    }
+
+    private static void RejectsBlankImportPath()
+    {
+        TestAssertions.Throws<ArgumentException>(() => CompilerImportLoader.Load([
+            new CompilerImport("Files", " ")]));
     }
 }

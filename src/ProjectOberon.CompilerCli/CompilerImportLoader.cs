@@ -10,6 +10,10 @@ internal static class CompilerImportLoader
         var modules = new Dictionary<string, OberonSymbolModule>(StringComparer.Ordinal);
         foreach (var import in imports)
         {
+            ArgumentNullException.ThrowIfNull(import);
+            ArgumentException.ThrowIfNullOrWhiteSpace(import.Name);
+            ArgumentException.ThrowIfNullOrWhiteSpace(import.Path);
+
             var module = OberonSymbolModuleReader.Parse(File.ReadAllBytes(import.Path));
             if (!string.Equals(import.Name, module.Name, StringComparison.Ordinal))
             {
