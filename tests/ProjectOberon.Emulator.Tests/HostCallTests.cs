@@ -47,5 +47,8 @@ internal static class HostCallTests
         runtime.BindExternal(binding, dispatcher);
         TestAssertions.False(called);
         TestAssertions.True(dispatcher.Addresses.Contains(0x4020u));
+
+        var invalidBinding = binding with { HostCallOffsets = [2] };
+        TestAssertions.Throws<ArgumentException>(() => runtime.BindExternal(invalidBinding, dispatcher));
     }
 }

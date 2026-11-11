@@ -31,7 +31,6 @@ public sealed class OberonModuleRuntime
         OberonHostCallDispatcher dispatcher)
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
-        BindExternal(binding);
         var handlerOffsets = binding.HostCallOffsets.Count == 0
             ? binding.EntryOffsets
             : binding.HostCallOffsets;
@@ -39,6 +38,9 @@ public sealed class OberonModuleRuntime
         {
             throw new ArgumentException("external handler count does not match host-call offsets", nameof(binding));
         }
+
+        ValidateWordAlignedOffsets(handlerOffsets, nameof(handlerOffsets));
+        BindExternal(binding);
 
         for (var index = 0; index < handlerOffsets.Count; index++)
         {
@@ -169,6 +171,17 @@ public sealed class OberonModuleRuntime
         {
             throw new ArgumentOutOfRangeException(nameof(stackPointer),
                 "stack pointer overlaps loaded Oberon modules");
+        }
+    }
+
+    private static void ValidateWordAlignedOffsets(IReadOnlyList<uint> offsets, string parameterName)
+    {
+        for (var index = 0; index < offsets.Count; index++)
+        {
+            if ((offsets[index] & 3) != 0)
+            {
+                throw new ArgumentException("host-call offsets must be word-aligned", parameterName);
+            }
         }
     }
 }
