@@ -119,6 +119,13 @@ public static class RscModuleReader
 
         RscModuleValidation.ValidateUniqueNames(imports, import => import.Name, "import");
         RscModuleValidation.ValidateUniqueNames(commands, command => command.Name, "command");
+        RscModuleValidation.ValidateEntryOffsets(codeWords, entries);
+        RscModuleValidation.ValidateFixupHeads(
+            codeWords,
+            typeDescriptorBytes,
+            fixupProgram,
+            fixupData,
+            fixupTypes);
         RscModuleValidation.ValidateCodeLayout(codeWords, commands, bodyOffset);
 
         return new RscModule(name, key, version, size, imports, typeDescriptorBytes, variableBytes, stringBytes,

@@ -9,10 +9,10 @@ internal static partial class RscModuleTests
             key: 42,
             imports: [("Kernel", 0x1234)],
             command: "Start",
-            typePayload: [1, 2, 3],
+            typePayload: [1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             variableBytes: 16,
             stringPayload: [(byte)'x', 0],
-            code: [0xc700_0010u, 0xc700_0020u],
+            code: [0xc700_0010u, 0xc700_0020u, 0],
             entries: [0, 4],
             pointerReferences: [8, 12],
             fixupProgram: 1,
@@ -28,7 +28,7 @@ internal static partial class RscModuleTests
         TestAssertions.Equal("Kernel", module.Imports[0].Name);
         TestAssertions.Equal(0x1234, module.Imports[0].Key);
         TestAssertions.Equal(16, module.VariableBytes);
-        TestAssertions.Equal(2, module.Code.Count);
+        TestAssertions.Equal(3, module.Code.Count);
         TestAssertions.Equal(0xc700_0020u, module.Code[1]);
         TestAssertions.Equal(1, module.Commands.Count);
         TestAssertions.Equal("Start", module.Commands[0].Name);
@@ -40,7 +40,7 @@ internal static partial class RscModuleTests
         TestAssertions.Equal(3, module.FixupTypes);
         TestAssertions.Equal(4, module.BodyOffset);
         TestAssertions.Equal((byte)'O', module.Trailer);
-        TestAssertions.Equal(3, module.TypeDescriptorPayload.Length);
+        TestAssertions.Equal(16, module.TypeDescriptorPayload.Length);
         TestAssertions.Equal(2, module.StringPayload.Length);
     }
 }

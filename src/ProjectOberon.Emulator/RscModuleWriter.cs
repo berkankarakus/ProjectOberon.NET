@@ -114,6 +114,13 @@ public static class RscModuleWriter
 
         RscModuleValidation.ValidateUniqueNames(module.Imports, import => import.Name, "import");
         RscModuleValidation.ValidateUniqueNames(module.Commands, command => command.Name, "command");
+        RscModuleValidation.ValidateEntryOffsets(module.CodeWords, module.Entries);
+        RscModuleValidation.ValidateFixupHeads(
+            module.CodeWords,
+            module.TypeDescriptorBytes,
+            module.FixupProgram,
+            module.FixupData,
+            module.FixupTypes);
         RscModuleValidation.ValidateCodeLayout(module.CodeWords, module.Commands, module.BodyOffset);
     }
 

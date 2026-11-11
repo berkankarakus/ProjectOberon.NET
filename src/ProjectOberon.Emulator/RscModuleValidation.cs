@@ -44,4 +44,41 @@ internal static class RscModuleValidation
             }
         }
     }
+
+    public static void ValidateEntryOffsets(int codeWords, IReadOnlyList<int> entries)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        var codeBytes = checked(codeWords * sizeof(uint));
+        foreach (var entry in entries)
+        {
+            if (entry < 0 || entry > codeBytes || entry % sizeof(uint) != 0)
+            {
+                throw new InvalidDataException($"invalid RSC entry offset: {entry}");
+            }
+        }
+    }
+
+    public static void ValidateFixupHeads(
+        int codeWords,
+        int typeDescriptorBytes,
+        int fixupProgram,
+        int fixupData,
+        int fixupTypes)
+    {
+        ValidateWordOffset(codeWords, fixupProgram, "program");
+        ValidateWordOffset(codeWords, fixupData, "data");
+
+        if (fixupTypes < 0 || (fixupTypes != 0 && fixupTypes * sizeof(uint) >= typeDescriptorBytes))
+        {
+            throw new InvalidDataException($"invalid RSC types fixup offset: {fixupTypes}");
+        }
+    }
+
+    private static void ValidateWordOffset(int wordCount, int offset, string name)
+    {
+        if (offset < 0 || (offset != 0 && offset >= wordCount))
+        {
+            throw new InvalidDataException($"invalid RSC {name} fixup offset: {offset}");
+        }
+    }
 }

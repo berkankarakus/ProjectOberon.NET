@@ -19,3 +19,4 @@
 | Runtime module failures expose their code | Include `OberonModuleLoadException.Code` in diagnostics | `RuntimeDiagnosticsTests.FormatsModuleLoadCode` |
 | Repeated compiler strings share one payload | Keep identical string literals from expanding module data | `OberonCompilerModuleEmitterTests.DeduplicatesRepeatedStringData` |
 | Compiler RSC preserves string data | Emit string bytes into the RSC string section and round-trip them | `OberonCompilerRscTests.EmitsStringPayload` |
+| RSC entry and fixup heads stay in bounds | Reject invalid code and type-section offsets before memory loading | `RscModuleTests.RejectsInvalidEntriesAndFixups` |

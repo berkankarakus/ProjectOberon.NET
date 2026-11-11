@@ -76,4 +76,15 @@ internal static partial class RscModuleTests
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(duplicateImports));
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(duplicateCommands));
     }
+
+    private static void RejectsInvalidEntriesAndFixups()
+    {
+        var invalidEntry = BuildRsc("Demo", 1, [], "Start", entries: [8]);
+        var invalidProgramFixup = BuildRsc("Demo", 1, [], "Start", fixupProgram: 1);
+        var invalidTypeFixup = BuildRsc("Demo", 1, [], "Start", typePayload: [0, 0, 0, 0], fixupTypes: 1);
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidEntry));
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidProgramFixup));
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidTypeFixup));
+    }
 }
