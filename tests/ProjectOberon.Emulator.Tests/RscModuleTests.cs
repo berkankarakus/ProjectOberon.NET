@@ -10,6 +10,7 @@ internal static partial class RscModuleTests
         RejectsNegativeCodeWordCount();
         RejectsNegativeEntryCount();
         RejectsInvalidTrailer();
+        RejectsInvalidCodeLayout();
         WritesRoundTripModule();
         RejectsMismatchedCodeCount();
         RejectsMismatchedPayloadCount();

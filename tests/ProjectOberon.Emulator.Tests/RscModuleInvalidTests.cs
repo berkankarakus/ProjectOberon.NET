@@ -52,4 +52,13 @@ internal static partial class RscModuleTests
 
         TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(data));
     }
+
+    private static void RejectsInvalidCodeLayout()
+    {
+        var invalidCommand = BuildRsc("Demo", 1, [], "Start", commandOffset: 4);
+        var invalidBody = BuildRsc("Demo", 1, [], "Start", bodyOffset: 2);
+
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidCommand));
+        TestAssertions.ThrowsInvalidData(() => RscModuleReader.Parse(invalidBody));
+    }
 }

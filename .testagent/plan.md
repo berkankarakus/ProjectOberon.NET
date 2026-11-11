@@ -13,3 +13,4 @@
 | RSC code offsets are safe | Reject unaligned and out-of-range command/body offsets before writing | `RscModuleTests.RejectsInvalidCodeOffsets` |
 | Minimal RSC limitation is explicit | Reject record/pointer descriptor data before producing an incomplete module | `OberonCompilerRscTests.RejectsUnsupportedMinimalRscTypes` |
 | Compiler CLI output options are stable | Parse SMB/RSC output options and reject invalid command lines | `CompilerCliOptionTests.ParsesOutputOptions`, `CompilerCliOptionTests.RejectsMissingOutputValue`, `CompilerCliOptionTests.RejectsUnknownOption` |
+| RSC reader rejects unsafe code layout | Validate command and body offsets when reading disk modules | `RscModuleTests.RejectsInvalidCodeLayout` |

@@ -7,6 +7,7 @@ internal static partial class RscModuleTests
         int key,
         (string Name, int Key)[] imports,
         string command,
+        int commandOffset = 0,
         byte[]? typePayload = null,
         int variableBytes = 0,
         byte[]? stringPayload = null,
@@ -52,7 +53,7 @@ internal static partial class RscModuleTests
         }
 
         AddString(data, command);
-        AddInt(data, 0);
+        AddInt(data, commandOffset);
         AddString(data, string.Empty);
         AddInt(data, entryCount ?? entries.Length);
         foreach (var entry in entries)
