@@ -93,7 +93,12 @@ public sealed class Memory : IMemoryBus
     public void Write32(uint address, uint value)
     {
         address &= MemoryMap.AddressMask;
-        if (_devices.Handles(address)) { _devices.Write(address & ~3u, value); return; }
+        if (_devices.Handles(address))
+        {
+            _devices.Write(address & ~3u, value);
+            return;
+        }
+
         if (IsRom(address))
         {
             return;
@@ -113,7 +118,13 @@ public sealed class Memory : IMemoryBus
 
     public void LoadRomWords(ReadOnlySpan<uint> words)
     {
-        if (words.Length != MemoryMap.RomWords) throw new ArgumentException($"ROM must contain exactly {MemoryMap.RomWords} words", nameof(words));
+        if (words.Length != MemoryMap.RomWords)
+        {
+            throw new ArgumentException(
+                $"ROM must contain exactly {MemoryMap.RomWords} words",
+                nameof(words));
+        }
+
         words.CopyTo(_rom);
     }
 
@@ -124,7 +135,11 @@ public sealed class Memory : IMemoryBus
         var index = 0;
         foreach (var originalLine in File.ReadLines(path))
         {
-            if (index >= MemoryMap.RomWords) throw new InvalidDataException($"ROM file contains more than {MemoryMap.RomWords} words: {path}");
+            if (index >= MemoryMap.RomWords)
+            {
+                throw new InvalidDataException(
+                    $"ROM file contains more than {MemoryMap.RomWords} words: {path}");
+            }
             var line = originalLine;
             var comment = line.IndexOfAny(['#', ';']);
             if (comment >= 0)
