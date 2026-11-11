@@ -9,6 +9,8 @@ internal static partial class OberonModuleTests
         var external = loader.RegisterExternal(symbol);
         TestAssertions.True(external.IsExternal);
         TestAssertions.Equal(0x1234_5678, external.Definition.Key);
+        TestAssertions.True(loader.TryGetExternalSymbol("Kernel.SMB", out var normalizedSymbol));
+        TestAssertions.Equal(symbol.Name, normalizedSymbol.Name);
         TestAssertions.False(loader.Free("Kernel"));
         var memoryLoader = new OberonModuleMemoryLoader(new Memory(), loader);
         TestAssertions.Throws<OberonModuleLoadException>(() => memoryLoader.Load("Kernel"));
