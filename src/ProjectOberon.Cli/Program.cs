@@ -12,8 +12,14 @@ try
     }
 
     machine = new Machine();
-    if (options.Rom is not null) machine.Memory.LoadRomFile(options.Rom);
-    if (options.Disk is not null) machine.OpenDisk(options.Disk, options.DiskWritable);
+    if (options.Rom is not null)
+    {
+        machine.Memory.LoadRomFile(options.Rom);
+    }
+    if (options.Disk is not null)
+    {
+        machine.OpenDisk(options.Disk, options.DiskWritable);
+    }
     if (options.StartModule is not null)
     {
         var boot = OberonBootSession.Create(machine);
@@ -40,7 +46,10 @@ try
     }
 
     var debugger = new MachineDebugger(machine);
-    if (options.Breakpoint is uint breakpoint) debugger.AddBreakpoint(breakpoint);
+    if (options.Breakpoint is uint breakpoint)
+    {
+        debugger.AddBreakpoint(breakpoint);
+    }
     var loadedModules = options.BootTrace || options.BootGraph ? AttachBootTrace(machine) : null;
     if (options.Trace is int traceSteps)
     {
@@ -51,12 +60,21 @@ try
                 var raw = machine.Memory.ReadInstruction(machine.Cpu.PcByte);
                 Console.WriteLine(MachineTraceFormatter.Format(index, machine.Cpu, raw));
             }
-            if (!debugger.Step()) break;
+            if (!debugger.Step())
+            {
+                break;
+            }
         }
     }
-    else debugger.Run(options.Steps);
+    else
+    {
+        debugger.Run(options.Steps);
+    }
 
-    if (debugger.IsAtBreakpoint) Console.Error.WriteLine($"breakpoint reached at pc=0x{machine.Cpu.PcByte:x6}");
+    if (debugger.IsAtBreakpoint)
+    {
+        Console.Error.WriteLine($"breakpoint reached at pc=0x{machine.Cpu.PcByte:x6}");
+    }
     if (loadedModules is not null)
     {
         machine.Disk!.SectorRead -= loadedModules.Handler;
@@ -102,7 +120,10 @@ static BootTraceState AttachBootTrace(Machine machine)
     var seen = new HashSet<string>(StringComparer.Ordinal);
     void Handler(uint sector)
     {
-        if (headers.TryGetValue(sector, out var name) && seen.Add(name)) modules.Add(new BootModuleEvent(name, machine.Cpu.Steps));
+        if (headers.TryGetValue(sector, out var name) && seen.Add(name))
+        {
+            modules.Add(new BootModuleEvent(name, machine.Cpu.Steps));
+        }
     }
     disk.SectorRead += Handler;
     return new BootTraceState(modules, entries, Handler);

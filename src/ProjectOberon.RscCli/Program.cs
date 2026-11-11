@@ -14,14 +14,20 @@ var fileSystem = new OberonFileSystem(disk);
 if (options.Disassemble)
 {
     var disassemblyEntry = fileSystem.Enumerate(options.ModuleName).SingleOrDefault(candidate => candidate.Name.Equals(options.ModuleName, StringComparison.Ordinal));
-    if (disassemblyEntry is null) throw new FileNotFoundException($"module not found in disk image: {options.ModuleName}");
+    if (disassemblyEntry is null)
+    {
+        throw new FileNotFoundException($"module not found in disk image: {options.ModuleName}");
+    }
     var disassemblyModule = RscModuleReader.Parse(fileSystem.ReadFile(disassemblyEntry));
     var sourcePath = OberonSourceLocator.FindModules(options.SourceRoot).TryGetValue(disassemblyModule.Name, out var located) ? located : null;
     var startOffset = disassemblyModule.BodyOffset;
     if (options.CommandName is not null)
     {
         var command = disassemblyModule.Commands.SingleOrDefault(candidate => candidate.Name.Equals(options.CommandName, StringComparison.Ordinal));
-        if (command is null) throw new InvalidOperationException($"command not found in {disassemblyModule.Name}: {options.CommandName}");
+        if (command is null)
+        {
+            throw new InvalidOperationException($"command not found in {disassemblyModule.Name}: {options.CommandName}");
+        }
         startOffset = command.CodeOffset;
         var sourceProcedure = sourcePath is null ? null : OberonSourceAnalysis.FindProcedures(System.IO.Path.Combine(options.SourceRoot, sourcePath)).FirstOrDefault(procedure => procedure.Name == options.CommandName);
         Console.WriteLine($"command: {options.CommandName}  code offset={startOffset}  source={(sourceProcedure is null ? "unknown" : $"{sourcePath}:{sourceProcedure.Line}")}");
@@ -61,7 +67,10 @@ if (options.SourceMap)
                 }
                 var exported = procedures.Where(procedure => procedure.Exported).Select(procedure => procedure.Name).ToHashSet(StringComparer.Ordinal);
                 var uncompiled = exported.Except(sourceModule.Commands.Select(command => command.Name), StringComparer.Ordinal).ToArray();
-                if (uncompiled.Length > 0) Console.WriteLine($"  exported procedures not in RSC command table: {string.Join(", ", uncompiled)}");
+                if (uncompiled.Length > 0)
+                {
+                    Console.WriteLine($"  exported procedures not in RSC command table: {string.Join(", ", uncompiled)}");
+                }
             }
         }
     }
@@ -77,11 +86,17 @@ if (options.Graph)
     Console.WriteLine("  rankdir=LR;");
     foreach (var parsed in modules.Values)
     {
-        if (parsed.Imports.Count == 0) Console.WriteLine($"  \"{parsed.Name}\";");
+        if (parsed.Imports.Count == 0)
+        {
+            Console.WriteLine($"  \"{parsed.Name}\";");
+        }
         foreach (var import in parsed.Imports)
         {
             var target = import.Name;
-            if (modules.ContainsKey(target)) Console.WriteLine($"  \"{parsed.Name}\" -> \"{target}\";");
+            if (modules.ContainsKey(target))
+            {
+                Console.WriteLine($"  \"{parsed.Name}\" -> \"{target}\";");
+            }
             else Console.WriteLine($"  \"{parsed.Name}\" -> \"{import.Name}\" [style=dashed];");
         }
     }
@@ -89,7 +104,10 @@ if (options.Graph)
     return;
 }
 var entry = fileSystem.Enumerate(options.ModuleName).SingleOrDefault(e => e.Name.Equals(options.ModuleName, StringComparison.Ordinal));
-if (entry is null) throw new FileNotFoundException($"module not found in disk image: {options.ModuleName}");
+if (entry is null)
+{
+    throw new FileNotFoundException($"module not found in disk image: {options.ModuleName}");
+}
 
 var module = RscModuleReader.Parse(fileSystem.ReadFile(entry));
 Console.WriteLine($"module: {module.Name}");

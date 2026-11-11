@@ -15,8 +15,14 @@ try
 
     using var log = UiLog.Open(options.LogPath);
     machine = new Machine();
-    if (options.Rom is not null) machine.Memory.LoadRomFile(options.Rom);
-    if (options.Disk is not null) machine.OpenDisk(options.Disk, options.DiskWritable);
+    if (options.Rom is not null)
+    {
+        machine.Memory.LoadRomFile(options.Rom);
+    }
+    if (options.Disk is not null)
+    {
+        machine.OpenDisk(options.Disk, options.DiskWritable);
+    }
     if (options.StartModule is not null)
     {
         var boot = OberonBootSession.Create(machine);
@@ -57,7 +63,10 @@ finally
 }
 static void Run(Machine machine, UiOptions options, UiLog log)
 {
-    if (SdlNative.SDL_Init(SdlNative.InitVideo) != 0) throw new InvalidOperationException(SdlNative.Error());
+    if (SdlNative.SDL_Init(SdlNative.InitVideo) != 0)
+    {
+        throw new InvalidOperationException(SdlNative.Error());
+    }
     SdlNative.SDL_ShowCursor(0);
     IntPtr window = IntPtr.Zero, renderer = IntPtr.Zero, texture = IntPtr.Zero;
     EditorSession? editor = null;
@@ -66,17 +75,32 @@ static void Run(Machine machine, UiOptions options, UiLog log)
         var width = Math.Max(1, (int)(Display.Width * options.Scale));
         var height = Math.Max(1, (int)(Display.Height * options.Scale));
         window = SdlNative.SDL_CreateWindow("Project Oberon", SdlNative.WindowPositionCentered, SdlNative.WindowPositionCentered, width, height, SdlNative.WindowResizable);
-        if (window == IntPtr.Zero) throw new InvalidOperationException(SdlNative.Error());
+        if (window == IntPtr.Zero)
+        {
+            throw new InvalidOperationException(SdlNative.Error());
+        }
         renderer = SdlNative.SDL_CreateRenderer(window, -1, SdlNative.RendererAccelerated | SdlNative.RendererPresentVsync);
-        if (renderer == IntPtr.Zero) renderer = SdlNative.SDL_CreateRenderer(window, -1, 0);
-        if (renderer == IntPtr.Zero) throw new InvalidOperationException(SdlNative.Error());
+        if (renderer == IntPtr.Zero)
+        {
+            renderer = SdlNative.SDL_CreateRenderer(window, -1, 0);
+        }
+        if (renderer == IntPtr.Zero)
+        {
+            throw new InvalidOperationException(SdlNative.Error());
+        }
         texture = SdlNative.SDL_CreateTexture(renderer, SdlNative.PixelFormatArgb8888, (int)SdlNative.TextureAccessStreaming, Display.Width, Display.Height);
-        if (texture == IntPtr.Zero) throw new InvalidOperationException(SdlNative.Error());
+        if (texture == IntPtr.Zero)
+        {
+            throw new InvalidOperationException(SdlNative.Error());
+        }
 
         var pixels = new uint[Display.Width * Display.Height];
         if (options.Editor is not null)
         {
-            if (options.Font is null) throw new ArgumentException("--editor requires --font FILE");
+            if (options.Font is null)
+            {
+                throw new ArgumentException("--editor requires --font FILE");
+            }
             editor = EditorSession.Load(options.Editor, options.Font);
         }
         SdlNative.SDL_StartTextInput();
@@ -102,8 +126,14 @@ static void Run(Machine machine, UiOptions options, UiLog log)
                     case SdlNative.TextInput:
                         var text = UiLogic.ReadTextInput(sdlEvent.Text);
                         log.Write($"text-input length={text.Length}");
-                        if (editor is null) UiLogic.EnqueueTextInput(machine.Memory, sdlEvent.Text);
-                        else editor.InsertText(text);
+                        if (editor is null)
+                        {
+                            UiLogic.EnqueueTextInput(machine.Memory, sdlEvent.Text);
+                        }
+                        else
+                        {
+                            editor.InsertText(text);
+                        }
                         break;
                     case SdlNative.WindowEvent when sdlEvent.Window.Event == SdlNative.WindowEventSizeChanged:
                         width = Math.Max(1, sdlEvent.Window.Data1);
@@ -131,12 +161,21 @@ static void Run(Machine machine, UiOptions options, UiLog log)
                         break;
                     case SdlNative.KeyDown:
                     case SdlNative.KeyUp:
-                        if (sdlEvent.Key.Repeat != 0) break;
+                        if (sdlEvent.Key.Repeat != 0)
+                        {
+                            break;
+                        }
                         var key = sdlEvent.Key.Keysym.Sym;
                         if (sdlEvent.Type == SdlNative.KeyDown && key == 27) running = false;
                         else if (sdlEvent.Type == SdlNative.KeyDown && key == 0x40000042) paused = !paused;
-                        else if (sdlEvent.Type == SdlNative.KeyDown && key == 0x40000043) machine.Step();
-                        else if (editor is not null && sdlEvent.Type == SdlNative.KeyDown) editor.HandleKey(key, sdlEvent.Key.Keysym.Mod);
+                        else if (sdlEvent.Type == SdlNative.KeyDown && key == 0x40000043)
+                        {
+                            machine.Step();
+                        }
+                        else if (editor is not null && sdlEvent.Type == SdlNative.KeyDown)
+                        {
+                            editor.HandleKey(key, sdlEvent.Key.Keysym.Mod);
+                        }
                         else
                         {
                             var pressed = sdlEvent.Type == SdlNative.KeyDown;
@@ -156,27 +195,45 @@ static void Run(Machine machine, UiOptions options, UiLog log)
                 lastLoggedMouseX = mouseX;
                 lastLoggedMouseY = mouseY;
             }
-            if (!paused) machine.Run(options.StepsPerFrame);
+            if (!paused)
+            {
+                machine.Run(options.StepsPerFrame);
+            }
             var uart = machine.Memory.TakeUartOutput();
             if (uart.Length != 0) uartOutput += uart;
             var litPixels = editor is null
                 ? UiLogic.UpdateFramebuffer(machine.Memory, pixels, options.FlipY)
                 : editor.Render(pixels, options.FlipY);
             SdlNative.SDL_SetWindowTitle(window, UiLogic.WindowTitle(machine, paused, uartOutput, litPixels));
-            if (SdlNative.SDL_UpdateTexture(texture, IntPtr.Zero, pixels, Display.Width * sizeof(uint)) != 0) throw new InvalidOperationException(SdlNative.Error());
+            if (SdlNative.SDL_UpdateTexture(texture, IntPtr.Zero, pixels, Display.Width * sizeof(uint)) != 0)
+            {
+                throw new InvalidOperationException(SdlNative.Error());
+            }
             SdlNative.SDL_RenderClear(renderer);
             SdlNative.SDL_RenderCopy(renderer, texture, IntPtr.Zero, IntPtr.Zero);
-            if (editor is not null) UiLogic.DrawHostCursor(renderer, cursorX, cursorY);
+            if (editor is not null)
+            {
+                UiLogic.DrawHostCursor(renderer, cursorX, cursorY);
+            }
             SdlNative.SDL_RenderPresent(renderer);
             SdlNative.SDL_Delay(1);
         }
     }
     finally
     {
-        if (texture != IntPtr.Zero) SdlNative.SDL_DestroyTexture(texture);
+        if (texture != IntPtr.Zero)
+        {
+            SdlNative.SDL_DestroyTexture(texture);
+        }
         SdlNative.SDL_StopTextInput();
-        if (renderer != IntPtr.Zero) SdlNative.SDL_DestroyRenderer(renderer);
-        if (window != IntPtr.Zero) SdlNative.SDL_DestroyWindow(window);
+        if (renderer != IntPtr.Zero)
+        {
+            SdlNative.SDL_DestroyRenderer(renderer);
+        }
+        if (window != IntPtr.Zero)
+        {
+            SdlNative.SDL_DestroyWindow(window);
+        }
         SdlNative.SDL_ShowCursor(1);
         SdlNative.SDL_Quit();
     }

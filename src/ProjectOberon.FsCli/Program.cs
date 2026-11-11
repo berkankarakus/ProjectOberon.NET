@@ -26,7 +26,10 @@ else if (options.Command == FsCommand.Cat)
 {
     var fileSystem = new OberonFileSystem(disk);
     var entry = fileSystem.Enumerate().SingleOrDefault(item => item.Name == options.Name);
-    if (entry is null) throw new FileNotFoundException($"Oberon file not found: {options.Name}");
+if (entry is null)
+{
+    throw new FileNotFoundException($"Oberon file not found: {options.Name}");
+}
     using var output = Console.OpenStandardOutput();
     output.Write(fileSystem.ReadFile(entry));
 }

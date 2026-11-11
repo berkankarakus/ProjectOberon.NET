@@ -33,15 +33,24 @@ internal static class UiLogic
         {
             return false;
         }
-        if (keyboard.Extended) memory.EnqueueKeyboard(0xe0);
-        if (!pressed) memory.EnqueueKeyboard(0xf0);
+        if (keyboard.Extended)
+        {
+            memory.EnqueueKeyboard(0xe0);
+        }
+        if (!pressed)
+        {
+            memory.EnqueueKeyboard(0xf0);
+        }
         memory.EnqueueKeyboard(keyboard.Code);
         return true;
     }
 
     public static unsafe void EnqueueTextInput(Memory memory, SdlNative.TextInputEvent text)
     {
-        foreach (var character in System.Text.Encoding.UTF8.GetBytes(ReadTextInput(text))) memory.EnqueueUartRx(character);
+        foreach (var character in System.Text.Encoding.UTF8.GetBytes(ReadTextInput(text)))
+        {
+            memory.EnqueueUartRx(character);
+        }
     }
 
     public static unsafe string ReadTextInput(SdlNative.TextInputEvent text)
