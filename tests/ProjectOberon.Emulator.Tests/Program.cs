@@ -15,6 +15,7 @@ var tests = new (string Name, Action Test)[]
     ("memory loading and reset", MemoryTests.Run),
     ("MMIO devices", DeviceTests.MmioDevices),
     ("disk image read/write", DeviceTests.DiskImageReadWrite),
+    ("disk image lifecycle", DeviceTests.DiskImageValidatesLifecycle),
     ("SPI disk read/write", DeviceTests.SpiDiskReadWrite),
     ("machine timer", DeviceTests.MachineTimer),
     ("host call dispatcher", HostCallTests.DispatchesRegisteredHostCalls),

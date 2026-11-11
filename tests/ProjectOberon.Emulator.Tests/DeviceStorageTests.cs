@@ -25,6 +25,30 @@ internal static partial class DeviceTests
         finally { File.Delete(path); }
     }
 
+    public static void DiskImageValidatesLifecycle()
+    {
+        using var disk = new DiskImage();
+        TestAssertions.Throws<InvalidOperationException>(() => disk.Read(0));
+
+        var path = Path.Combine(Path.GetTempPath(), $"project-oberon-invalid-disk-{Guid.NewGuid():N}.img");
+        try
+        {
+            File.WriteAllBytes(path, [1]);
+            TestAssertions.Throws<InvalidDataException>(() => disk.Open(path));
+            TestAssertions.False(disk.Writable);
+            TestAssertions.Equal(0u, disk.SectorCount);
+
+            File.WriteAllBytes(path, new byte[DiskImage.SectorSize]);
+            disk.Open(path);
+            TestAssertions.Throws<ArgumentOutOfRangeException>(() => disk.Read(1));
+            TestAssertions.Throws<ArgumentException>(() => disk.Write(0, [1]));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     public static void SpiDiskReadWrite()
     {
         var path = Path.Combine(Path.GetTempPath(), $"project-oberon-csharp-spi-{Guid.NewGuid():N}.img");
