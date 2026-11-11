@@ -26,5 +26,6 @@ internal static partial class RscModuleTests
         RejectsInvalidCodeOffsets();
         RejectsNullModelCollections();
         RejectsLongModuleName();
+        RejectsInvalidNamesAndTrailer();
     }
 }
