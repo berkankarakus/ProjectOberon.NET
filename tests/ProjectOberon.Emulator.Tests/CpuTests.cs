@@ -61,4 +61,23 @@ internal static class CpuTests
         cpu.Step(false);
         TestAssertions.Equal(Risc5Cpu.ResetPc + 3, cpu.PcWord);
     }
+
+    public static void ResetsStateAndValidatesAddresses()
+    {
+        var cpu = new Risc5Cpu(new Memory());
+        cpu.SetRegister(3, 42);
+        cpu.SetProgramCounter(0x100);
+        cpu.Step();
+
+        cpu.Reset();
+
+        TestAssertions.Equal(0u, cpu.Register(3));
+        TestAssertions.Equal(Risc5Cpu.ResetPc, cpu.PcWord);
+        TestAssertions.Equal(0ul, cpu.Steps);
+        TestAssertions.False(cpu.Carry);
+        TestAssertions.False(cpu.Overflow);
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => cpu.SetRegister(16, 0));
+        TestAssertions.Throws<ArgumentException>(() => cpu.SetProgramCounter(2));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => cpu.SetProgramCounter(Memory.AddressMask + 1));
+    }
 }
