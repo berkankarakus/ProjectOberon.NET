@@ -215,12 +215,6 @@ public static class RscModuleReader
             }
         }
 
-        public void Align(int alignment)
-        {
-            var aligned = (_position + alignment - 1) / alignment * alignment;
-            Skip(aligned - _position);
-        }
-
         public void EnsureEnd()
         {
             if (_position != _data.Length)
