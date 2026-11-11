@@ -41,6 +41,7 @@ var tests = new (string Name, Action Test)[]
     ("module load diagnostics", RuntimeDiagnosticsTests.FormatsModuleLoadCode),
     ("disassembler and breakpoint", DeviceTests.DisassemblerAndBreakpoint),
     ("display and input mapping", DeviceTests.DisplayAndInputMapping),
+    ("input mapping helpers", InputMappingTests.Run),
     ("Oberon input decoder", DeviceTests.OberonInputDecoder),
     ("Oberon kernel sectors", DeviceTests.OberonKernelSectors),
     ("Oberon files and riders", OberonPersistenceTests.OberonFilesAndRiders),
