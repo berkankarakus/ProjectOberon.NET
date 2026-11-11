@@ -27,3 +27,4 @@
 | RSC fixup validation is overflow-safe | Reject extreme type fixup values without arithmetic overflow | `RscModuleTests.RejectsInvalidEntriesAndFixups` |
 | Unsupported `IS` syntax is diagnosed explicitly | Parse the relation and report the missing runtime type-test lowering | `OberonCompilerParserTests.ReportsUnsupportedTypeTests` |
 | Compiler RSC body uses the module data base | Execute a minimal compiled assignment through the runtime loader | `OberonCompilerRscTests.ExecutesCompilerProducedBody` |
+| Runtime stack cannot overlap module allocations | Reject explicitly supplied stack pointers below the next free module address | `OberonModuleTests.MemoryImage` |

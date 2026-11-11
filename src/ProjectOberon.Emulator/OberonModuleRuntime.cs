@@ -164,5 +164,11 @@ public sealed class OberonModuleRuntime
         {
             throw new ArgumentOutOfRangeException(nameof(stackPointer));
         }
+
+        if (stackPointer <= MemoryLoader.NextAllocationAddress)
+        {
+            throw new ArgumentOutOfRangeException(nameof(stackPointer),
+                "stack pointer overlaps loaded Oberon modules");
+        }
     }
 }

@@ -36,5 +36,6 @@ internal static partial class OberonModuleTests
         var commandImage = commandRuntime.StartCommand("A", "Start");
         TestAssertions.Equal(commandImage.CodeAddress, commandCpu.PcByte);
         TestAssertions.Throws<OberonModuleLoadException>(() => commandRuntime.StartCommand("A", "Missing"));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => commandRuntime.Start("A", 0x1000));
     }
 }
