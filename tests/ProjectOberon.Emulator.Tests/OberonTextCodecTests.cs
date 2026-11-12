@@ -8,6 +8,7 @@ internal static class OberonTextCodecTests
         CreatesAndLoadsTextFiles();
         RejectsInvalidTextBlocks();
         RejectsUnrepresentableLatin1Text();
+        RejectsTooManyFonts();
     }
 
     private static void RoundTripsStyledText()
@@ -57,5 +58,18 @@ internal static class OberonTextCodecTests
         text = new OberonText("ok");
         text.ChangeLooks(0, 2, new OberonTextStyle("Font", 1, 128));
         TestAssertions.Throws<ArgumentOutOfRangeException>(() => OberonTextCodec.Encode(text));
+    }
+
+    private static void RejectsTooManyFonts()
+    {
+        var text = new OberonText();
+        for (var index = 0; index < 256; index++)
+        {
+            var buffer = new OberonTextBuffer();
+            buffer.Append("x", new OberonTextStyle($"Font{index}", 1, 0));
+            text.Append(buffer);
+        }
+
+        TestAssertions.ThrowsInvalidData(() => OberonTextCodec.Encode(text));
     }
 }
