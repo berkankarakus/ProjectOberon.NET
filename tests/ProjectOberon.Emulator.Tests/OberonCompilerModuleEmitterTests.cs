@@ -24,6 +24,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsNestedImportedRecordFieldCopy();
         EmitsImportedArrayRecordFieldCopy();
         EmitsImportedPointerRecordFieldStore();
+        EmitsImportedRecordArrayFieldCopy();
         EmitsAggregateArrayElementCopy();
     }
 
@@ -336,6 +337,51 @@ internal static class OberonCompilerModuleEmitterTests
         new OberonCompilerModuleEmitter(generator).Emit(result);
 
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("STR r0")));
+    }
+
+    private static void EmitsImportedRecordArrayFieldCopy()
+    {
+        var symbols = new OberonSymbolModule(
+            "Types",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Container", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Record,
+                TypeSize = 8,
+                RecordFields =
+                [
+                    new OberonSymbolField(
+                        "nodes",
+                        0,
+                        (int)OberonCompilerTypeForm.Array,
+                        8,
+                        2,
+                        (int)OberonCompilerTypeForm.Record,
+                        4,
+                        null,
+                        [new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)])
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Records; IMPORT Types; TYPE Container = Types.Container; VAR source, target: Container; BEGIN target.nodes[0].value := source.nodes[1].value; END Records.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
+            .ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        TestAssertions.True(result.Succeeded);
+        new OberonCompilerModuleEmitter(generator).Emit(result);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("LDR r0")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("STR r0")));
     }
 
