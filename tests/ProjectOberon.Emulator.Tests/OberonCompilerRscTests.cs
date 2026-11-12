@@ -16,6 +16,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalValueParameterFixup();
         EmitsMultipleExternalFixups();
         EmitsExternalVariableDataFixup();
+        EmitsMultipleExternalDataFixups();
         EmitsExternalRecordVariableDataFixup();
         EmitsExternalPointerVariableDataFixup();
         EmitsExternalArrayVariableDataFixup();
@@ -401,6 +402,34 @@ internal static class OberonCompilerRscTests
 
         var image = runtime.MemoryLoader.Load("Demo");
         TestAssertions.Equal(0x30u, memory.Read32(image.CodeAddress + 8) & 0xffff);
+    }
+
+    private static void EmitsMultipleExternalDataFixups()
+    {
+        var first = new OberonSymbolModule(
+            "First",
+            0x1001,
+            1,
+            [new OberonSymbolExport("Value", 2, 0)]);
+        var second = new OberonSymbolModule(
+            "Second",
+            0x1002,
+            1,
+            [new OberonSymbolExport("Value", 2, 4)]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT First, Second; VAR result: INTEGER; BEGIN result := First.Value + Second.Value; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule>
+            {
+                ["First"] = first,
+                ["Second"] = second
+            })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(2, module.Imports.Count);
+        TestAssertions.True(module.FixupData > 0);
     }
 
     private static void EmitsExternalRecordVariableDataFixup()
