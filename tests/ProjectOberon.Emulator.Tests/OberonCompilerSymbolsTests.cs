@@ -11,6 +11,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsExternalVariableMetadata();
         ImportsExternalRecordVariableMetadata();
         ImportsExternalArrayVariableMetadata();
+        ImportsExternalPointerVariableMetadata();
         ImportsPrimitiveTypeMetadata();
         ImportsOpaqueRecordTypeMetadata();
         ImportsNestedRecordTypeMetadata();
@@ -162,6 +163,40 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.Equal(OberonCompilerTypeForm.Array, variable.Type!.Form);
         TestAssertions.Equal(2, variable.Type.Length);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, variable.Type.Base!.Form);
+    }
+
+    private static void ImportsExternalPointerVariableMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "State",
+            new OberonSymbolModule(
+                "State",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Current", 2, 0)
+                {
+                    IsProcedure = false,
+                    TypeForm = (int)OberonCompilerTypeForm.Pointer,
+                    BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                    BaseTypeSize = 4,
+                    BaseRecordFields =
+                    [
+                        new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ]
+                }]));
+        var variable = module.FindMember("Current")!;
+
+        TestAssertions.Equal(OberonCompilerTypeForm.Pointer, variable.Type!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, variable.Type.Base!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, variable.Type.Base.Fields[0].Type!.Form);
     }
 
     private static void ImportsPrimitiveTypeMetadata()
