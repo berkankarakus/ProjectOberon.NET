@@ -26,14 +26,7 @@ public sealed class OberonCompilerModuleEmitter
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
         _frames = new OberonCompilerFrameEmitter(generator);
-        _statements = new OberonCompilerStatementEmitter(
-            generator,
-            frameSize: 0,
-            procedureLabelResolver: ResolveProcedureLabel,
-            currentLevel: 1,
-            stringAddressResolver: ResolveStringAddress,
-            externalProcedureEmitter: EmitExternalProcedureCall,
-            externalVariableAddressEmitter: EmitExternalVariableAddress);
+        _statements = CreateStatementEmitter(frameSize: 0, currentLevel: 1);
     }
 
     public IReadOnlyList<byte> ModuleData => _moduleData;
@@ -136,14 +129,10 @@ public sealed class OberonCompilerModuleEmitter
             _generator.Bind(_procedureLabels[procedure.Symbol]);
             _frames.EmitProcedurePrologue(procedure.FrameSize, procedure.Symbol.Level > 1);
             _frames.SaveParameters(procedure.Symbol);
-            var procedureStatements = new OberonCompilerStatementEmitter(
-                _generator,
+            var procedureStatements = CreateStatementEmitter(
                 procedure.FrameSize,
-                ResolveProcedureLabel,
-                currentLevel: procedure.Symbol.Level + 1,
-                stringAddressResolver: ResolveStringAddress,
-                externalProcedureEmitter: EmitExternalProcedureCall,
-                externalVariableAddressEmitter: EmitExternalVariableAddress);
+                procedure.Symbol.Level + 1
+            );
             if (procedure.Body is not null)
             {
                 procedureStatements.EmitStatementSequence(procedure.Body);
@@ -165,6 +154,20 @@ public sealed class OberonCompilerModuleEmitter
         }
 
         return _generator.Code;
+    }
+
+    private OberonCompilerStatementEmitter CreateStatementEmitter(
+        int frameSize,
+        int currentLevel)
+    {
+        return new OberonCompilerStatementEmitter(
+            _generator,
+            frameSize,
+            ResolveProcedureLabel,
+            currentLevel,
+            ResolveStringAddress,
+            EmitExternalProcedureCall,
+            EmitExternalVariableAddress);
     }
 
     private void ConfigureExternalImports(IReadOnlyList<RscImport> imports)
