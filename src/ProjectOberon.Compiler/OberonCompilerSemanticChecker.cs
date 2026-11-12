@@ -248,6 +248,7 @@ public sealed class OberonCompilerSemanticChecker
                 || rightType?.Form != OberonCompilerTypeForm.Record)
             {
                 AddDiagnostic("IS requires a POINTER and a RECORD type");
+                return _booleanType;
             }
 
             AddDiagnostic("IS expressions are not supported by the compiler yet");

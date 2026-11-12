@@ -15,6 +15,7 @@ internal static class OberonCompilerParserTests
         ParsesCaseLabelRanges();
         ParsesSetMembership();
         ReportsUnsupportedTypeTests();
+        ReportsInvalidTypeTestWithoutDuplicateDiagnostic();
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
         RejectsMismatchedExternalFixedArrayLength();
@@ -374,6 +375,18 @@ internal static class OberonCompilerParserTests
         var literal = (OberonCompilerIntegerLiteralExpression)assignment.Value;
         TestAssertions.Equal(unchecked((int)0x8000_001d), checked((int)literal.Value));
         TestAssertions.Equal(OberonCompilerTypeForm.Set, literal.Type.Form);
+    }
+
+    private static void ReportsInvalidTypeTestWithoutDuplicateDiagnostic()
+    {
+        const string source = "MODULE Types; VAR value: INTEGER; BEGIN IF value IS value THEN END; END Types.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.Equal(1, result.Diagnostics.Count(diagnostic =>
+            diagnostic.Message.Contains("IS requires", StringComparison.Ordinal)));
+        TestAssertions.False(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("not supported", StringComparison.Ordinal)));
     }
 
     private static void ReportsUnsupportedTypeTests()
