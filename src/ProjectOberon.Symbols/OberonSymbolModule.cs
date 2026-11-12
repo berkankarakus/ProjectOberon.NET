@@ -34,7 +34,8 @@ public sealed record OberonSymbolField(
     int? Size,
     int? ArrayLength,
     int? BaseTypeForm,
-    int? BaseTypeSize);
+    int? BaseTypeSize,
+    IReadOnlyList<OberonSymbolField>? RecordFields = null);
 
 public sealed record OberonSymbolModule(
     string Name,
@@ -103,16 +104,7 @@ public static class OberonSymbolModuleReader
                 ArrayLength = typeInfo.ArrayLength,
                 BaseTypeForm = typeInfo.BaseTypeForm,
                 BaseTypeSize = typeInfo.BaseTypeSize,
-                RecordFields = typeInfo.Fields?
-                    .Select(field => new OberonSymbolField(
-                        field.Name,
-                        field.Offset,
-                        field.TypeForm,
-                        field.Size,
-                        field.ArrayLength,
-                        field.BaseTypeForm,
-                        field.BaseTypeSize))
-                    .ToArray()
+                RecordFields = typeInfo.Fields?.Select(MapField).ToArray()
             });
 
             if (symbolClass == 5)
@@ -245,9 +237,20 @@ public static class OberonSymbolModuleReader
                 fieldType.Size,
                 fieldType.ArrayLength,
                 fieldType.BaseTypeForm,
-                fieldType.BaseTypeSize));
+                fieldType.BaseTypeSize,
+                fieldType.Fields));
         }
     }
+
+    private static OberonSymbolField MapField(SymbolFieldInfo field) => new(
+        field.Name,
+        field.Offset,
+        field.TypeForm,
+        field.Size,
+        field.ArrayLength,
+        field.BaseTypeForm,
+        field.BaseTypeSize,
+        field.Fields?.Select(MapField).ToArray());
 
     private static IReadOnlyList<SymbolParameterInfo> SkipProcedureParameters(ref SymbolReader reader)
     {
@@ -316,7 +319,8 @@ public static class OberonSymbolModuleReader
         int? Size,
         int? ArrayLength,
         int? BaseTypeForm,
-        int? BaseTypeSize);
+        int? BaseTypeSize,
+        IReadOnlyList<SymbolFieldInfo>? Fields);
 
     private ref struct SymbolReader
     {
