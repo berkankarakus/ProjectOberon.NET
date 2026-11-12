@@ -11,6 +11,7 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     public bool? IsProcedure { get; init; }
     public bool? HasResult { get; init; }
     public int ParameterCount { get; init; }
+    public IReadOnlyList<bool>? ParameterReadOnly { get; init; }
     public int? TypeForm { get; init; }
 }
 
@@ -60,6 +61,7 @@ public static class OberonSymbolModuleReader
                 IsProcedure = typeInfo.IsProcedure,
                 HasResult = typeInfo.HasResult,
                 ParameterCount = typeInfo.ParameterCount,
+                ParameterReadOnly = typeInfo.ParameterReadOnly,
                 TypeForm = typeInfo.TypeForm
             });
 
@@ -78,12 +80,13 @@ public static class OberonSymbolModuleReader
         var reference = reader.ReadSignedByte();
         if (reference < 0)
         {
-            return new SymbolTypeInfo(false, 0, false, -1);
+            return new SymbolTypeInfo(false, 0, false, -1, null);
         }
 
         var form = reader.ReadSignedByte();
         var isProcedure = form == 10;
         var parameterCount = 0;
+        IReadOnlyList<bool>? parameterReadOnly = null;
         var hasResult = false;
         switch (form)
         {
@@ -105,7 +108,8 @@ public static class OberonSymbolModuleReader
             case 10:
                 var resultType = SkipType(ref reader);
                 hasResult = resultType.TypeForm != 9;
-                parameterCount = SkipProcedureParameters(ref reader);
+                parameterReadOnly = SkipProcedureParameters(ref reader);
+                parameterCount = parameterReadOnly.Count;
                 break;
             case 1:
             case 2:
@@ -128,7 +132,12 @@ public static class OberonSymbolModuleReader
             reader.ReadString();
         }
 
-        return new SymbolTypeInfo(isProcedure, parameterCount, hasResult, form);
+        return new SymbolTypeInfo(
+            isProcedure,
+            parameterCount,
+            hasResult,
+            form,
+            parameterReadOnly);
     }
 
     private static void SkipRecordFields(ref SymbolReader reader)
@@ -151,20 +160,19 @@ public static class OberonSymbolModuleReader
         }
     }
 
-    private static int SkipProcedureParameters(ref SymbolReader reader)
+    private static IReadOnlyList<bool> SkipProcedureParameters(ref SymbolReader reader)
     {
-        var count = 0;
+        var readOnly = new List<bool>();
         while (true)
         {
             var parameterClass = reader.ReadSignedByte();
             if (parameterClass == 0)
             {
-                return count;
+                return readOnly;
             }
 
-            reader.ReadSignedByte();
+            readOnly.Add(reader.ReadSignedByte() != 0);
             SkipType(ref reader);
-            count++;
         }
     }
 
@@ -187,7 +195,8 @@ public static class OberonSymbolModuleReader
         bool IsProcedure,
         int ParameterCount,
         bool HasResult,
-        int TypeForm);
+        int TypeForm,
+        IReadOnlyList<bool>? ParameterReadOnly);
 
     private ref struct SymbolReader
     {

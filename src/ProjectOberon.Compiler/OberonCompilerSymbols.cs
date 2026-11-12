@@ -318,7 +318,10 @@ public sealed class OberonCompilerSymbols
                 Type = CreateProcedure(
                     resultType,
                     Enumerable.Range(0, export.ParameterCount)
-                        .Select(index => DeclareImportedParameter(export.Name, index))),
+                        .Select(index => DeclareImportedParameter(
+                            export.Name,
+                            index,
+                            export.ParameterReadOnly))),
                 Value = export.Value,
                 ReadOnly = true,
                 OriginalName = export.Name,
@@ -399,12 +402,21 @@ public sealed class OberonCompilerSymbols
         };
     }
 
-    private OberonCompilerObject DeclareImportedParameter(string procedureName, int index)
+    private OberonCompilerObject DeclareImportedParameter(
+        string procedureName,
+        int index,
+        IReadOnlyList<bool>? parameterReadOnly)
     {
+        var isReadOnly = true;
+        if (parameterReadOnly is not null && index < parameterReadOnly.Count)
+        {
+            isReadOnly = parameterReadOnly[index];
+        }
+
         return new OberonCompilerObject($"arg{index}", OberonCompilerObjectClass.Parameter)
         {
             Type = IntegerType,
-            ReadOnly = true,
+            ReadOnly = isReadOnly,
             OriginalName = procedureName
         };
     }

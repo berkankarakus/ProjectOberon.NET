@@ -13,6 +13,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalValueParameterFixup();
         EmitsMultipleExternalFixups();
         EmitsExternalVariableDataFixup();
+        EmitsExternalVarParameterCall();
         RejectsInvalidExternalImportTables();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
@@ -270,6 +271,33 @@ internal static class OberonCompilerRscTests
 
         var image = runtime.MemoryLoader.Load("Demo");
         TestAssertions.Equal(0x30u, memory.Read32(image.CodeAddress + 8) & 0xffff);
+    }
+
+    private static void EmitsExternalVarParameterCall()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Set", 1, 0)
+            {
+                IsProcedure = true,
+                ParameterCount = 1,
+                ParameterReadOnly = [false]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; VAR value: INTEGER; BEGIN IO.Set(value); END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var generator = new OberonCompilerCodeGenerator();
+        var module = new OberonCompilerModuleEmitter(generator).EmitRsc(result);
+
+        TestAssertions.True(generator.Code
+            .Select(Risc5Disassembler.Format)
+            .Contains("ADD r0, r13, 0x0000"));
+        TestAssertions.True(module.FixupProgram > 0);
     }
 
     private static void EmitsStringPayload()
