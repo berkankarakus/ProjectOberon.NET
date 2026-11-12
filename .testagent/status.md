@@ -40,3 +40,36 @@ test files, 94 direct pairings, and 60 conservative unpaired reports. The
 reported compiler/Symbols false negatives are caused by shared global usings;
 the corresponding test suites already exist and were reviewed. No duplicate
 test files were added based on this heuristic result.
+
+## Continuation verification
+
+- Added minimal-RSC descriptor boundary tests for direct records, pointers, and
+  arrays of records, including diagnostic text assertions.
+- Added repeated-emission and cross-mode isolation tests for one emitter
+  instance.
+- Added runtime fixtures for compiler-produced record and scalar-array copies,
+  plus an external record argument passed through the RSC host-call path.
+- `scripts/verify-dotnet.sh` now writes Release artifacts to a user-temporary
+  directory. `PROJECT_OBERON_DOTNET_ARTIFACTS` overrides that location, and
+  `PROJECT_OBERON_REPO_ROOT` lets architecture tests locate the repository when
+  the test binary is outside the checkout.
+- Release verification passed after each temporary mutation was restored.
+
+### Verified pseudo-mutations
+
+Two representative mutations were injected and then reverted immediately:
+
+1. Record assignability changed from `expected.Size == actual.Size` to `!=`.
+   The Release suite failed in `ParsesExternalRecordFunctionResult`.
+2. Minimal-RSC descriptor detection stopped treating records as requiring a
+   descriptor. The Release suite failed in
+   `RejectsUnsupportedMinimalRscTypes`.
+
+Both mutations were killed; the clean baseline passed afterward. The reviewed
+assertion surface contains 1,441 custom assertions across the test sources,
+using equality, boolean, negative, and exception categories. No assertion-free
+test was introduced in this continuation.
+
+CodeGraph was synchronized successfully after the changes; its SQLite index
+required the sandbox-external `codegraph sync .` path because the workspace
+sandbox could not open `.codegraph/codegraph.db`.
