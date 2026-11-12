@@ -22,6 +22,12 @@ internal static partial class SdlUiTests
         TestAssertions.Equal("Start", options.Command);
     }
 
+    private static void HandlesUiHelp()
+    {
+        TestAssertions.True(UiOptions.Parse(["--help", "--unknown"]).Help);
+        TestAssertions.True(UiOptions.Parse(["-h", "--read-only"]).Help);
+    }
+
     private static void RejectsInvalidUiOptions()
     {
         TestAssertions.Throws<ArgumentNullException>(() => UiOptions.Parse(null!));

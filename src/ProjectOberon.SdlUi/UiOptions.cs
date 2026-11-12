@@ -21,6 +21,28 @@ internal sealed record UiOptions(
     public static UiOptions Parse(string[] args)
     {
         ArgumentNullException.ThrowIfNull(args);
+
+        if (args.Contains("--help", StringComparer.Ordinal)
+            || args.Contains("-h", StringComparer.Ordinal))
+        {
+            return new UiOptions(
+                Rom: null,
+                Disk: null,
+                DiskWritable: true,
+                StepsPerFrame: 100_000UL,
+                Scale: 1.25,
+                FlipY: true,
+                Editor: null,
+                Font: null,
+                LogPath: null,
+                StartModule: null,
+                Initialize: false,
+                Boot: false,
+                Command: null,
+                Help: true
+            );
+        }
+
         string? rom = null, disk = null;
         var writable = true;
         var steps = 100_000UL;
