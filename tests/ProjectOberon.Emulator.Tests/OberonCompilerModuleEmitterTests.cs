@@ -19,6 +19,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsOpenArrayAndScalarParameterCall();
         ReportsExternalProcedureLoweringGap();
         EmitsImportedConstantExpression();
+        EmitsAggregateRecordFieldCopy();
     }
 
     private static void EmitsParameterlessProcedureCall()
@@ -161,6 +162,22 @@ internal static class OberonCompilerModuleEmitterTests
         new OberonCompilerModuleEmitter(generator).Emit(result);
 
         TestAssertions.Equal("MOV r0, 0x002a", Risc5Disassembler.Format(generator.Code[0]));
+    }
+
+    private static void EmitsAggregateRecordFieldCopy()
+    {
+        const string source = "MODULE Records; TYPE Vector = ARRAY 2 OF INTEGER; Holder = RECORD values: Vector; END; VAR source, target: Holder; BEGIN target.values := source.values; END Records.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        TestAssertions.True(result.Succeeded);
+        new OberonCompilerModuleEmitter(generator).Emit(result);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Contains("LDR r0, [r1, 0]"));
+        TestAssertions.True(instructions.Contains("STR r0, [r2, 0]"));
+        TestAssertions.True(instructions.Contains("LDR r0, [r1, 4]"));
+        TestAssertions.True(instructions.Contains("STR r0, [r2, 4]"));
     }
 
     private static void EmitsStaticLinkForNestedProcedure()
