@@ -9,6 +9,7 @@ internal static class OberonCompilerRscTests
         EmitsImportsAndExportedCommands();
         EmitsExternalProcedureFixup();
         EmitsExternalModuleDeterministically();
+        ExternalEmissionDoesNotAffectLocalEmission();
         ExecutesExternalProcedureCall();
         ExecutesExternalVarParameterCall();
         ExecutesExternalFixedArrayParameterCall();
@@ -116,6 +117,31 @@ internal static class OberonCompilerRscTests
         TestAssertions.Equal(first.FixupData, second.FixupData);
         TestAssertions.Equal(first.VariableBytes, second.VariableBytes);
         TestAssertions.Equal(first.BodyOffset, second.BodyOffset);
+    }
+
+    private static void ExternalEmissionDoesNotAffectLocalEmission()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Run", 1, 7) { IsProcedure = true }]);
+        var externalResult = new OberonCompilerParser(
+            "MODULE External; IMPORT IO; BEGIN IO.Run; END External.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+        var localResult = new OberonCompilerParser(
+            "MODULE Local; PROCEDURE Run; BEGIN END Run; BEGIN Run; END Local.")
+            .ParseModule();
+        var emitter = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator());
+
+        emitter.EmitRsc(externalResult);
+        var localCode = emitter.Emit(localResult);
+
+        TestAssertions.True(localCode.Count > 0);
+        TestAssertions.True(localCode
+            .Select(Risc5Disassembler.Format)
+            .Any(instruction => instruction.StartsWith("BTL ", StringComparison.Ordinal)));
     }
 
     private static void ExecutesExternalProcedureCall()
