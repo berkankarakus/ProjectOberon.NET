@@ -104,19 +104,10 @@ public sealed class OberonCompilerAddressEmitter
                 var baseRegister = EmitStorageBase(symbol, destination);
                 _generator.EmitImmediate(AluOperation.Add, destination, baseRegister, offset);
                 return;
-            case OberonCompilerObjectClass.Parameter when !symbol.ReadOnly:
-                var referenceBase = EmitStorageBase(symbol, destination);
-                _generator.EmitLoad(destination, referenceBase, offset);
-                return;
             case OberonCompilerObjectClass.Parameter
-                when symbol.Type?.Form == OberonCompilerTypeForm.Array && symbol.Type.Length < 0:
-                var arrayBase = EmitStorageBase(symbol, destination);
-                _generator.EmitLoad(destination, arrayBase, offset);
-                return;
-            case OberonCompilerObjectClass.Parameter
-                when OberonCompilerTypeRules.IsAggregate(symbol.Type):
-                var aggregateBase = EmitStorageBase(symbol, destination);
-                _generator.EmitLoad(destination, aggregateBase, offset);
+                when RequiresIndirectParameterLoad(symbol):
+                var parameterBase = EmitStorageBase(symbol, destination);
+                _generator.EmitLoad(destination, parameterBase, offset);
                 return;
             default:
                 throw new NotSupportedException($"'{name.Name}' cannot be passed by reference");
@@ -152,6 +143,22 @@ public sealed class OberonCompilerAddressEmitter
         }
 
         return destination;
+    }
+
+    private static bool RequiresIndirectParameterLoad(OberonCompilerObject symbol)
+    {
+        if (!symbol.ReadOnly)
+        {
+            return true;
+        }
+
+        if (symbol.Type?.Form == OberonCompilerTypeForm.Array
+            && symbol.Type.Length < 0)
+        {
+            return true;
+        }
+
+        return OberonCompilerTypeRules.IsAggregate(symbol.Type);
     }
 
     private void EmitIndexedAddress(OberonCompilerIndexExpression index, int destination)
