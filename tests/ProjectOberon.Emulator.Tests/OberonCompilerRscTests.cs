@@ -10,6 +10,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalProcedureFixup();
         ExecutesExternalProcedureCall();
         ExecutesExternalVarParameterCall();
+        ExecutesExternalFixedArrayParameterCall();
         EmitsExternalFunctionFixup();
         EmitsExternalRealFunctionExpression();
         EmitsExternalValueParameterFixup();
@@ -141,6 +142,54 @@ internal static class OberonCompilerRscTests
             }]);
         var result = new OberonCompilerParser(
             "MODULE Demo; IMPORT IO; VAR value: INTEGER; BEGIN IO.Set(value); END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == "Demo" ? bytes : null);
+        loader.RegisterExternal(symbols);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+        uint? receivedAddress = null;
+        var dispatcher = new OberonHostCallDispatcher();
+        runtime.BindExternal(
+            new OberonExternalModuleBinding("IO", 0x3000, 0x4000, [0])
+            {
+                EntryHandlers =
+                [
+                    context =>
+                    {
+                        receivedAddress = context.Cpu.Register(0);
+                        context.Cpu.SetProgramCounter(Memory.RomBase);
+                    }
+                ]
+            },
+            dispatcher);
+
+        var image = runtime.MemoryLoader.Load("Demo");
+        runtime.Initialize(image, dispatcher);
+
+        TestAssertions.Equal(image.DataAddress, receivedAddress);
+    }
+
+    private static void ExecutesExternalFixedArrayParameterCall()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Consume", 1, 0)
+            {
+                IsProcedure = true,
+                ParameterCount = 1,
+                ParameterReadOnly = [true],
+                ParameterTypeForms = [(int)OberonCompilerTypeForm.Array],
+                ParameterArrayLengths = new int?[] { 3 },
+                ParameterBaseTypeForms = [(int)OberonCompilerTypeForm.Integer]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; TYPE Values = ARRAY 3 OF INTEGER; VAR value: Values; BEGIN IO.Consume(value); END Demo.",
             importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
             .ParseModule();
         var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
