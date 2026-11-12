@@ -207,34 +207,20 @@ public sealed class OberonCompilerModuleEmitter
                 $"external procedure entry is outside the RSC range: {procedure.Name}");
         }
 
-        var fixupPosition = _generator.ProgramCounter;
-
-        if (fixupPosition == 0)
-        {
-            _generator.EmitRegister(AluOperation.Mov, 0, 0, 0);
-            fixupPosition = _generator.ProgramCounter;
-        }
-
-        var previousDistance = fixupPosition - _programFixupHead;
-        if (previousDistance is < 1 or > 0xfff)
-        {
-            throw new InvalidOperationException("RSC program fixup chain distance is out of range");
-        }
+        var fixup = PrepareExternalFixup(ref _programFixupHead, "program");
 
         var entryNumber = checked((int)procedure.Value);
-        var encodedImmediate = ((entryNumber & 0x0f) << 12) | previousDistance;
+        var encodedImmediate = ((entryNumber & 0x0f) << 12) | fixup.PreviousDistance;
         _generator.EmitImmediate(
             (AluOperation)(entryNumber >> 4),
             0,
             importNumber,
             encodedImmediate);
 
-        if (_firstProgramFixup is null)
-        {
-            _firstProgramFixup = fixupPosition;
-        }
-
-        _programFixupHead = fixupPosition;
+        RecordExternalFixup(
+            ref _firstProgramFixup,
+            ref _programFixupHead,
+            fixup.Position);
     }
 
     private void EmitExternalVariableAddress(OberonCompilerObject variable, int destination)
@@ -251,6 +237,25 @@ public sealed class OberonCompilerModuleEmitter
                 $"external module key is not imported: {variable.Key}");
         }
 
+        var fixup = PrepareExternalFixup(ref _dataFixupHead, "data");
+
+        _generator.EmitLoad(destination, importNumber, fixup.PreviousDistance);
+        _generator.EmitImmediate(
+            AluOperation.Add,
+            destination,
+            destination,
+            checked((int)variable.Value));
+
+        RecordExternalFixup(
+            ref _firstDataFixup,
+            ref _dataFixupHead,
+            fixup.Position);
+    }
+
+    private (int Position, int PreviousDistance) PrepareExternalFixup(
+        ref int fixupHead,
+        string fixupKind)
+    {
         var fixupPosition = _generator.ProgramCounter;
 
         if (fixupPosition == 0)
@@ -259,25 +264,27 @@ public sealed class OberonCompilerModuleEmitter
             fixupPosition = _generator.ProgramCounter;
         }
 
-        var previousDistance = fixupPosition - _dataFixupHead;
+        var previousDistance = fixupPosition - fixupHead;
         if (previousDistance is < 1 or > 0xfff)
         {
-            throw new InvalidOperationException("RSC data fixup chain distance is out of range");
+            throw new InvalidOperationException(
+                $"RSC {fixupKind} fixup chain distance is out of range");
         }
 
-        _generator.EmitLoad(destination, importNumber, previousDistance);
-        _generator.EmitImmediate(
-            AluOperation.Add,
-            destination,
-            destination,
-            checked((int)variable.Value));
+        return (fixupPosition, previousDistance);
+    }
 
-        if (_firstDataFixup is null)
+    private static void RecordExternalFixup(
+        ref int? firstFixup,
+        ref int fixupHead,
+        int fixupPosition)
+    {
+        if (firstFixup is null)
         {
-            _firstDataFixup = fixupPosition;
+            firstFixup = fixupPosition;
         }
 
-        _dataFixupHead = fixupPosition;
+        fixupHead = fixupPosition;
     }
 
     private OberonCompilerLabel? ResolveProcedureLabel(OberonCompilerObject procedure) =>
