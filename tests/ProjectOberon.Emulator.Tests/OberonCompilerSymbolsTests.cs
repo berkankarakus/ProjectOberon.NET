@@ -9,6 +9,7 @@ internal static class OberonCompilerSymbolsTests
         BuildsRecordsPointersAndProcedures();
         CreatesReadOnlyModules();
         ImportsExternalVariableMetadata();
+        ImportsPrimitiveTypeMetadata();
     }
 
     private static void InitializesUniverseAndSystemBuiltins()
@@ -89,6 +90,26 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, variable.Type!.Form);
         TestAssertions.Equal(12L, variable.Value);
         TestAssertions.Equal(0, variable.Level);
+    }
+
+    private static void ImportsPrimitiveTypeMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Types",
+            new OberonSymbolModule(
+                "Types",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Count", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Integer
+                }]));
+        var type = module.FindMember("Count");
+
+        TestAssertions.True(type is not null);
+        TestAssertions.Equal(OberonCompilerObjectClass.Type, type!.Class);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Type!.Form);
     }
 }
 

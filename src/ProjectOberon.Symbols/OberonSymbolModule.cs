@@ -11,6 +11,7 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     public bool? IsProcedure { get; init; }
     public bool? HasResult { get; init; }
     public int ParameterCount { get; init; }
+    public int? TypeForm { get; init; }
 }
 
 public sealed record OberonSymbolModule(
@@ -58,7 +59,8 @@ public static class OberonSymbolModuleReader
             {
                 IsProcedure = typeInfo.IsProcedure,
                 HasResult = typeInfo.HasResult,
-                ParameterCount = typeInfo.ParameterCount
+                ParameterCount = typeInfo.ParameterCount,
+                TypeForm = typeInfo.TypeForm
             });
 
             if (symbolClass == 5)

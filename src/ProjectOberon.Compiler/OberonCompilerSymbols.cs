@@ -355,7 +355,48 @@ public sealed class OberonCompilerSymbols
             imported.AddMember(variable);
         }
 
+        foreach (var export in module.Exports.Where(
+            export => export.IsProcedure != true && export.Class == (int)OberonCompilerObjectClass.Type))
+        {
+            var importedType = CreateImportedPrimitiveType(export.TypeForm);
+            if (importedType is null)
+            {
+                continue;
+            }
+
+            var type = new OberonCompilerObject(export.Name, OberonCompilerObjectClass.Type)
+            {
+                Type = importedType,
+                ReadOnly = true,
+                OriginalName = export.Name,
+                Key = module.Key
+            };
+            imported.AddMember(type);
+        }
+
         return imported;
+    }
+
+    private OberonCompilerType? CreateImportedPrimitiveType(int? typeForm)
+    {
+        if (typeForm is not int form)
+        {
+            return null;
+        }
+
+        return form switch
+        {
+            (int)OberonCompilerTypeForm.Byte => ByteType,
+            (int)OberonCompilerTypeForm.Boolean => BooleanType,
+            (int)OberonCompilerTypeForm.Character => CharacterType,
+            (int)OberonCompilerTypeForm.Integer => IntegerType,
+            (int)OberonCompilerTypeForm.Real => RealType,
+            (int)OberonCompilerTypeForm.Set => SetType,
+            (int)OberonCompilerTypeForm.Nil => NilType,
+            (int)OberonCompilerTypeForm.None => NoneType,
+            (int)OberonCompilerTypeForm.String => StringType,
+            _ => null
+        };
     }
 
     private OberonCompilerObject DeclareImportedParameter(string procedureName, int index)
