@@ -25,6 +25,8 @@ public sealed class OberonTask
     public OberonTaskState State { get; internal set; }
 
     internal OberonTask Next { get; set; }
+
+    internal OberonTaskScheduler? Owner { get; set; }
 }
 
 public sealed class OberonTaskScheduler
@@ -61,7 +63,7 @@ public sealed class OberonTaskScheduler
     public bool Install(OberonTask task)
     {
         ArgumentNullException.ThrowIfNull(task);
-        if (task.State != OberonTaskState.Off)
+        if (task.State != OberonTaskState.Off || task.Owner is not null)
         {
             return false;
         }
@@ -70,6 +72,7 @@ public sealed class OberonTaskScheduler
         _currentTask.Next = task;
         task.State = OberonTaskState.Idle;
         task.NextTime = 0;
+        task.Owner = this;
         TaskCount++;
         return true;
     }
@@ -77,7 +80,7 @@ public sealed class OberonTaskScheduler
     public bool Remove(OberonTask task)
     {
         ArgumentNullException.ThrowIfNull(task);
-        if (task.State == OberonTaskState.Off)
+        if (task.State == OberonTaskState.Off || !ReferenceEquals(task.Owner, this))
         {
             return false;
         }
@@ -95,6 +98,7 @@ public sealed class OberonTaskScheduler
         previous.Next = task.Next;
         task.State = OberonTaskState.Off;
         task.Next = task;
+        task.Owner = null;
         _currentTask = previous;
         TaskCount--;
         return true;

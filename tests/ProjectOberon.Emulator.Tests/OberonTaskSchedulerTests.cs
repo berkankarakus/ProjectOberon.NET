@@ -7,6 +7,7 @@ internal static class OberonTaskSchedulerTests
         CreatesTasksOffAndInstallsOnce();
         RunsTasksByPeriod();
         RemovesTasksAndUpdatesCurrentTask();
+        RejectsRemovingTasksOwnedByAnotherScheduler();
         CollectsActivityCount();
         ValidatesTasksAndRestoresStateAfterFailure();
     }
@@ -54,6 +55,22 @@ internal static class OberonTaskSchedulerTests
         TestAssertions.False(scheduler.Remove(first));
         TestAssertions.Equal(1, scheduler.TaskCount);
         TestAssertions.Equal(second, scheduler.CurrentTask);
+    }
+
+    private static void RejectsRemovingTasksOwnedByAnotherScheduler()
+    {
+        var owner = new OberonTaskScheduler();
+        var other = new OberonTaskScheduler();
+        var task = owner.NewTask(static () => { }, 1);
+        var currentTask = other.CurrentTask;
+
+        owner.Install(task);
+
+        TestAssertions.False(other.Remove(task));
+        TestAssertions.Equal(OberonTaskState.Idle, task.State);
+        TestAssertions.Equal(1, owner.TaskCount);
+        TestAssertions.Equal(0, other.TaskCount);
+        TestAssertions.Equal(currentTask, other.CurrentTask);
     }
 
     private static void CollectsActivityCount()
