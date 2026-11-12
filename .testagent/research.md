@@ -1,52 +1,61 @@
-# Test-generation research
+# Architecture test research
 
 ## Scope
 
-This 25-batch continuation covers the C# compiler, symbol metadata, RSC
-emission, and emulator integration paths in the existing solution. The C++
-emulator is explicitly out of scope.
+This is a broad, repository-wide architecture-test request covering all seven
+SDK-style projects and the project-level dependency graph.
 
-## Repository conventions
+## Codegraph findings
 
-- SDK-style projects target the solution in `ProjectOberon.NET.slnx`.
-- The repository uses a self-contained executable test project at
-  `tests/ProjectOberon.Emulator.Tests`; tests are registered through its
-  `Program.cs` runner rather than a framework test adapter.
-- Existing tests use small named methods and `TestAssertions`, with each suite
-  exposing a public `Run()` method.
-- The deterministic validation gate is `bash scripts/verify-dotnet.sh`.
+The current project graph has one dependency root and five production adapters:
 
-## Target inventory
+- `ProjectOberon.Emulator` has no project references and is the core runtime,
+  storage, compiler, and module-format library.
+- `ProjectOberon.Cli`, `ProjectOberon.CompilerCli`, `ProjectOberon.FsCli`,
+  `ProjectOberon.RscCli`, and `ProjectOberon.SdlUi` each depend on the emulator.
+- `ProjectOberon.Emulator.Tests` depends on the emulator and every production
+  adapter so the repository's executable test runner can exercise all surfaces.
+- No production project may depend on the test project.
 
-- `src/ProjectOberon.Symbols/OberonSymbolModule.cs`: SMB metadata parsing and
-  nested type mapping.
-- `src/ProjectOberon.Compiler/OberonCompilerSymbols.cs`: imported type and
-  parameter construction.
-- `src/ProjectOberon.Compiler/OberonCompilerSemanticChecker.cs`: type
-  compatibility and argument validation.
-- `src/ProjectOberon.Compiler/OberonCompilerAddressEmitter.cs`: aggregate
-  address lowering and explicit unsupported-path diagnostics.
-- `src/ProjectOberon.Compiler/OberonCompilerModuleEmitter.cs`: RSC fixups,
-  aggregate copying, and module data/code emission.
-- `tests/ProjectOberon.Emulator.Tests/OberonCompilerSymbolFileTests.cs`:
-  symbol-file round trips and malformed metadata coverage.
-- `tests/ProjectOberon.Emulator.Tests/OberonCompilerSymbolsTests.cs`:
-  imported type construction.
-- `tests/ProjectOberon.Emulator.Tests/OberonCompilerParserTests.cs`:
-  parser and semantic compatibility coverage.
-- `tests/ProjectOberon.Emulator.Tests/OberonCompilerModuleEmitterTests.cs`:
-  instruction-level compiler output.
-- `tests/ProjectOberon.Emulator.Tests/OberonCompilerRscTests.cs`: RSC fixups
-  and external call execution.
+Codegraph was synchronized before implementation. Its `status`/`files` commands
+currently report an SQLite open error even though `codegraph sync .` succeeds;
+the dependency direction was therefore cross-checked against the indexed
+project-reference declarations.
 
 ## Acceptance checklist
 
-1. Preserve SMB nested record/array/pointer metadata without changing the
-   origin C++ tree.
-2. Cover imported type construction and qualified selectors for the supported
-   combinations.
-3. Cover external scalar, aggregate, `VAR`, pointer, and open-array call
-   lowering where the current RSC representation supports it.
-4. Keep unsupported aggregate function-result copying explicit and tested.
-5. Run the narrow executable test suite and the repository verification gate.
-6. Keep each coherent implementation increment in a local commit; do not push.
+1. Add an executable architecture test that checks the allowed project graph.
+2. Reject production-to-test references and adapter-to-adapter references.
+3. Document the dependency direction and folder layout.
+4. Move production projects under `src/` and tests under `tests/`, updating all
+   solution, project-reference, CI, and README paths.
+5. Build the solution and run the complete repository test runner.
+
+## Follow-up batch
+
+The compiler emitter now exposes a minimal RSC artifact: code, variable/string
+data, imports, exported top-level procedure commands, and body offset. Type
+descriptor and pointer-fixup generation are intentionally not claimed yet.
+
+## Repository-wide pairing scan
+
+The static `Find-UntestedSources` scan was rerun after the refactor batch:
+
+- 154 production C# files and 99 test files were discovered.
+- 94 production files were paired directly and 60 were reported as unpaired.
+- The unpaired list is conservative rather than a coverage measurement. The
+  test project centralizes compiler, RSC, and Symbols namespaces in
+  `CompilerGlobalUsings.cs`, while the scanner only considers `using` directives
+  inside each individual test file. Consequently, existing suites such as
+  `OberonCompilerSymbolsTests`, `OberonCompilerScannerTests`,
+  `OberonCompilerSymbolFileTests`, and `SymbolModuleTests` appear in the
+  unpaired list even though they exercise the corresponding source types.
+- The scan was used as a review aid, not as an instruction to add duplicate
+  test files. Existing test suites were checked for the highest-declaration
+  candidates, and no new untested production surface was identified from this
+  report alone.
+
+Architecture tests and the executable test runner remain the authoritative
+verification for this repository because they compile against the actual
+project references and execute behavior rather than inferring pairing from
+syntax alone.
