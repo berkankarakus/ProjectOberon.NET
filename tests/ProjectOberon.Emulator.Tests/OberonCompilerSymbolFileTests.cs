@@ -7,6 +7,7 @@ internal static class OberonCompilerSymbolFileTests
         WritesFilesAcceptedByTheExistingReader();
         ReadsFunctionResultMetadata();
         ReadsTypeFormMetadata();
+        ReadsOpenArrayParameterMetadata();
         RejectsUnexportedSymbols();
         RejectsInvalidModuleNames();
         RejectsNonAsciiNestedNames();
@@ -71,6 +72,28 @@ internal static class OberonCompilerSymbolFileTests
         var module = OberonSymbolModuleReader.Parse(data);
 
         TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, module.Exports[0].TypeForm);
+    }
+
+    private static void ReadsOpenArrayParameterMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var array = symbols.CreateArray(symbols.IntegerType, -1, 8);
+        var parameter = symbols.Declare(
+            "items",
+            OberonCompilerObjectClass.Parameter,
+            array,
+            readOnly: true);
+        var procedureType = symbols.CreateProcedure(symbols.NoneType, [parameter]);
+        var procedure = symbols.Declare(
+            "Consume",
+            OberonCompilerObjectClass.Procedure,
+            procedureType,
+            exported: true);
+        var data = OberonCompilerSymbolFileWriter.Write("Demo", [procedure]);
+        var module = OberonSymbolModuleReader.Parse(data);
+
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Array, module.Exports[0].ParameterTypeForms![0]);
+        TestAssertions.Equal(-1, module.Exports[0].ParameterArrayLengths![0]);
     }
 
     private static void RejectsUnexportedSymbols()

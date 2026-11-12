@@ -283,10 +283,12 @@ internal static class OberonCompilerRscTests
             {
                 IsProcedure = true,
                 ParameterCount = 1,
-                ParameterReadOnly = [false]
+                ParameterReadOnly = [true],
+                ParameterTypeForms = [(int)OberonCompilerTypeForm.Array],
+                ParameterArrayLengths = new int?[] { -1 }
             }]);
         var result = new OberonCompilerParser(
-            "MODULE Demo; IMPORT IO; VAR value: INTEGER; BEGIN IO.Set(value); END Demo.",
+            "MODULE Demo; IMPORT IO; TYPE Values = ARRAY 2 OF INTEGER; VAR value: Values; BEGIN IO.Set(value); END Demo.",
             importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
             .ParseModule();
 
@@ -297,6 +299,9 @@ internal static class OberonCompilerRscTests
         TestAssertions.True(generator.Code
             .Select(Risc5Disassembler.Format)
             .Contains("ADD r0, r13, 0x0000"));
+        TestAssertions.True(generator.Code
+            .Select(Risc5Disassembler.Format)
+            .Contains("MOV r1, 0x0002"));
         TestAssertions.True(module.FixupProgram > 0);
     }
 

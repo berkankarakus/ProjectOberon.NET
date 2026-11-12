@@ -12,6 +12,8 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     public bool? HasResult { get; init; }
     public int ParameterCount { get; init; }
     public IReadOnlyList<bool>? ParameterReadOnly { get; init; }
+    public IReadOnlyList<int>? ParameterTypeForms { get; init; }
+    public IReadOnlyList<int?>? ParameterArrayLengths { get; init; }
     public int? TypeForm { get; init; }
 }
 
@@ -62,6 +64,12 @@ public static class OberonSymbolModuleReader
                 HasResult = typeInfo.HasResult,
                 ParameterCount = typeInfo.ParameterCount,
                 ParameterReadOnly = typeInfo.ParameterReadOnly,
+                ParameterTypeForms = typeInfo.Parameters?
+                    .Select(parameter => parameter.TypeForm)
+                    .ToArray(),
+                ParameterArrayLengths = typeInfo.Parameters?
+                    .Select(parameter => parameter.ArrayLength)
+                    .ToArray(),
                 TypeForm = typeInfo.TypeForm
             });
 
@@ -80,13 +88,15 @@ public static class OberonSymbolModuleReader
         var reference = reader.ReadSignedByte();
         if (reference < 0)
         {
-            return new SymbolTypeInfo(false, 0, false, -1, null);
+            return new SymbolTypeInfo(false, 0, false, -1, null, null, null);
         }
 
         var form = reader.ReadSignedByte();
         var isProcedure = form == 10;
         var parameterCount = 0;
         IReadOnlyList<bool>? parameterReadOnly = null;
+        IReadOnlyList<SymbolParameterInfo>? parameters = null;
+        int? arrayLength = null;
         var hasResult = false;
         switch (form)
         {
@@ -95,7 +105,7 @@ public static class OberonSymbolModuleReader
                 break;
             case 12:
                 SkipType(ref reader);
-                reader.ReadNum();
+                arrayLength = reader.ReadNum();
                 reader.ReadNum();
                 break;
             case 13:
@@ -108,7 +118,10 @@ public static class OberonSymbolModuleReader
             case 10:
                 var resultType = SkipType(ref reader);
                 hasResult = resultType.TypeForm != 9;
-                parameterReadOnly = SkipProcedureParameters(ref reader);
+                parameters = SkipProcedureParameters(ref reader);
+                parameterReadOnly = parameters
+                    .Select(parameter => parameter.ReadOnly)
+                    .ToArray();
                 parameterCount = parameterReadOnly.Count;
                 break;
             case 1:
@@ -137,7 +150,9 @@ public static class OberonSymbolModuleReader
             parameterCount,
             hasResult,
             form,
-            parameterReadOnly);
+            parameterReadOnly,
+            arrayLength,
+            parameters);
     }
 
     private static void SkipRecordFields(ref SymbolReader reader)
@@ -160,19 +175,20 @@ public static class OberonSymbolModuleReader
         }
     }
 
-    private static IReadOnlyList<bool> SkipProcedureParameters(ref SymbolReader reader)
+    private static IReadOnlyList<SymbolParameterInfo> SkipProcedureParameters(ref SymbolReader reader)
     {
-        var readOnly = new List<bool>();
+        var parameters = new List<SymbolParameterInfo>();
         while (true)
         {
             var parameterClass = reader.ReadSignedByte();
             if (parameterClass == 0)
             {
-                return readOnly;
+                return parameters;
             }
 
-            readOnly.Add(reader.ReadSignedByte() != 0);
-            SkipType(ref reader);
+            var readOnly = reader.ReadSignedByte() != 0;
+            var type = SkipType(ref reader);
+            parameters.Add(new SymbolParameterInfo(readOnly, type.TypeForm, type.ArrayLength));
         }
     }
 
@@ -196,7 +212,14 @@ public static class OberonSymbolModuleReader
         int ParameterCount,
         bool HasResult,
         int TypeForm,
-        IReadOnlyList<bool>? ParameterReadOnly);
+        IReadOnlyList<bool>? ParameterReadOnly,
+        int? ArrayLength,
+        IReadOnlyList<SymbolParameterInfo>? Parameters);
+
+    private readonly record struct SymbolParameterInfo(
+        bool ReadOnly,
+        int TypeForm,
+        int? ArrayLength);
 
     private ref struct SymbolReader
     {

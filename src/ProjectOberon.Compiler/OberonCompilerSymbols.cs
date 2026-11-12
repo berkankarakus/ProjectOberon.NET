@@ -321,7 +321,9 @@ public sealed class OberonCompilerSymbols
                         .Select(index => DeclareImportedParameter(
                             export.Name,
                             index,
-                            export.ParameterReadOnly))),
+                            export.ParameterReadOnly,
+                            export.ParameterTypeForms,
+                            export.ParameterArrayLengths))),
                 Value = export.Value,
                 ReadOnly = true,
                 OriginalName = export.Name,
@@ -405,7 +407,9 @@ public sealed class OberonCompilerSymbols
     private OberonCompilerObject DeclareImportedParameter(
         string procedureName,
         int index,
-        IReadOnlyList<bool>? parameterReadOnly)
+        IReadOnlyList<bool>? parameterReadOnly,
+        IReadOnlyList<int>? parameterTypeForms,
+        IReadOnlyList<int?>? parameterArrayLengths)
     {
         var isReadOnly = true;
         if (parameterReadOnly is not null && index < parameterReadOnly.Count)
@@ -413,9 +417,30 @@ public sealed class OberonCompilerSymbols
             isReadOnly = parameterReadOnly[index];
         }
 
+        var type = IntegerType;
+        if (parameterTypeForms is not null && index < parameterTypeForms.Count)
+        {
+            var typeForm = parameterTypeForms[index];
+            var arrayLength = parameterArrayLengths is not null && index < parameterArrayLengths.Count
+                ? parameterArrayLengths[index]
+                : null;
+            if (typeForm == (int)OberonCompilerTypeForm.Array && arrayLength == -1)
+            {
+                type = CreateArray(IntegerType, -1, 8);
+            }
+            else
+            {
+                var importedPrimitiveType = CreateImportedPrimitiveType(typeForm);
+                if (importedPrimitiveType is not null)
+                {
+                    type = importedPrimitiveType;
+                }
+            }
+        }
+
         return new OberonCompilerObject($"arg{index}", OberonCompilerObjectClass.Parameter)
         {
-            Type = IntegerType,
+            Type = type,
             ReadOnly = isReadOnly,
             OriginalName = procedureName
         };
