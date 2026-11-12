@@ -9,6 +9,7 @@ internal static class OberonFontTests
         RendersGlyphsToDisplayMemory();
         RejectsTruncatedFonts();
         RejectsInvalidGlyphRanges();
+        AcceptsFontPadding();
     }
 
     private static void ParsesFontRunsAndGlyphs()
@@ -49,6 +50,17 @@ internal static class OberonFontTests
         BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(18, 2), 129);
 
         TestAssertions.ThrowsInvalidData(() => OberonFont.Parse(data));
+    }
+
+    private static void AcceptsFontPadding()
+    {
+        var source = BuildFont();
+        var padded = new byte[source.Length + 4];
+        source.CopyTo(padded, 0);
+
+        var font = OberonFont.Parse(padded);
+
+        TestAssertions.Equal(3, font.GetGlyph('A').Advance);
     }
 
     private static byte[] BuildFont()
