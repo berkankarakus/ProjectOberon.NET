@@ -278,12 +278,11 @@ dotnet run --project src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csp
   path/to/Demo.Mod --import Files=Files.smb --no-disassemble
 ```
 
-The current import slice preserves exported procedure arity, scalar result and
-parameter types, fixed/open array metadata, pointer metadata, record sizes and
-exported record fields. Qualified calls are validated against that metadata.
-External scalar, array and pointer calls are lowered into RSC program/data
-fixups; aggregate record parameters and remaining `VAR` forms are still
-reported explicitly as compiler limitations.
+The current import slice preserves exported procedure arity, scalar and record
+results, scalar parameters, fixed/open arrays, pointer targets, record sizes and
+nested record fields. Qualified calls are validated against that metadata.
+External scalar, array, pointer and aggregate record calls—including `VAR`
+forms—are lowered into RSC program/data fixups.
 
 The compiler CLI now emits a minimal RSC container. Full type descriptor and
 pointer-fixup generation remains a separate compiler milestone; modules that
@@ -301,10 +300,9 @@ pages are rejected before their addresses are read. Text/rider codecs reject
 NUL or unrepresentable characters instead of silently replacing data.
 
 Compiler limitations are currently explicit for aggregate field/array loads and
-stores, aggregate record parameter lowering, remaining external `VAR` forms,
-pointer-fixup descriptors, incomplete nested imported type metadata, and `IS`
-type-test lowering. These are planned compiler milestones rather than silently
-accepted syntax.
+stores, pointer-fixup descriptors, record-valued function result copying, and
+`IS` type-test lowering. These are planned compiler milestones rather than
+silently accepted syntax.
 
 Run the fast validation suite after changing compiler or RSC code:
 
