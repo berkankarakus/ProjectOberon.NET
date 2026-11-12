@@ -17,12 +17,14 @@ The first slice contains:
 - a command-line runner
 - behavior tests for the CPU core
 
-Build and run the tests:
+Build and run the deterministic test suite:
 
 ```sh
-dotnet build src/ProjectOberon.Cli/ProjectOberon.Cli.csproj
-dotnet run --project tests/ProjectOberon.Emulator.Tests/ProjectOberon.Emulator.Tests.csproj
+bash scripts/verify-dotnet.sh
 ```
+
+The script builds the Release solution and runs the test runner without the
+external disk fixture.
 
 The boot/input integration test requires a compatible `RISC-work.img`. Set
 `PROJECT_OBERON_DISK` to its path, or run the deterministic unit suite without
