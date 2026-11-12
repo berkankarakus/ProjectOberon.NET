@@ -23,6 +23,10 @@ internal static partial class OberonDiskFormatTests
     private static void RejectsInvalidDirectoryPageShape()
     {
         TestAssertions.Throws<ArgumentNullException>(() => OberonDirectoryPageCodec.Write(null!));
+        TestAssertions.Throws<ArgumentNullException>(() => OberonDirectoryPageCodec.Write(
+            new OberonDirectoryPage { Entries = null!, Children = [0] }));
+        TestAssertions.Throws<ArgumentNullException>(() => OberonDirectoryPageCodec.Write(
+            new OberonDirectoryPage { Entries = [], Children = null! }));
 
         var tooManyEntries = new OberonDirectoryPage
         {
