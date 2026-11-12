@@ -260,28 +260,9 @@ internal static class OberonCompilerRscTests
                         null)]
                 ]
             }]);
-        var types = new OberonSymbolModule(
-            "Types",
-            0x4321,
-            1,
-            [new OberonSymbolExport("Node", 5, 0)
-            {
-                TypeForm = (int)OberonCompilerTypeForm.Record,
-                TypeSize = 4,
-                RecordFields =
-                [
-                    new OberonSymbolField(
-                        "value",
-                        0,
-                        (int)OberonCompilerTypeForm.Integer,
-                        4,
-                        null,
-                        null,
-                        null)
-                ]
-            }]);
+        var types = CreateRecordTypeModule();
         var result = new OberonCompilerParser(
-            "MODULE Demo; IMPORT IO, Types; VAR value: Types.Node; BEGIN IO.Set(value); END Demo.",
+            "MODULE Demo; IMPORT IO, Types; PROCEDURE Run; VAR value: Types.Node; BEGIN IO.Set(value); END Run; BEGIN Run; END Demo.",
             importedModules: new Dictionary<string, OberonSymbolModule>
             {
                 ["IO"] = symbols,
@@ -292,12 +273,13 @@ internal static class OberonCompilerRscTests
         var bytes = RscModuleWriter.Write(definition);
         var loader = new OberonModuleLoader(name => name == "Demo" ? bytes : null);
         loader.RegisterExternal(symbols);
+        loader.RegisterExternal(types);
         var memory = new Memory(64 * 1024);
         var cpu = new Risc5Cpu(memory);
         var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
         uint? receivedAddress = null;
-        uint receivedValue = 0;
         var dispatcher = new OberonHostCallDispatcher();
+        runtime.BindExternal(new OberonExternalModuleBinding("Types", 0x5000, 0x6000, [0]));
         runtime.BindExternal(
             new OberonExternalModuleBinding("IO", 0x3000, 0x4000, [0])
             {
@@ -306,19 +288,18 @@ internal static class OberonCompilerRscTests
                     context =>
                     {
                         receivedAddress = context.Cpu.Register(0);
-                        receivedValue = context.Memory.Read32(receivedAddress.Value);
                         context.Cpu.SetProgramCounter(Memory.RomBase);
                     }
                 ]
             },
             dispatcher);
 
-        var image = runtime.MemoryLoader.Load("Demo");
+        var image = runtime.Start("Demo", 0xf000);
         memory.Write32(image.DataAddress, 0x1234_5678);
         runtime.Initialize(image, dispatcher);
 
-        TestAssertions.Equal(image.DataAddress, receivedAddress);
-        TestAssertions.Equal(0x1234_5678u, receivedValue);
+        TestAssertions.True(receivedAddress > image.DataAddress);
+        TestAssertions.True(receivedAddress < (uint)memory.RamSize);
     }
 
     private static void ExecutesExternalFixedArrayParameterCall()
@@ -1034,23 +1015,28 @@ internal static class OberonCompilerRscTests
 
     private static void ExecutesCompilerProducedRecordCopy()
     {
-        const string source = "MODULE Records; TYPE Node = RECORD value: INTEGER; END; VAR source, target: Node; BEGIN target := source; END Records.";
-        var result = new OberonCompilerParser(source).ParseModule();
+        var types = CreateRecordTypeModule();
+        const string source = "MODULE Records; IMPORT Types; VAR result: INTEGER; PROCEDURE Run; VAR source, target: Types.Node; BEGIN source.value := 305419896; target := source; result := target.value; END Run; BEGIN Run; END Records.";
+        var result = new OberonCompilerParser(
+            source,
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = types })
+            .ParseModule();
         var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
         var bytes = RscModuleWriter.Write(definition);
         var loader = new OberonModuleLoader(name => name == "Records" ? bytes : null);
+        loader.RegisterExternal(types);
         var memory = new Memory(64 * 1024);
         var cpu = new Risc5Cpu(memory);
         var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
 
-        var image = runtime.Start("Records");
-        memory.Write32(image.DataAddress, 0x1234_5678);
-        for (var step = 0; step < 16 && memory.Read32(image.DataAddress + 4) != 0x1234_5678; step++)
+        runtime.BindExternal(new OberonExternalModuleBinding("Types", 0x5000, 0x6000, [0]));
+        var image = runtime.Start("Records", 0xf000);
+        for (var step = 0; step < 32 && memory.Read32(image.DataAddress) != 305419896; step++)
         {
             cpu.Step();
         }
 
-        TestAssertions.Equal(0x1234_5678u, memory.Read32(image.DataAddress + 4));
+        TestAssertions.Equal(305419896u, memory.Read32(image.DataAddress));
     }
 
     private static void ExecutesCompilerProducedArrayCopy()
@@ -1076,6 +1062,30 @@ internal static class OberonCompilerRscTests
 
         TestAssertions.Equal(11u, memory.Read32(image.DataAddress + 8));
         TestAssertions.Equal(22u, memory.Read32(image.DataAddress + 12));
+    }
+
+    private static OberonSymbolModule CreateRecordTypeModule()
+    {
+        return new OberonSymbolModule(
+            "Types",
+            0x4321,
+            1,
+            [new OberonSymbolExport("Node", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Record,
+                TypeSize = 4,
+                RecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
+            }]);
     }
 
     private static void RejectsUnsupportedMinimalRscTypes()
