@@ -382,7 +382,7 @@ public sealed class OberonCompilerSymbols
             if (importedType is null
                 && export.TypeForm == (int)OberonCompilerTypeForm.Record)
             {
-                importedType = CreateImportedRecordType(export.TypeSize);
+                importedType = CreateImportedRecordType(export.TypeSize, export.RecordFields);
             }
 
             if (importedType is null)
@@ -425,7 +425,9 @@ public sealed class OberonCompilerSymbols
         };
     }
 
-    private OberonCompilerType? CreateImportedRecordType(int? typeSize)
+    private OberonCompilerType? CreateImportedRecordType(
+        int? typeSize,
+        IReadOnlyList<OberonSymbolField>? fields = null)
     {
         if (typeSize is not int recordSize)
         {
@@ -434,7 +436,54 @@ public sealed class OberonCompilerSymbols
 
         var recordType = CreateRecord();
         recordType.Size = recordSize;
+        foreach (var field in fields ?? [])
+        {
+            var fieldType = CreateImportedFieldType(field);
+            if (fieldType is not null)
+            {
+                DeclareField(recordType, field.Name, fieldType, field.Offset, exported: true);
+            }
+        }
         return recordType;
+    }
+
+    private OberonCompilerType? CreateImportedFieldType(OberonSymbolField field)
+    {
+        if (field.TypeForm == (int)OberonCompilerTypeForm.Array
+            && field.ArrayLength is int arrayLength
+            && field.BaseTypeForm is int baseTypeForm)
+        {
+            var baseType = CreateImportedPrimitiveType(baseTypeForm);
+            if (baseType is null)
+            {
+                return null;
+            }
+
+            var size = field.Size ?? checked(baseType.Size * Math.Max(arrayLength, 0));
+            return CreateArray(baseType, arrayLength, size);
+        }
+
+        if (field.TypeForm == (int)OberonCompilerTypeForm.Pointer)
+        {
+            var baseType = CreateImportedPrimitiveType(field.BaseTypeForm);
+            if (baseType is not null)
+            {
+                return CreatePointer(baseType);
+            }
+
+            if (field.BaseTypeForm == (int)OberonCompilerTypeForm.Record)
+            {
+                var recordType = CreateImportedRecordType(field.BaseTypeSize);
+                if (recordType is not null)
+                {
+                    return CreatePointer(recordType);
+                }
+            }
+
+            return null;
+        }
+
+        return CreateImportedPrimitiveType(field.TypeForm);
     }
 
     private OberonCompilerType? CreateImportedPointerType(

@@ -21,7 +21,17 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     public IReadOnlyList<int?>? ParameterBaseTypeSizes { get; init; }
     public int? TypeForm { get; init; }
     public int? TypeSize { get; init; }
+    public IReadOnlyList<OberonSymbolField>? RecordFields { get; init; }
 }
+
+public sealed record OberonSymbolField(
+    string Name,
+    int Offset,
+    int TypeForm,
+    int? Size,
+    int? ArrayLength,
+    int? BaseTypeForm,
+    int? BaseTypeSize);
 
 public sealed record OberonSymbolModule(
     string Name,
@@ -86,7 +96,17 @@ public static class OberonSymbolModuleReader
                     .Select(parameter => parameter.BaseTypeSize)
                     .ToArray(),
                 TypeForm = typeInfo.TypeForm,
-                TypeSize = typeInfo.Size
+                TypeSize = typeInfo.Size,
+                RecordFields = typeInfo.Fields?
+                    .Select(field => new OberonSymbolField(
+                        field.Name,
+                        field.Offset,
+                        field.TypeForm,
+                        field.Size,
+                        field.ArrayLength,
+                        field.BaseTypeForm,
+                        field.BaseTypeSize))
+                    .ToArray()
             });
 
             if (symbolClass == 5)
@@ -104,7 +124,7 @@ public static class OberonSymbolModuleReader
         var reference = reader.ReadSignedByte();
         if (reference < 0)
         {
-            return new SymbolTypeInfo(false, 0, false, -1, null, null, null, null, null, null, null, null, null);
+            return new SymbolTypeInfo(false, 0, false, -1, null, null, null, null, null, null, null, null, null, null);
         }
 
         var form = reader.ReadSignedByte();
@@ -116,6 +136,7 @@ public static class OberonSymbolModuleReader
         int? baseTypeForm = null;
         int? baseTypeSize = null;
         int? typeSize = null;
+        IReadOnlyList<SymbolFieldInfo>? fields = null;
         int? resultTypeForm = null;
         int? resultBaseTypeForm = null;
         int? resultBaseTypeSize = null;
@@ -128,7 +149,9 @@ public static class OberonSymbolModuleReader
                 baseTypeSize = baseType.Size;
                 break;
             case 12:
-                SkipType(ref reader);
+                var arrayBaseType = SkipType(ref reader);
+                baseTypeForm = arrayBaseType.TypeForm;
+                baseTypeSize = arrayBaseType.Size;
                 arrayLength = reader.ReadNum();
                 typeSize = reader.ReadNum();
                 break;
@@ -137,7 +160,7 @@ public static class OberonSymbolModuleReader
                 reader.ReadNum();
                 reader.ReadNum();
                 typeSize = reader.ReadNum();
-                SkipRecordFields(ref reader);
+                fields = ReadRecordFields(ref reader);
                 break;
             case 10:
                 var resultType = SkipType(ref reader);
@@ -184,27 +207,39 @@ public static class OberonSymbolModuleReader
             baseTypeForm,
             baseTypeSize,
             typeSize,
+            fields,
             resultBaseTypeForm,
             resultBaseTypeSize);
     }
 
-    private static void SkipRecordFields(ref SymbolReader reader)
+    private static IReadOnlyList<SymbolFieldInfo> ReadRecordFields(ref SymbolReader reader)
     {
+        var fields = new List<SymbolFieldInfo>();
         while (true)
         {
             var fieldClass = reader.ReadSignedByte();
             if (fieldClass == 0)
             {
-                return;
+                return fields;
             }
 
             var fieldName = reader.ReadString();
-            if (fieldName.Length > 0)
+            if (fieldName.Length == 0)
             {
-                SkipType(ref reader);
+                reader.ReadNum();
+                continue;
             }
 
-            reader.ReadNum();
+            var fieldType = SkipType(ref reader);
+            var offset = reader.ReadNum();
+            fields.Add(new SymbolFieldInfo(
+                fieldName,
+                offset,
+                fieldType.TypeForm,
+                fieldType.Size,
+                fieldType.ArrayLength,
+                fieldType.BaseTypeForm,
+                fieldType.BaseTypeSize));
         }
     }
 
@@ -257,12 +292,22 @@ public static class OberonSymbolModuleReader
         int? BaseTypeForm,
         int? BaseTypeSize,
         int? Size,
+        IReadOnlyList<SymbolFieldInfo>? Fields,
         int? ResultBaseTypeForm,
         int? ResultBaseTypeSize);
 
     private readonly record struct SymbolParameterInfo(
         bool ReadOnly,
         int TypeForm,
+        int? ArrayLength,
+        int? BaseTypeForm,
+        int? BaseTypeSize);
+
+    private readonly record struct SymbolFieldInfo(
+        string Name,
+        int Offset,
+        int TypeForm,
+        int? Size,
         int? ArrayLength,
         int? BaseTypeForm,
         int? BaseTypeSize);
