@@ -37,19 +37,35 @@ public static class OberonDirectoryPageCodec
             throw new InvalidDataException($"invalid directory entry count: {count}");
         }
 
-        var page = new OberonDirectoryPage { Children = [BinaryPrimitives.ReadInt32LittleEndian(data[8..])] };
+        var firstChild = BinaryPrimitives.ReadInt32LittleEndian(data[8..]);
+        ValidateLogicalAddress(firstChild, allowZero: true);
+        var page = new OberonDirectoryPage { Children = [firstChild] };
         for (var index = 0; index < count; index++)
         {
             var offset = HeaderSize + index * EntrySize;
+            var entryAddress = BinaryPrimitives.ReadInt32LittleEndian(data[(offset + 32)..]);
+            var childAddress = BinaryPrimitives.ReadInt32LittleEndian(data[(offset + 36)..]);
+            ValidateLogicalAddress(entryAddress, allowZero: false);
+            ValidateLogicalAddress(childAddress, allowZero: true);
             var entry = new OberonDirectoryRecord(
                 ReadName(data, offset),
-                BinaryPrimitives.ReadInt32LittleEndian(data[(offset + 32)..]),
-                BinaryPrimitives.ReadInt32LittleEndian(data[(offset + 36)..]));
+                entryAddress,
+                childAddress);
             page.Entries.Add(entry);
             page.Children.Add(entry.Child);
         }
 
         return page;
+    }
+
+    private static void ValidateLogicalAddress(int address, bool allowZero)
+    {
+        if ((!allowZero && address == 0)
+            || address < 0
+            || address % OberonDiskLayout.LogicalSectorUnit != 0)
+        {
+            throw new InvalidDataException("directory page contains an invalid logical address");
+        }
     }
 
     public static byte[] Write(OberonDirectoryPage page)
