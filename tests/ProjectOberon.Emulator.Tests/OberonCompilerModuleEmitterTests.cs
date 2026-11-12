@@ -21,6 +21,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsImportedConstantExpression();
         EmitsAggregateRecordFieldCopy();
         EmitsNestedImportedRecordFieldCopy();
+        EmitsImportedArrayRecordFieldCopy();
         EmitsAggregateArrayElementCopy();
     }
 
@@ -225,6 +226,45 @@ internal static class OberonCompilerModuleEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Contains("LDR r0, [r0, 0]"));
         TestAssertions.True(instructions.Contains("STR r0, [r1, 0]"));
+    }
+
+    private static void EmitsImportedArrayRecordFieldCopy()
+    {
+        var symbols = new OberonSymbolModule(
+            "Types",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Nodes", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Array,
+                ArrayLength = 2,
+                BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                BaseTypeSize = 4,
+                BaseRecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ],
+                TypeSize = 8
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Records; IMPORT Types; TYPE Nodes = Types.Nodes; VAR source, target: Nodes; BEGIN target[0].value := source[1].value; END Records.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
+            .ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        TestAssertions.True(result.Succeeded);
+        new OberonCompilerModuleEmitter(generator).Emit(result);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("LDR r0")));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("STR r0")));
     }
 
     private static void EmitsAggregateArrayElementCopy()
