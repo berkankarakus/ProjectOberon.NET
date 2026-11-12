@@ -380,11 +380,9 @@ public sealed class OberonCompilerSymbols
         {
             var importedType = CreateImportedPrimitiveType(export.TypeForm);
             if (importedType is null
-                && export.TypeForm == (int)OberonCompilerTypeForm.Record
-                && export.TypeSize is int recordSize)
+                && export.TypeForm == (int)OberonCompilerTypeForm.Record)
             {
-                importedType = CreateRecord();
-                importedType.Size = recordSize;
+                importedType = CreateImportedRecordType(export.TypeSize);
             }
 
             if (importedType is null)
@@ -427,18 +425,33 @@ public sealed class OberonCompilerSymbols
         };
     }
 
-    private OberonCompilerType? CreateImportedPointerType(
-        int? baseTypeForm,
-        int? baseTypeSize)
+    private OberonCompilerType? CreateImportedRecordType(int? typeSize)
     {
-        if (baseTypeForm != (int)OberonCompilerTypeForm.Record
-            || baseTypeSize is not int recordSize)
+        if (typeSize is not int recordSize)
         {
             return null;
         }
 
         var recordType = CreateRecord();
         recordType.Size = recordSize;
+        return recordType;
+    }
+
+    private OberonCompilerType? CreateImportedPointerType(
+        int? baseTypeForm,
+        int? baseTypeSize)
+    {
+        if (baseTypeForm != (int)OberonCompilerTypeForm.Record)
+        {
+            return null;
+        }
+
+        var recordType = CreateImportedRecordType(baseTypeSize);
+        if (recordType is null)
+        {
+            return null;
+        }
+
         return CreatePointer(recordType);
     }
 
@@ -485,12 +498,12 @@ public sealed class OberonCompilerSymbols
             }
             else if (typeForm == (int)OberonCompilerTypeForm.Pointer)
             {
-                if (baseTypeForm == (int)OberonCompilerTypeForm.Record
-                    && baseTypeSize is int recordSize)
+                var importedPointerType = CreateImportedPointerType(
+                    baseTypeForm,
+                    baseTypeSize);
+                if (importedPointerType is not null)
                 {
-                    var recordType = CreateRecord();
-                    recordType.Size = recordSize;
-                    type = CreatePointer(recordType);
+                    type = importedPointerType;
                 }
                 else
                 {
