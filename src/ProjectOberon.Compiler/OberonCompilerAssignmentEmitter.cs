@@ -45,21 +45,21 @@ public sealed class OberonCompilerAssignmentEmitter
         _emitExpression(assignment.Value, 0);
         if (assignment.Target is OberonCompilerFieldExpression field)
         {
-            if (!OberonCompilerTypeRules.IsScalar(field.Field.Type))
-                throw new NotSupportedException("aggregate field stores are not implemented");
-            using var preservedValue = _registers.ReserveRange(0, 1);
-            _addresses.EmitAddress(field, 1);
-            _generator.EmitStore(0, 1, 0, OberonCompilerTypeRules.IsByteSized(field.Field.Type));
+            EmitScalarAddressStore(
+                field,
+                field.Field.Type,
+                "aggregate field stores are not implemented"
+            );
             return;
         }
 
         if (assignment.Target is OberonCompilerIndexExpression index)
         {
-            if (!OberonCompilerTypeRules.IsScalar(index.ElementType))
-                throw new NotSupportedException("aggregate array element stores are not implemented");
-            using var preservedValue = _registers.ReserveRange(0, 1);
-            _addresses.EmitAddress(index, 1);
-            _generator.EmitStore(0, 1, 0, OberonCompilerTypeRules.IsByteSized(index.ElementType));
+            EmitScalarAddressStore(
+                index,
+                index.ElementType,
+                "aggregate array element stores are not implemented"
+            );
             return;
         }
 
@@ -79,6 +79,25 @@ public sealed class OberonCompilerAssignmentEmitter
 
         var addressRegister = _addresses.EmitStorageBase(target, 1);
         _generator.EmitStore(0, addressRegister, offset, OberonCompilerTypeRules.IsByteSized(target.Type));
+    }
+
+    private void EmitScalarAddressStore(
+        OberonCompilerExpression target,
+        OberonCompilerType? targetType,
+        string aggregateError)
+    {
+        if (!OberonCompilerTypeRules.IsScalar(targetType))
+        {
+            throw new NotSupportedException(aggregateError);
+        }
+
+        using var preservedValue = _registers.ReserveRange(0, 1);
+        _addresses.EmitAddress(target, 1);
+        _generator.EmitStore(
+            0,
+            1,
+            0,
+            OberonCompilerTypeRules.IsByteSized(targetType));
     }
 
     private void EmitAggregateCopy(
