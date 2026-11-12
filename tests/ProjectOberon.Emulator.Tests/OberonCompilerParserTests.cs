@@ -17,6 +17,7 @@ internal static class OberonCompilerParserTests
         ReportsUnsupportedTypeTests();
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
+        RejectsMismatchedExternalFixedArrayLength();
         ReportsMissingImportedExport();
         ParsesQualifiedImportedType();
         ParsesSetLiteral();
@@ -409,6 +410,30 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Any(diagnostic =>
             diagnostic.Message.Contains("expects 1 arguments", StringComparison.Ordinal)));
+    }
+
+    private static void RejectsMismatchedExternalFixedArrayLength()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Set", 1, 7)
+            {
+                IsProcedure = true,
+                ParameterCount = 1,
+                ParameterReadOnly = [true],
+                ParameterTypeForms = [(int)OberonCompilerTypeForm.Array],
+                ParameterArrayLengths = new int?[] { 3 }
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; TYPE Values = ARRAY 2 OF INTEGER; VAR value: Values; BEGIN IO.Set(value); END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("expects ARRAY", StringComparison.Ordinal)));
     }
 
     private static void ReportsMissingImportedExport()
