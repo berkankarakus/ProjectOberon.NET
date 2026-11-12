@@ -341,6 +341,20 @@ public sealed class OberonCompilerSymbols
             imported.AddMember(constant);
         }
 
+        foreach (var export in module.Exports.Where(
+            export => export.IsProcedure != true && export.Class == (int)OberonCompilerObjectClass.Variable))
+        {
+            var variable = new OberonCompilerObject(export.Name, OberonCompilerObjectClass.Variable)
+            {
+                Type = IntegerType,
+                Value = export.Value,
+                OriginalName = export.Name,
+                Key = module.Key,
+                Level = 0
+            };
+            imported.AddMember(variable);
+        }
+
         return imported;
     }
 

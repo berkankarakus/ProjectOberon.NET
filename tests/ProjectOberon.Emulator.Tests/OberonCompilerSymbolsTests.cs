@@ -8,6 +8,7 @@ internal static class OberonCompilerSymbolsTests
         ResolvesNestedScopesAndReportsDuplicates();
         BuildsRecordsPointersAndProcedures();
         CreatesReadOnlyModules();
+        ImportsExternalVariableMetadata();
     }
 
     private static void InitializesUniverseAndSystemBuiltins()
@@ -69,6 +70,25 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.Equal(0x1234L, module.Key);
         TestAssertions.True(module.ReadOnly);
         TestAssertions.True(ReferenceEquals(module, symbols.Lookup("Files")));
+    }
+
+    private static void ImportsExternalVariableMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Config",
+            new OberonSymbolModule(
+                "Config",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Value", 2, 12)]));
+        var variable = module.FindMember("Value");
+
+        TestAssertions.True(variable is not null);
+        TestAssertions.Equal(OberonCompilerObjectClass.Variable, variable!.Class);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, variable.Type!.Form);
+        TestAssertions.Equal(12L, variable.Value);
+        TestAssertions.Equal(0, variable.Level);
     }
 }
 
