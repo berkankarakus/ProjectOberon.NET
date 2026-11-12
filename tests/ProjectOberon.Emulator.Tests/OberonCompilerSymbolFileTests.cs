@@ -7,6 +7,7 @@ internal static class OberonCompilerSymbolFileTests
         WritesFilesAcceptedByTheExistingReader();
         ReadsFunctionResultMetadata();
         ReadsPointerFunctionResultMetadata();
+        ReadsRecordFunctionResultMetadata();
         ReadsTypeFormMetadata();
         ReadsArrayTypeMetadata();
         ReadsRecordTypeSizeMetadata();
@@ -85,6 +86,25 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal((int)OberonCompilerTypeForm.Pointer, module.Exports[0].ResultTypeForm);
         TestAssertions.Equal((int)OberonCompilerTypeForm.Record, module.Exports[0].ResultBaseTypeForm);
         TestAssertions.Equal(0, module.Exports[0].ResultBaseTypeSize);
+    }
+
+    private static void ReadsRecordFunctionResultMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var record = symbols.CreateRecord();
+        symbols.DeclareField(record, "value", symbols.IntegerType, 0, exported: true);
+        var functionType = symbols.CreateProcedure(record, []);
+        var function = symbols.Declare(
+            "Make",
+            OberonCompilerObjectClass.Function,
+            functionType,
+            exported: true);
+        var module = OberonSymbolModuleReader.Parse(
+            OberonCompilerSymbolFileWriter.Write("Demo", [function]));
+
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Record, module.Exports[0].ResultTypeForm);
+        TestAssertions.Equal(1, module.Exports[0].ResultRecordFields!.Count);
+        TestAssertions.Equal("value", module.Exports[0].ResultRecordFields![0].Name);
     }
 
     private static void ReadsTypeFormMetadata()

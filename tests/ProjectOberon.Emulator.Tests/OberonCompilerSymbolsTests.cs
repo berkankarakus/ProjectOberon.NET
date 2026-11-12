@@ -15,6 +15,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsArrayTypeMetadata();
         ImportsExternalFunctionResultType();
         ImportsExternalPointerFunctionResultType();
+        ImportsExternalRecordFunctionResultType();
         ImportsExternalRecordParameterMetadata();
     }
 
@@ -263,6 +264,40 @@ internal static class OberonCompilerSymbolsTests
 
         TestAssertions.Equal(OberonCompilerTypeForm.Record, type.Fields[0].Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Fields[0].Type!.Fields[0].Type!.Form);
+    }
+
+    private static void ImportsExternalRecordFunctionResultType()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Factory",
+            new OberonSymbolModule(
+                "Factory",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Make", 1, 0)
+                {
+                    IsProcedure = true,
+                    HasResult = true,
+                    ResultTypeForm = (int)OberonCompilerTypeForm.Record,
+                    ResultBaseTypeSize = 4,
+                    ResultRecordFields =
+                    [
+                        new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ]
+                }]));
+        var function = module.FindMember("Make")!;
+
+        TestAssertions.Equal(OberonCompilerObjectClass.Function, function.Class);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, function.Type!.Base!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, function.Type.Base.Fields[0].Type!.Form);
     }
 
     private static void ImportsExternalRecordParameterMetadata()

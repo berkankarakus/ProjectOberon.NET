@@ -317,6 +317,13 @@ public sealed class OberonCompilerSymbols
             {
                 var importedResultType = CreateImportedPrimitiveType(export.ResultTypeForm);
                 if (importedResultType is null
+                    && export.ResultTypeForm == (int)OberonCompilerTypeForm.Record)
+                {
+                    importedResultType = CreateImportedRecordType(
+                        export.ResultBaseTypeSize,
+                        export.ResultRecordFields);
+                }
+                if (importedResultType is null
                     && export.ResultTypeForm == (int)OberonCompilerTypeForm.Pointer)
                 {
                     importedResultType = CreateImportedPointerType(
