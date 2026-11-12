@@ -101,6 +101,7 @@ internal static class ModulesHostBindingTests
         machine.Cpu.SetRegister(0, 0x1234);
         machine.Cpu.SetRegister(1, 0x5678);
         machine.Cpu.SetRegister(13, 0x9abc);
+        machine.Cpu.SetProgramCounter(0x444);
 
         TestAssertions.Throws<OberonModuleLoadException>(
             () => runtime.Initialize(image, machine.HostCalls, maxSteps: 3));
@@ -109,6 +110,7 @@ internal static class ModulesHostBindingTests
         TestAssertions.Equal(0x9abcu, machine.Cpu.Register(13));
         TestAssertions.Equal(0u, machine.Cpu.Register(12));
         TestAssertions.Equal(0u, machine.Cpu.Register(14));
+        TestAssertions.Equal(0x444u, machine.Cpu.PcByte);
     }
 
     private static byte[] BuildRsc(uint code = 0xc700_000fu)
