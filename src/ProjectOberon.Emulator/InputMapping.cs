@@ -63,6 +63,11 @@ public static class InputMapping
             throw new ArgumentOutOfRangeException(nameof(maximum));
         }
 
+        if (maximum > ushort.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximum));
+        }
+
         if (extent == 1)
         {
             return 0;

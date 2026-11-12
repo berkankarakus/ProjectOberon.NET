@@ -38,5 +38,7 @@ internal static class InputMappingTests
         TestAssertions.Equal((ushort)0, InputMapping.ScaleCoordinate(10, 1, 1024));
         TestAssertions.Throws<ArgumentOutOfRangeException>(() => InputMapping.ScaleCoordinate(0, 0, 1024));
         TestAssertions.Throws<ArgumentOutOfRangeException>(() => InputMapping.ScaleCoordinate(0, 100, 0));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() =>
+            InputMapping.ScaleCoordinate(0, 100, ushort.MaxValue + 1));
     }
 }
