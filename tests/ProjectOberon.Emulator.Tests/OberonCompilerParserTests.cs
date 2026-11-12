@@ -17,6 +17,7 @@ internal static class OberonCompilerParserTests
         ReportsUnsupportedTypeTests();
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
+        ReportsMissingImportedExport();
         ParsesSetLiteral();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
@@ -407,6 +408,19 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Any(diagnostic =>
             diagnostic.Message.Contains("expects 1 arguments", StringComparison.Ordinal)));
+    }
+
+    private static void ReportsMissingImportedExport()
+    {
+        var symbols = new OberonSymbolModule("IO", 0x1234, 1, []);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; BEGIN IO.Run; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("module member 'Run' is not defined", StringComparison.Ordinal)));
     }
 
     private static void ParsesControlFlowStatements()
