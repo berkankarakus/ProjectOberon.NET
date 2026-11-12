@@ -21,6 +21,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalRealOpenArrayParameterCall();
         EmitsExternalPointerParameterCall();
         EmitsExternalRecordParameterCall();
+        EmitsExternalVarRecordParameterCall();
         RejectsInvalidExternalImportTables();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
@@ -582,6 +583,66 @@ internal static class OberonCompilerRscTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Contains("LDR r0, [r14, 4]"));
         TestAssertions.True(instructions.Contains("MOV r0, 0x0004"));
+        TestAssertions.True(module.FixupProgram > 0);
+    }
+
+    private static void EmitsExternalVarRecordParameterCall()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Set", 1, 0)
+            {
+                IsProcedure = true,
+                ParameterCount = 1,
+                ParameterReadOnly = [false],
+                ParameterTypeForms = [(int)OberonCompilerTypeForm.Record],
+                ParameterBaseTypeSizes = [4],
+                ParameterRecordFields =
+                [
+                    [new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)]
+                ]
+            }]);
+        var types = new OberonSymbolModule(
+            "Types",
+            0x4321,
+            1,
+            [new OberonSymbolExport("Node", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Record,
+                TypeSize = 4,
+                RecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO, Types; PROCEDURE Relay(VAR value: Types.Node); BEGIN IO.Set(value); END Relay; BEGIN END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule>
+            {
+                ["IO"] = symbols,
+                ["Types"] = types
+            })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var generator = new OberonCompilerCodeGenerator();
+        var module = new OberonCompilerModuleEmitter(generator).EmitRsc(result);
         TestAssertions.True(module.FixupProgram > 0);
     }
 
