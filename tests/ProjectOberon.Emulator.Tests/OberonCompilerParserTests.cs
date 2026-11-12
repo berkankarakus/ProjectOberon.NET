@@ -23,6 +23,7 @@ internal static class OberonCompilerParserTests
         ParsesQualifiedImportedRecordType();
         ParsesNestedQualifiedImportedRecordType();
         ParsesQualifiedImportedArrayType();
+        ParsesExternalRecordFunctionResult();
         ParsesSetLiteral();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
@@ -571,6 +572,40 @@ internal static class OberonCompilerParserTests
         TestAssertions.Equal(OberonCompilerTypeForm.Record, value.Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, value.Type.Fields[0].Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, value.Type.Fields[0].Type!.Fields[0].Type!.Form);
+    }
+
+    private static void ParsesExternalRecordFunctionResult()
+    {
+        var factory = new OberonSymbolModule(
+            "Factory",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Make", 1, 0)
+            {
+                IsProcedure = true,
+                HasResult = true,
+                ResultTypeForm = (int)OberonCompilerTypeForm.Record,
+                ResultBaseTypeSize = 4,
+                ResultRecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Factory; TYPE Node = RECORD value: INTEGER; END; VAR target: Node; BEGIN target := Factory.Make(); END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Factory"] = factory })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var target = result.ModuleScope!.Objects.Single(obj => obj.Name == "target");
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, target.Type!.Form);
     }
 
     private static void ParsesControlFlowStatements()
