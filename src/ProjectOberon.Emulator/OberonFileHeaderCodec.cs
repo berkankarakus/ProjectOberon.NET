@@ -23,13 +23,29 @@ public static class OberonFileHeaderCodec
             throw new InvalidDataException($"invalid Oberon file header at sector {headerAddress:x}");
         }
 
-        return new OberonFileHeader(
+        var header = new OberonFileHeader(
             ReadName(sector, 4),
             ReadInt32(sector, 36),
             ReadInt32(sector, 40),
             ReadInt32(sector, 44),
             ReadIntArray(sector, 48, ExtensionCount),
             ReadIntArray(sector, 96, SectorCount));
+
+        if (header.AllocatedPages < 0 || header.AllocatedPages > MaxAllocatedPages)
+        {
+            throw new InvalidDataException("invalid Oberon file length");
+        }
+
+        var minimumLastPageLength = header.AllocatedPages == 0
+            ? HeaderSize
+            : 1;
+        if (header.LastPageLength < minimumLastPageLength
+            || header.LastPageLength > OberonDiskLayout.SectorLength)
+        {
+            throw new InvalidDataException("invalid Oberon last page length");
+        }
+
+        return header;
     }
 
     public static int[] ReadPageAddresses(OberonFileHeader header, Func<int, byte[]> readSector)
