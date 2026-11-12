@@ -57,7 +57,8 @@ public sealed class OberonCompilerFrameEmitter
                 continue;
             }
 
-            throw new NotSupportedException("aggregate parameter lowering is not implemented");
+            throw new NotSupportedException(
+                $"parameter type '{parameter.Type?.Form}' cannot be lowered");
         }
     }
 }

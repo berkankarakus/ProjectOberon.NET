@@ -172,7 +172,8 @@ public sealed class OberonCompilerCallEmitter
             }
             else
             {
-                throw new NotSupportedException("record parameter lowering is not implemented");
+                throw new NotSupportedException(
+                    $"parameter type '{parameter.Type?.Form}' cannot be lowered");
             }
 
             register += ParameterRegisterCount(parameter);
