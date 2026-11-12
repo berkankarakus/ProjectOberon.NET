@@ -18,6 +18,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsSameModuleDeterministically();
         EmitsOpenArrayAndScalarParameterCall();
         ReportsExternalProcedureLoweringGap();
+        EmitsImportedConstantExpression();
     }
 
     private static void EmitsParameterlessProcedureCall()
@@ -141,6 +142,25 @@ internal static class OberonCompilerModuleEmitterTests
 
         var rsc = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(parsed);
         TestAssertions.Equal(1, rsc.FixupProgram);
+    }
+
+    private static void EmitsImportedConstantExpression()
+    {
+        var symbols = new OberonSymbolModule(
+            "Config",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Answer", 1, 42) { IsProcedure = false }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Config; VAR value: INTEGER; BEGIN value := Config.Answer; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Config"] = symbols })
+            .ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        TestAssertions.True(result.Succeeded);
+        new OberonCompilerModuleEmitter(generator).Emit(result);
+
+        TestAssertions.Equal("MOV r0, 0x002a", Risc5Disassembler.Format(generator.Code[0]));
     }
 
     private static void EmitsStaticLinkForNestedProcedure()

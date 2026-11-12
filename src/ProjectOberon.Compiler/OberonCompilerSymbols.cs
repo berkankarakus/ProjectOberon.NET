@@ -327,6 +327,20 @@ public sealed class OberonCompilerSymbols
             imported.AddMember(procedure);
         }
 
+        foreach (var export in module.Exports.Where(
+            export => export.IsProcedure == false && export.Class == (int)OberonCompilerObjectClass.Constant))
+        {
+            var constant = new OberonCompilerObject(export.Name, OberonCompilerObjectClass.Constant)
+            {
+                Type = IntegerType,
+                Value = export.Value,
+                ReadOnly = true,
+                OriginalName = export.Name,
+                Key = module.Key
+            };
+            imported.AddMember(constant);
+        }
+
         return imported;
     }
 
