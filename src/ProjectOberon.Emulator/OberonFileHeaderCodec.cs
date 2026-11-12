@@ -72,7 +72,9 @@ public static class OberonFileHeaderCodec
                     throw new InvalidDataException("Oberon file header contains a missing extension page");
                 }
 
-                var extension = readSector(header.ExtensionAddresses[extensionIndex]);
+                var extensionAddress = header.ExtensionAddresses[extensionIndex];
+                ValidateLogicalAddress(extensionAddress, "extension page");
+                var extension = readSector(extensionAddress);
                 if (extension.Length < OberonDiskLayout.SectorLength)
                 {
                     throw new InvalidDataException("Oberon file header extension page is too small");
@@ -85,9 +87,19 @@ public static class OberonFileHeaderCodec
             {
                 throw new InvalidDataException("Oberon file header contains a missing page address");
             }
+
+            ValidateLogicalAddress(pages[index], "file page");
         }
 
         return pages;
+    }
+
+    private static void ValidateLogicalAddress(int address, string description)
+    {
+        if (address < 0 || address % OberonDiskLayout.LogicalSectorUnit != 0)
+        {
+            throw new InvalidDataException($"Oberon file header contains an invalid {description} address");
+        }
     }
 
     public static void Write(Span<byte> sector, string name, int allocatedPages, int lastPageLength, int date,

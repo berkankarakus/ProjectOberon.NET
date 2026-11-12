@@ -12,7 +12,7 @@ internal static partial class OberonDiskFormatTests
             allocatedPages: 65,
             lastPageLength: 512,
             date: 123,
-            extensions: [2000],
+            extensions: [2001],
             pages: Enumerable.Range(1, 66).Select(index => index * OberonDiskLayout.LogicalSectorUnit).ToArray());
 
         var header = OberonFileHeaderCodec.Read(sector, 29);
@@ -25,7 +25,7 @@ internal static partial class OberonDiskFormatTests
         }
 
         var pages = OberonFileHeaderCodec.ReadPageAddresses(header, address =>
-            address == 2000 ? extension : throw new InvalidOperationException("unexpected extension address"));
+            address == 2001 ? extension : throw new InvalidOperationException("unexpected extension address"));
 
         TestAssertions.Equal("Demo.Mod", header.Name);
         TestAssertions.Equal(65, header.AllocatedPages);
@@ -108,5 +108,15 @@ internal static partial class OberonDiskFormatTests
         TestAssertions.Throws<InvalidDataException>(() => OberonFileHeaderCodec.ReadPageAddresses(
             extensionHeader,
             _ => new byte[4]));
+
+        var invalidPage = header with { SectorAddresses = [31] };
+        TestAssertions.Throws<InvalidDataException>(() => OberonFileHeaderCodec.ReadPageAddresses(
+            invalidPage,
+            _ => new byte[OberonDiskLayout.SectorLength]));
+
+        var invalidExtension = extensionHeader with { ExtensionAddresses = [-29] };
+        TestAssertions.Throws<InvalidDataException>(() => OberonFileHeaderCodec.ReadPageAddresses(
+            invalidExtension,
+            _ => new byte[OberonDiskLayout.SectorLength]));
     }
 }
