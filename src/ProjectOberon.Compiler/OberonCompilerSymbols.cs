@@ -386,7 +386,7 @@ public sealed class OberonCompilerSymbols
         {
             var variable = new OberonCompilerObject(export.Name, OberonCompilerObjectClass.Variable)
             {
-                Type = IntegerType,
+                Type = CreateImportedExportType(export) ?? IntegerType,
                 Value = export.Value,
                 OriginalName = export.Name,
                 Key = module.Key,
@@ -398,30 +398,7 @@ public sealed class OberonCompilerSymbols
         foreach (var export in module.Exports.Where(
             export => export.IsProcedure != true && export.Class == (int)OberonCompilerObjectClass.Type))
         {
-            var importedType = CreateImportedPrimitiveType(export.TypeForm);
-            if (importedType is null
-                && export.TypeForm == (int)OberonCompilerTypeForm.Array)
-            {
-                importedType = CreateImportedArrayType(
-                    export.ArrayLength,
-                    export.BaseTypeForm,
-                    export.BaseTypeSize,
-                    export.TypeSize,
-                    export.BaseRecordFields);
-            }
-            if (importedType is null
-                && export.TypeForm == (int)OberonCompilerTypeForm.Record)
-            {
-                importedType = CreateImportedRecordType(export.TypeSize, export.RecordFields);
-            }
-            if (importedType is null
-                && export.TypeForm == (int)OberonCompilerTypeForm.Pointer)
-            {
-                importedType = CreateImportedPointerType(
-                    export.BaseTypeForm,
-                    export.BaseTypeSize,
-                    export.BaseRecordFields);
-            }
+            var importedType = CreateImportedExportType(export);
 
             if (importedType is null)
             {
@@ -439,6 +416,36 @@ public sealed class OberonCompilerSymbols
         }
 
         return imported;
+    }
+
+    private OberonCompilerType? CreateImportedExportType(OberonSymbolExport export)
+    {
+        var importedType = CreateImportedPrimitiveType(export.TypeForm);
+        if (importedType is null
+            && export.TypeForm == (int)OberonCompilerTypeForm.Array)
+        {
+            importedType = CreateImportedArrayType(
+                export.ArrayLength,
+                export.BaseTypeForm,
+                export.BaseTypeSize,
+                export.TypeSize,
+                export.BaseRecordFields);
+        }
+        if (importedType is null
+            && export.TypeForm == (int)OberonCompilerTypeForm.Record)
+        {
+            importedType = CreateImportedRecordType(export.TypeSize, export.RecordFields);
+        }
+        if (importedType is null
+            && export.TypeForm == (int)OberonCompilerTypeForm.Pointer)
+        {
+            importedType = CreateImportedPointerType(
+                export.BaseTypeForm,
+                export.BaseTypeSize,
+                export.BaseRecordFields);
+        }
+
+        return importedType;
     }
 
     private OberonCompilerType? CreateImportedPrimitiveType(int? typeForm)
