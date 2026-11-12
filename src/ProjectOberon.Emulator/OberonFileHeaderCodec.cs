@@ -129,6 +129,11 @@ public static class OberonFileHeaderCodec
             throw new ArgumentException("page list is shorter than the allocated file", nameof(pages));
         }
 
+        if (extensions.Length > ExtensionCount)
+        {
+            throw new ArgumentException("extension page list exceeds the header capacity", nameof(extensions));
+        }
+
         for (var index = 0; index < allocatedPages + 1; index++)
         {
             ValidateLogicalAddress(pages[index], "file page");

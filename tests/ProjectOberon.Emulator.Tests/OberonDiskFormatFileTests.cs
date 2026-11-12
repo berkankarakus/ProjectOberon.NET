@@ -82,6 +82,15 @@ internal static partial class OberonDiskFormatTests
             [],
             [31]
         ));
+        TestAssertions.Throws<ArgumentException>(() => OberonFileHeaderCodec.Write(
+            sector,
+            "Demo",
+            0,
+            OberonFileHeader.HeaderSize,
+            0,
+            Enumerable.Repeat(29, OberonFileHeaderCodec.ExtensionCount + 1).ToArray(),
+            [29]
+        ));
 
         var invalidName = new byte[OberonDiskLayout.SectorLength];
         BinaryPrimitives.WriteInt32LittleEndian(invalidName, OberonFileHeaderCodec.HeaderMark);
