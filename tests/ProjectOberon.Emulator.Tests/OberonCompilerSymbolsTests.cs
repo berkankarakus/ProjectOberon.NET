@@ -15,6 +15,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsArrayTypeMetadata();
         ImportsExternalFunctionResultType();
         ImportsExternalPointerFunctionResultType();
+        ImportsExternalRecordParameterMetadata();
     }
 
     private static void InitializesUniverseAndSystemBuiltins()
@@ -262,6 +263,40 @@ internal static class OberonCompilerSymbolsTests
 
         TestAssertions.Equal(OberonCompilerTypeForm.Record, type.Fields[0].Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Fields[0].Type!.Fields[0].Type!.Form);
+    }
+
+    private static void ImportsExternalRecordParameterMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "IO",
+            new OberonSymbolModule(
+                "IO",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Consume", 1, 7)
+                {
+                    IsProcedure = true,
+                    ParameterCount = 1,
+                    ParameterTypeForms = [(int)OberonCompilerTypeForm.Record],
+                    ParameterBaseTypeSizes = [4],
+                    ParameterRecordFields =
+                    [
+                        [new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)]
+                    ]
+                }]));
+        var procedure = module.FindMember("Consume")!;
+        var parameter = procedure.Type!.Parameters[0];
+
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, parameter.Type!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, parameter.Type.Fields[0].Type!.Form);
     }
 }
 

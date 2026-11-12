@@ -338,7 +338,8 @@ public sealed class OberonCompilerSymbols
                             export.ParameterTypeForms,
                             export.ParameterArrayLengths,
                             export.ParameterBaseTypeForms,
-                            export.ParameterBaseTypeSizes))),
+                            export.ParameterBaseTypeSizes,
+                            export.ParameterRecordFields))),
                 Value = export.Value,
                 ReadOnly = true,
                 OriginalName = export.Name,
@@ -552,7 +553,8 @@ public sealed class OberonCompilerSymbols
         IReadOnlyList<int>? parameterTypeForms,
         IReadOnlyList<int?>? parameterArrayLengths,
         IReadOnlyList<int?>? parameterBaseTypeForms,
-        IReadOnlyList<int?>? parameterBaseTypeSizes)
+        IReadOnlyList<int?>? parameterBaseTypeSizes,
+        IReadOnlyList<IReadOnlyList<OberonSymbolField>?>? parameterRecordFields)
     {
         var isReadOnly = true;
         if (parameterReadOnly is not null && index < parameterReadOnly.Count)
@@ -602,6 +604,21 @@ public sealed class OberonCompilerSymbols
                     {
                         type = CreatePointer(importedBaseType);
                     }
+                }
+            }
+            else if (typeForm == (int)OberonCompilerTypeForm.Record)
+            {
+                var fields = parameterRecordFields is not null && index < parameterRecordFields.Count
+                    ? parameterRecordFields[index]
+                    : null;
+                var importedRecordType = CreateImportedRecordType(
+                    parameterBaseTypeSizes is not null && index < parameterBaseTypeSizes.Count
+                        ? parameterBaseTypeSizes[index]
+                        : null,
+                    fields);
+                if (importedRecordType is not null)
+                {
+                    type = importedRecordType;
                 }
             }
             else
