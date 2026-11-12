@@ -78,6 +78,11 @@ internal static partial class OberonDiskFormatTests
         BinaryPrimitives.WriteInt32LittleEndian(invalidName, OberonFileHeaderCodec.HeaderMark);
         invalidName[4] = 0xff;
         TestAssertions.Throws<InvalidDataException>(() => OberonFileHeaderCodec.Read(invalidName, 29));
+
+        var unterminatedName = new byte[OberonDiskLayout.SectorLength];
+        BinaryPrimitives.WriteInt32LittleEndian(unterminatedName, OberonFileHeaderCodec.HeaderMark);
+        unterminatedName.AsSpan(4, 32).Fill((byte)'x');
+        TestAssertions.Throws<InvalidDataException>(() => OberonFileHeaderCodec.Read(unterminatedName, 29));
     }
 
     private static void RejectsMissingFilePages()

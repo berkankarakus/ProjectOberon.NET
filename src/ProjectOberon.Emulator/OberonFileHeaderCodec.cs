@@ -154,6 +154,11 @@ public static class OberonFileHeaderCodec
             length++;
         }
 
+        if (length == 32)
+        {
+            throw new InvalidDataException("Oberon file name is not NUL-terminated");
+        }
+
         return Encoding.ASCII.GetString(data.Slice(offset, length));
     }
 }
