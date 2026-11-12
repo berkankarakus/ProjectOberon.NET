@@ -24,7 +24,9 @@ bash scripts/verify-dotnet.sh
 ```
 
 The script builds the Release solution and runs the test runner without the
-external disk fixture.
+external disk fixture. Build artifacts are written to the user temporary
+directory instead of the repository; set `PROJECT_OBERON_DOTNET_ARTIFACTS` to
+override that location.
 
 The boot/input integration test requires a compatible `RISC-work.img`. Set
 `PROJECT_OBERON_DISK` to its path, or run the deterministic unit suite without
