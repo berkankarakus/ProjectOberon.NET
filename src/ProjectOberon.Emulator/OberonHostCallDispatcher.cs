@@ -57,6 +57,20 @@ public sealed class OberonHostCallContext
     {
         ArgumentNullException.ThrowIfNull(value);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumLength);
+
+        foreach (var character in value)
+        {
+            if (character == '\0')
+            {
+                throw new InvalidDataException("Oberon strings cannot contain NUL");
+            }
+
+            if (character > byte.MaxValue)
+            {
+                throw new InvalidDataException("Oberon strings must contain Latin-1 characters");
+            }
+        }
+
         var bytes = System.Text.Encoding.Latin1.GetBytes(value);
         if (bytes.Length >= maximumLength)
         {
