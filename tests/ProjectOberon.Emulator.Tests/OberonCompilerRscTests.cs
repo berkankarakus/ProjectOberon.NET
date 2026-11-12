@@ -12,6 +12,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalFunctionFixup();
         EmitsExternalValueParameterFixup();
         EmitsMultipleExternalFixups();
+        RejectsInvalidExternalImportTables();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
         ExecutesCompilerProducedStringBody();
@@ -196,6 +197,42 @@ internal static class OberonCompilerRscTests
         TestAssertions.Equal(2u, (module.Code[2] >> 20) & 0x0f);
         TestAssertions.Equal(1u, module.Code[1] & 0xfff);
         TestAssertions.Equal(1u, module.Code[2] & 0xfff);
+    }
+
+    private static void RejectsInvalidExternalImportTables()
+    {
+        var tooManyImportNames = string.Join(
+            ", ",
+            Enumerable.Range(0, 16).Select(index => $"M{index}"));
+        var tooManyImports = Enumerable.Range(0, 16)
+            .ToDictionary(
+                index => $"M{index}",
+                index => new OberonSymbolModule(
+                    $"M{index}",
+                    0x2000 + index,
+                    1,
+                    []));
+        var tooManyResult = new OberonCompilerParser(
+            $"MODULE Demo; IMPORT {tooManyImportNames}; BEGIN END Demo.",
+            importedModules: tooManyImports)
+            .ParseModule();
+
+        TestAssertions.True(tooManyResult.Succeeded);
+        TestAssertions.Throws<NotSupportedException>(() =>
+            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(tooManyResult));
+
+        var duplicateResult = new OberonCompilerParser(
+            "MODULE Demo; IMPORT First, Second; BEGIN END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule>
+            {
+                ["First"] = new OberonSymbolModule("First", 0x3000, 1, []),
+                ["Second"] = new OberonSymbolModule("Second", 0x3000, 1, [])
+            })
+            .ParseModule();
+
+        TestAssertions.True(duplicateResult.Succeeded);
+        TestAssertions.Throws<InvalidOperationException>(() =>
+            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(duplicateResult));
     }
 
     private static void EmitsStringPayload()
