@@ -58,6 +58,7 @@ internal static class OberonCompilerSymbolFileTests
 
         TestAssertions.True(module.Exports[0].IsProcedure == true);
         TestAssertions.True(module.Exports[0].HasResult == true);
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, module.Exports[0].ResultTypeForm);
     }
 
     private static void ReadsTypeFormMetadata()

@@ -312,7 +312,12 @@ public sealed class OberonCompilerSymbols
             var importedClass = hasResult
                 ? OberonCompilerObjectClass.Function
                 : OberonCompilerObjectClass.Procedure;
-            var resultType = hasResult ? IntegerType : NoneType;
+            var resultType = NoneType;
+            if (hasResult)
+            {
+                var importedResultType = CreateImportedPrimitiveType(export.ResultTypeForm);
+                resultType = importedResultType is null ? IntegerType : importedResultType;
+            }
             var procedure = new OberonCompilerObject(export.Name, importedClass)
             {
                 Type = CreateProcedure(
