@@ -11,6 +11,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsExternalVariableMetadata();
         ImportsPrimitiveTypeMetadata();
         ImportsOpaqueRecordTypeMetadata();
+        ImportsNestedRecordTypeMetadata();
         ImportsArrayTypeMetadata();
         ImportsExternalFunctionResultType();
         ImportsExternalPointerFunctionResultType();
@@ -222,6 +223,45 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.Equal(3, type.Type.Length);
         TestAssertions.Equal(12, type.Type.Size);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Type.Base!.Form);
+    }
+
+    private static void ImportsNestedRecordTypeMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Types",
+            new OberonSymbolModule(
+                "Types",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Outer", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Record,
+                    TypeSize = 4,
+                    RecordFields =
+                    [
+                        new OberonSymbolField(
+                            "inner",
+                            0,
+                            (int)OberonCompilerTypeForm.Record,
+                            4,
+                            null,
+                            null,
+                            null,
+                            [new OberonSymbolField(
+                                "value",
+                                0,
+                                (int)OberonCompilerTypeForm.Integer,
+                                4,
+                                null,
+                                null,
+                                null)])
+                    ]
+                }]));
+        var type = module.FindMember("Outer")!.Type!;
+
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, type.Fields[0].Type!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Fields[0].Type!.Fields[0].Type!.Form);
     }
 }
 

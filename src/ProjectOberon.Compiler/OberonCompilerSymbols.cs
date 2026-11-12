@@ -492,6 +492,11 @@ public sealed class OberonCompilerSymbols
             return null;
         }
 
+        if (field.TypeForm == (int)OberonCompilerTypeForm.Record)
+        {
+            return CreateImportedRecordType(field.Size, field.RecordFields);
+        }
+
         return CreateImportedPrimitiveType(field.TypeForm);
     }
 

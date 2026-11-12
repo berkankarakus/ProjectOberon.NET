@@ -13,6 +13,7 @@ internal static class OberonCompilerSymbolFileTests
         ReadsOpenArrayParameterMetadata();
         ReadsPointerParameterMetadata();
         ReadsRecordFieldMetadata();
+        ReadsNestedRecordFieldMetadata();
         RejectsUnexportedSymbols();
         RejectsInvalidModuleNames();
         RejectsNonAsciiNestedNames();
@@ -202,6 +203,27 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal("enabled", fields[1].Name);
         TestAssertions.Equal((int)OberonCompilerTypeForm.Boolean, fields[1].TypeForm);
         TestAssertions.Equal(4, fields[1].Offset);
+    }
+
+    private static void ReadsNestedRecordFieldMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var inner = symbols.CreateRecord();
+        symbols.DeclareField(inner, "value", symbols.IntegerType, 0, exported: true);
+        var outer = symbols.CreateRecord();
+        symbols.DeclareField(outer, "inner", inner, 0, exported: true);
+        var type = symbols.Declare(
+            "Outer",
+            OberonCompilerObjectClass.Type,
+            outer,
+            exported: true);
+        var module = OberonSymbolModuleReader.Parse(
+            OberonCompilerSymbolFileWriter.Write("Demo", [type]));
+
+        var nested = module.Exports[0].RecordFields![0].RecordFields!;
+        TestAssertions.Equal(1, nested.Count);
+        TestAssertions.Equal("value", nested[0].Name);
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, nested[0].TypeForm);
     }
 
     private static void RejectsUnexportedSymbols()
