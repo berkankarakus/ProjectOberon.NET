@@ -17,6 +17,8 @@ internal static class OberonCompilerRscTests
         EmitsMultipleExternalFixups();
         EmitsExternalVariableDataFixup();
         EmitsExternalRecordVariableDataFixup();
+        EmitsExternalPointerVariableDataFixup();
+        EmitsExternalArrayVariableDataFixup();
         EmitsExternalVarParameterCall();
         EmitsExternalFixedArrayParameterCall();
         EmitsExternalRealOpenArrayParameterCall();
@@ -432,6 +434,65 @@ internal static class OberonCompilerRscTests
         TestAssertions.True(result.Succeeded);
         var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
 
+        TestAssertions.True(module.FixupData > 0);
+    }
+
+    private static void EmitsExternalPointerVariableDataFixup()
+    {
+        var symbols = new OberonSymbolModule(
+            "State",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Current", 2, 0)
+            {
+                IsProcedure = false,
+                TypeForm = (int)OberonCompilerTypeForm.Pointer,
+                BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                BaseTypeSize = 4,
+                BaseRecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT State; BEGIN State.Current^.value := 1; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["State"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        TestAssertions.True(module.FixupData > 0);
+    }
+
+    private static void EmitsExternalArrayVariableDataFixup()
+    {
+        var symbols = new OberonSymbolModule(
+            "State",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Values", 2, 0)
+            {
+                IsProcedure = false,
+                TypeForm = (int)OberonCompilerTypeForm.Array,
+                ArrayLength = 2,
+                BaseTypeForm = (int)OberonCompilerTypeForm.Integer,
+                BaseTypeSize = 4,
+                TypeSize = 8
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT State; BEGIN State.Values[0] := State.Values[1]; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["State"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
         TestAssertions.True(module.FixupData > 0);
     }
 
