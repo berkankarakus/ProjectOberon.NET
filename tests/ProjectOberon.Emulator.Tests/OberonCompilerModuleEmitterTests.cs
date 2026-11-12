@@ -18,6 +18,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsSameModuleDeterministically();
         EmitsOpenArrayAndScalarParameterCall();
         ReportsExternalProcedureLoweringGap();
+        ReportsAggregateFunctionResultLoweringGap();
         EmitsImportedConstantExpression();
         EmitsAggregateRecordFieldCopy();
         EmitsNestedImportedRecordFieldCopy();
@@ -147,6 +148,40 @@ internal static class OberonCompilerModuleEmitterTests
 
         var rsc = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(parsed);
         TestAssertions.Equal(1, rsc.FixupProgram);
+    }
+
+    private static void ReportsAggregateFunctionResultLoweringGap()
+    {
+        var factory = new OberonSymbolModule(
+            "Factory",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Make", 1, 0)
+            {
+                IsProcedure = true,
+                HasResult = true,
+                ResultTypeForm = (int)OberonCompilerTypeForm.Record,
+                ResultBaseTypeSize = 4,
+                ResultRecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
+            }]);
+        var parsed = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Factory; TYPE Node = RECORD value: INTEGER; END; VAR target: Node; BEGIN target := Factory.Make(); END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Factory"] = factory })
+            .ParseModule();
+        var error = TestAssertions.Throws<NotSupportedException>(() =>
+            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).Emit(parsed));
+
+        TestAssertions.True(error.Message.Contains("aggregate function result address", StringComparison.Ordinal));
     }
 
     private static void EmitsImportedConstantExpression()
