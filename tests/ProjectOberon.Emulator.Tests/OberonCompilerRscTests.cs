@@ -948,8 +948,9 @@ internal static class OberonCompilerRscTests
         const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; VAR node: Node; BEGIN END Demo.";
         var result = new OberonCompilerParser(source).ParseModule();
 
-        TestAssertions.Throws<NotSupportedException>(() =>
+        var error = TestAssertions.Throws<NotSupportedException>(() =>
             new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
+        TestAssertions.True(error.Message.Contains("type descriptors", StringComparison.Ordinal));
     }
 
     private static void RejectsPointerTypeDescriptors()
@@ -957,8 +958,9 @@ internal static class OberonCompilerRscTests
         const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; Ref = POINTER TO Node; VAR node: Ref; BEGIN END Demo.";
         var result = new OberonCompilerParser(source).ParseModule();
 
-        TestAssertions.Throws<NotSupportedException>(() =>
+        var error = TestAssertions.Throws<NotSupportedException>(() =>
             new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
+        TestAssertions.True(error.Message.Contains("type descriptors", StringComparison.Ordinal));
     }
 
     private static void RejectsNestedRecordTypeDescriptors()
@@ -966,8 +968,9 @@ internal static class OberonCompilerRscTests
         const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; Nodes = ARRAY 2 OF Node; VAR nodes: Nodes; BEGIN END Demo.";
         var result = new OberonCompilerParser(source).ParseModule();
 
-        TestAssertions.Throws<NotSupportedException>(() =>
+        var error = TestAssertions.Throws<NotSupportedException>(() =>
             new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
+        TestAssertions.True(error.Message.Contains("type descriptors", StringComparison.Ordinal));
     }
 
     private static void ExecutesCompilerProducedStringBody()
