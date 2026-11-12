@@ -429,7 +429,16 @@ public sealed class OberonCompilerSymbols
             var arrayLength = parameterArrayLengths is not null && index < parameterArrayLengths.Count
                 ? parameterArrayLengths[index]
                 : null;
-            if (typeForm == (int)OberonCompilerTypeForm.Array && arrayLength == -1)
+            if (typeForm == (int)OberonCompilerTypeForm.Array
+                && arrayLength is int fixedLength
+                && fixedLength >= 0)
+            {
+                type = CreateArray(
+                    IntegerType,
+                    fixedLength,
+                    checked(fixedLength * IntegerType.Size));
+            }
+            else if (typeForm == (int)OberonCompilerTypeForm.Array && arrayLength == -1)
             {
                 type = CreateArray(IntegerType, -1, 8);
             }

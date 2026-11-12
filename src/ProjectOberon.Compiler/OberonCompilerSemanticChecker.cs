@@ -423,6 +423,14 @@ public sealed class OberonCompilerSemanticChecker
         }
         if (expected.Form == OberonCompilerTypeForm.Pointer
             && actual.Form == OberonCompilerTypeForm.Nil) return true;
+        if (expected.Form == OberonCompilerTypeForm.Array
+            && actual.Form == OberonCompilerTypeForm.Array)
+        {
+            return expected.Length == actual.Length
+                && expected.Base is not null
+                && actual.Base is not null
+                && AreAssignable(expected.Base, actual.Base);
+        }
         if (IsNumeric(expected) && IsNumeric(actual))
         {
             return true;

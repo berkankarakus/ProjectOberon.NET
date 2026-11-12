@@ -15,6 +15,7 @@ internal static class OberonCompilerRscTests
         EmitsMultipleExternalFixups();
         EmitsExternalVariableDataFixup();
         EmitsExternalVarParameterCall();
+        EmitsExternalFixedArrayParameterCall();
         RejectsInvalidExternalImportTables();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
@@ -327,6 +328,35 @@ internal static class OberonCompilerRscTests
         TestAssertions.True(generator.Code
             .Select(Risc5Disassembler.Format)
             .Contains("MOV r1, 0x0002"));
+        TestAssertions.True(module.FixupProgram > 0);
+    }
+
+    private static void EmitsExternalFixedArrayParameterCall()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Set", 1, 0)
+            {
+                IsProcedure = true,
+                ParameterCount = 1,
+                ParameterReadOnly = [true],
+                ParameterTypeForms = [(int)OberonCompilerTypeForm.Array],
+                ParameterArrayLengths = new int?[] { 3 }
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; TYPE Values = ARRAY 3 OF INTEGER; VAR value: Values; BEGIN IO.Set(value); END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var generator = new OberonCompilerCodeGenerator();
+        var module = new OberonCompilerModuleEmitter(generator).EmitRsc(result);
+
+        TestAssertions.True(generator.Code
+            .Select(Risc5Disassembler.Format)
+            .Contains("ADD r0, r13, 0x0000"));
         TestAssertions.True(module.FixupProgram > 0);
     }
 
