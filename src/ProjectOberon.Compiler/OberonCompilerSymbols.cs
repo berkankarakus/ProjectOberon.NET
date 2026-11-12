@@ -379,6 +379,14 @@ public sealed class OberonCompilerSymbols
             export => export.IsProcedure != true && export.Class == (int)OberonCompilerObjectClass.Type))
         {
             var importedType = CreateImportedPrimitiveType(export.TypeForm);
+            if (importedType is null
+                && export.TypeForm == (int)OberonCompilerTypeForm.Record
+                && export.TypeSize is int recordSize)
+            {
+                importedType = CreateRecord();
+                importedType.Size = recordSize;
+            }
+
             if (importedType is null)
             {
                 continue;

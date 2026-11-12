@@ -20,6 +20,7 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     public IReadOnlyList<int?>? ParameterBaseTypeForms { get; init; }
     public IReadOnlyList<int?>? ParameterBaseTypeSizes { get; init; }
     public int? TypeForm { get; init; }
+    public int? TypeSize { get; init; }
 }
 
 public sealed record OberonSymbolModule(
@@ -84,7 +85,8 @@ public static class OberonSymbolModuleReader
                 ParameterBaseTypeSizes = typeInfo.Parameters?
                     .Select(parameter => parameter.BaseTypeSize)
                     .ToArray(),
-                TypeForm = typeInfo.TypeForm
+                TypeForm = typeInfo.TypeForm,
+                TypeSize = typeInfo.Size
             });
 
             if (symbolClass == 5)

@@ -10,6 +10,7 @@ internal static class OberonCompilerSymbolsTests
         CreatesReadOnlyModules();
         ImportsExternalVariableMetadata();
         ImportsPrimitiveTypeMetadata();
+        ImportsOpaqueRecordTypeMetadata();
         ImportsExternalFunctionResultType();
         ImportsExternalPointerFunctionResultType();
     }
@@ -134,6 +135,28 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.True(function is not null);
         TestAssertions.Equal(OberonCompilerObjectClass.Function, function!.Class);
         TestAssertions.True(ReferenceEquals(symbols.RealType, function.Type!.Base));
+    }
+
+    private static void ImportsOpaqueRecordTypeMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Types",
+            new OberonSymbolModule(
+                "Types",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Node", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Record,
+                    TypeSize = 8
+                }]));
+        var type = module.FindMember("Node");
+
+        TestAssertions.True(type is not null);
+        TestAssertions.Equal(OberonCompilerObjectClass.Type, type!.Class);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, type.Type!.Form);
+        TestAssertions.Equal(8, type.Type.Size);
     }
 
     private static void ImportsExternalPointerFunctionResultType()
