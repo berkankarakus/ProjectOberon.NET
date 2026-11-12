@@ -131,7 +131,7 @@ public sealed class Memory : IMemoryBus
     public void LoadRomFile(string path)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        Array.Clear(_rom);
+        var words = new uint[MemoryMap.RomWords];
         var index = 0;
         foreach (var originalLine in File.ReadLines(path))
         {
@@ -153,8 +153,10 @@ public sealed class Memory : IMemoryBus
             }
             if (!uint.TryParse(line.Trim(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var word))
                 throw new InvalidDataException($"Invalid ROM word at line {index + 1}: {path}");
-            _rom[index++] = word;
+            words[index++] = word;
         }
+
+        words.CopyTo(_rom, 0);
     }
 
     public void AttachDisk(DiskImage disk) => _devices.AttachDisk(disk);

@@ -30,10 +30,16 @@ internal static class MemoryTests
     private static void RejectsInvalidRomFiles()
     {
         var path = Path.Combine(Path.GetTempPath(), $"project-oberon-rom-{Guid.NewGuid():N}.txt");
-        File.WriteAllText(path, "not-hex\n");
+        File.WriteAllText(path, "12345678\nnot-hex\n");
         try
         {
-            TestAssertions.Throws<InvalidDataException>(() => new Memory().LoadRomFile(path));
+            var memory = new Memory();
+            var originalRom = new uint[Memory.RomWords];
+            originalRom[0] = 0xdead_beefu;
+            memory.LoadRomWords(originalRom);
+
+            TestAssertions.Throws<InvalidDataException>(() => memory.LoadRomFile(path));
+            TestAssertions.Equal(0xdead_beefu, memory.Read32(Memory.RomBase));
             TestAssertions.Throws<ArgumentException>(() => new Memory().LoadRomWords([1u]));
         }
         finally
