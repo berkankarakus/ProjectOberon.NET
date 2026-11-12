@@ -83,6 +83,24 @@ public static class OberonFileHeaderCodec
         }
 
         ArgumentNullException.ThrowIfNull(name);
+        if (allocatedPages < 0 || allocatedPages > MaxAllocatedPages)
+        {
+            throw new ArgumentOutOfRangeException(nameof(allocatedPages));
+        }
+
+        var minimumLastPageLength = allocatedPages == 0
+            ? HeaderSize
+            : 1;
+        if (lastPageLength < minimumLastPageLength || lastPageLength > OberonDiskLayout.SectorLength)
+        {
+            throw new ArgumentOutOfRangeException(nameof(lastPageLength));
+        }
+
+        if (pages.Length < allocatedPages + 1)
+        {
+            throw new ArgumentException("page list is shorter than the allocated file", nameof(pages));
+        }
+
         if (name.Length >= 32 || name.Any(character => character > 0x7f || character == '\0'))
         {
             throw new ArgumentException(
