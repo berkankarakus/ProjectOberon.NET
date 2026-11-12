@@ -78,6 +78,7 @@ internal static class OberonCompilerSymbolFileTests
     {
         var symbols = new OberonCompilerSymbols();
         var record = symbols.CreateRecord();
+        symbols.DeclareField(record, "value", symbols.IntegerType, 0, exported: true);
         var pointer = symbols.CreatePointer(record);
         var functionType = symbols.CreateProcedure(pointer, []);
         var function = symbols.Declare(
@@ -270,6 +271,7 @@ internal static class OberonCompilerSymbolFileTests
     {
         var symbols = new OberonCompilerSymbols();
         var record = symbols.CreateRecord();
+        symbols.DeclareField(record, "value", symbols.IntegerType, 0, exported: true);
         var pointer = symbols.CreatePointer(record);
         var parameter = symbols.Declare(
             "value",
@@ -288,6 +290,7 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal((int)OberonCompilerTypeForm.Pointer, module.Exports[0].ParameterTypeForms![0]);
         TestAssertions.Equal((int)OberonCompilerTypeForm.Record, module.Exports[0].ParameterBaseTypeForms![0]);
         TestAssertions.Equal(0, module.Exports[0].ParameterBaseTypeSizes![0]);
+        TestAssertions.Equal("value", module.Exports[0].ParameterBaseRecordFields![0]![0].Name);
     }
 
     private static void ReadsRecordParameterFieldMetadata()
