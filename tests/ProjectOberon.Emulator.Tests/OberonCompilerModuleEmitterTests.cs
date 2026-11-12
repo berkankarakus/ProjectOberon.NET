@@ -22,6 +22,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsAggregateRecordFieldCopy();
         EmitsNestedImportedRecordFieldCopy();
         EmitsImportedArrayRecordFieldCopy();
+        EmitsImportedPointerRecordFieldStore();
         EmitsAggregateArrayElementCopy();
     }
 
@@ -264,6 +265,42 @@ internal static class OberonCompilerModuleEmitterTests
 
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("LDR r0")));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("STR r0")));
+    }
+
+    private static void EmitsImportedPointerRecordFieldStore()
+    {
+        var symbols = new OberonSymbolModule(
+            "Types",
+            0x1234,
+            1,
+            [new OberonSymbolExport("NodeRef", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Pointer,
+                BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                BaseTypeSize = 4,
+                BaseRecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Records; IMPORT Types; TYPE NodeRef = Types.NodeRef; VAR value: NodeRef; BEGIN value^.value := 1; END Records.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
+            .ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        TestAssertions.True(result.Succeeded);
+        new OberonCompilerModuleEmitter(generator).Emit(result);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("STR r0")));
     }
 
