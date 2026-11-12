@@ -7,6 +7,7 @@ internal static class OberonCompilerRscTests
         EmitsMinimalRscModule();
         EmitsStringPayload();
         EmitsImportsAndExportedCommands();
+        EmitsExternalProcedureFixup();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
         ExecutesCompilerProducedStringBody();
@@ -44,6 +45,31 @@ internal static class OberonCompilerRscTests
         TestAssertions.Equal("Start", module.Commands[0].Name);
         TestAssertions.Equal(0, module.Commands[0].CodeOffset);
         TestAssertions.True(module.BodyOffset > module.Commands[0].CodeOffset);
+    }
+
+    private static void EmitsExternalProcedureFixup()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Run", 1, 7) { IsProcedure = true }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; BEGIN IO.Run; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(1, module.Imports.Count);
+        TestAssertions.Equal(1, module.FixupProgram);
+        var placeholder = module.Code[module.FixupProgram];
+        TestAssertions.Equal(1u, (placeholder >> 20) & 0x0f);
+        TestAssertions.Equal(7u, (placeholder >> 12) & 0xff);
+        TestAssertions.Equal(1u, placeholder & 0xfff);
+
+        var roundTrip = RscModuleReader.Parse(RscModuleWriter.Write(module));
+        TestAssertions.Equal(module.FixupProgram, roundTrip.FixupProgram);
+        TestAssertions.True(module.Code.SequenceEqual(roundTrip.Code));
     }
 
     private static void EmitsStringPayload()

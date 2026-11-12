@@ -7,6 +7,7 @@ public sealed class OberonCompilerCallEmitter
     private readonly OberonCompilerRegisterAllocator _registers;
     private readonly Func<OberonCompilerExpression, int, int> _emitExpression;
     private readonly Func<OberonCompilerObject, OberonCompilerLabel?>? _procedureLabelResolver;
+    private readonly Action<OberonCompilerObject>? _externalProcedureEmitter;
     private readonly int _currentLevel;
 
     public OberonCompilerCallEmitter(
@@ -16,6 +17,25 @@ public sealed class OberonCompilerCallEmitter
         Func<OberonCompilerExpression, int, int> emitExpression,
         Func<OberonCompilerObject, OberonCompilerLabel?>? procedureLabelResolver,
         int currentLevel = 1)
+        : this(
+            generator,
+            addresses,
+            registers,
+            emitExpression,
+            procedureLabelResolver,
+            currentLevel,
+            externalProcedureEmitter: null)
+    {
+    }
+
+    internal OberonCompilerCallEmitter(
+        IOberonCompilerInstructionWriter generator,
+        OberonCompilerAddressEmitter addresses,
+        OberonCompilerRegisterAllocator registers,
+        Func<OberonCompilerExpression, int, int> emitExpression,
+        Func<OberonCompilerObject, OberonCompilerLabel?>? procedureLabelResolver,
+        int currentLevel,
+        Action<OberonCompilerObject>? externalProcedureEmitter)
     {
         ArgumentNullException.ThrowIfNull(generator);
         ArgumentNullException.ThrowIfNull(addresses);
@@ -27,6 +47,7 @@ public sealed class OberonCompilerCallEmitter
         _registers = registers;
         _emitExpression = emitExpression;
         _procedureLabelResolver = procedureLabelResolver;
+        _externalProcedureEmitter = externalProcedureEmitter;
         _currentLevel = currentLevel;
     }
 
@@ -40,6 +61,12 @@ public sealed class OberonCompilerCallEmitter
         var target = ResolveProcedureLabel(procedure);
         if (target is null)
         {
+            if (procedure.Level == 0 && procedure.Key != 0 && _externalProcedureEmitter is not null)
+            {
+                _externalProcedureEmitter(procedure);
+                return;
+            }
+
             if (procedure.Level == 0 && procedure.Key != 0)
             {
                 throw new NotSupportedException(

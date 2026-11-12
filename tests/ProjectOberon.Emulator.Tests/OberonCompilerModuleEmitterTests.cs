@@ -138,6 +138,9 @@ internal static class OberonCompilerModuleEmitterTests
 
         TestAssertions.Throws<NotSupportedException>(() =>
             new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).Emit(parsed));
+
+        var rsc = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(parsed);
+        TestAssertions.Equal(1, rsc.FixupProgram);
     }
 
     private static void EmitsStaticLinkForNestedProcedure()
