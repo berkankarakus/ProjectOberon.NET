@@ -45,6 +45,11 @@ internal sealed record Options(
                     help = true;
                     break;
                 case "--rom":
+                    if (rom is not null)
+                    {
+                        throw new ArgumentException("ROM file specified more than once");
+                    }
+
                     rom = Next(args, ref index, "--rom");
                     break;
                 case "--steps":
@@ -52,6 +57,11 @@ internal sealed record Options(
                         throw new ArgumentException("--steps must be an unsigned integer");
                     break;
                 case "--disk":
+                    if (disk is not null)
+                    {
+                        throw new ArgumentException("disk file specified more than once");
+                    }
+
                     disk = Next(args, ref index, "--disk");
                     break;
                 case "--read-only":

@@ -73,5 +73,7 @@ internal static class CliOptionTests
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--breakpoint", "not-hex"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--unknown"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--disk"]));
+        TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--rom", "first.mem", "--rom", "second.mem"]));
+        TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--disk", "first.img", "--disk", "second.img"]));
     }
 }
