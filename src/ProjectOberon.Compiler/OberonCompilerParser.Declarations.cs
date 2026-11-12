@@ -276,6 +276,29 @@ public sealed partial class OberonCompilerParser
             var name = _current.Lexeme;
             Next();
             var obj = _symbols.Lookup(name);
+
+            if (_current.Kind == OberonCompilerTokenKind.Period
+                && obj?.Class == OberonCompilerObjectClass.Module)
+            {
+                Next();
+                if (_current.Kind != OberonCompilerTokenKind.Identifier)
+                {
+                    AddDiagnostic("type identifier expected after module selector");
+                    return _symbols.NoneType;
+                }
+
+                var memberName = _current.Lexeme;
+                Next();
+                var member = obj.FindMember(memberName);
+                if (member?.Class == OberonCompilerObjectClass.Type && member.Type is not null)
+                {
+                    return member.Type;
+                }
+
+                AddDiagnostic($"module type '{memberName}' is not defined");
+                return _symbols.NoneType;
+            }
+
             if (obj?.Class == OberonCompilerObjectClass.Type && obj.Type is not null)
             {
                 return obj.Type;

@@ -18,6 +18,7 @@ internal static class OberonCompilerParserTests
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
         ReportsMissingImportedExport();
+        ParsesQualifiedImportedType();
         ParsesSetLiteral();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
@@ -421,6 +422,26 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Any(diagnostic =>
             diagnostic.Message.Contains("module member 'Run' is not defined", StringComparison.Ordinal)));
+    }
+
+    private static void ParsesQualifiedImportedType()
+    {
+        var symbols = new OberonSymbolModule(
+            "Types",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Count", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Integer
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Types; TYPE Value = Types.Count; VAR value: Value; BEGIN value := 1; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var value = result.ModuleScope!.Objects.Single(obj => obj.Name == "Value");
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, value.Type!.Form);
     }
 
     private static void ParsesControlFlowStatements()
