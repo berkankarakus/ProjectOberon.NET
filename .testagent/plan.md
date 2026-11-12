@@ -79,3 +79,17 @@
 | Disk names preserve byte fidelity | Reject non-ASCII names during directory and file-header read/write | `OberonDiskFormatTests.RejectsInvalidDirectoryPageShape`, `OberonDiskFormatTests.RejectsInvalidFileHeader` |
 | File extension pages have complete sectors | Reject short extension pages before reading page addresses | `OberonDiskFormatTests.RejectsMissingFilePages` |
 | CLI parsers reject null argument arrays | Validate parser entry points before inspecting options | `CliOptionTests`, `SubcommandOptionTests`, `SdlUiTests` |
+
+## Current continuation plan
+
+1. Extend the existing compiler/RSC suites rather than creating duplicate test
+   projects, following the static pairing caveat recorded in research.
+2. Add one focused regression at a time for the remaining supported type and
+   call combinations; implement production changes only when the regression
+   demonstrates a real gap.
+3. Keep unsupported runtime representations explicit and add an assertion for
+   their diagnostic instead of silently generating incomplete RSC.
+4. Run the executable test project after each coherent batch and finish with
+   `bash scripts/verify-dotnet.sh`.
+5. Refresh CodeGraph, review assertion strength inline, write
+   `.testagent/status.md`, and keep all work local until explicitly pushed.

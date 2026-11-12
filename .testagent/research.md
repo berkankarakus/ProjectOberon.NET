@@ -59,3 +59,17 @@ Architecture tests and the executable test runner remain the authoritative
 verification for this repository because they compile against the actual
 project references and execute behavior rather than inferring pairing from
 syntax alone.
+
+## Current continuation scope
+
+The current 25-batch continuation targets the remaining compiler/RSC gaps while
+keeping the C++ emulator untouched. The static pairing scan was rerun with the
+Roslyn analyzer: 154 source files and 99 test files were found; 94 paired and
+60 conservatively unpaired. The unpaired result is affected by centralized
+global usings, so existing suite coverage remains authoritative.
+
+Primary targets are `OberonSymbolModule`, imported compiler symbols, semantic
+type compatibility, address/code emission, and external RSC call paths. The
+remaining explicit product gaps are type descriptors/pointer fixups, aggregate
+function-result copying, aggregate selector execution coverage, and `IS`
+lowering.

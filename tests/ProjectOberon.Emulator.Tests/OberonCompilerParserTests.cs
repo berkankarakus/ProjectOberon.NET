@@ -26,6 +26,7 @@ internal static class OberonCompilerParserTests
         ParsesImportedArrayRecordSelectors();
         ParsesImportedPointerRecordSelectors();
         ParsesExternalRecordFunctionResult();
+        RejectsMismatchedImportedRecordParameterSize();
         ParsesSetLiteral();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
@@ -678,6 +679,30 @@ internal static class OberonCompilerParserTests
         TestAssertions.True(result.Succeeded);
         var target = result.ModuleScope!.Objects.Single(obj => obj.Name == "target");
         TestAssertions.Equal(OberonCompilerTypeForm.Record, target.Type!.Form);
+    }
+
+    private static void RejectsMismatchedImportedRecordParameterSize()
+    {
+        var io = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Consume", 1, 0)
+            {
+                IsProcedure = true,
+                ParameterCount = 1,
+                ParameterTypeForms = [(int)OberonCompilerTypeForm.Record],
+                ParameterBaseTypeSizes = [8],
+                ParameterRecordFields = [[]]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; TYPE Node = RECORD value: INTEGER; END; VAR value: Node; BEGIN IO.Consume(value); END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = io })
+            .ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("expects RECORD", StringComparison.Ordinal)));
     }
 
     private static void ParsesControlFlowStatements()
