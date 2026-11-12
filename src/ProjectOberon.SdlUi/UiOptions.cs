@@ -61,9 +61,19 @@ internal sealed record UiOptions(
                     help = true;
                     break;
                 case "--rom" when index + 1 < args.Length:
+                    if (rom is not null)
+                    {
+                        throw new ArgumentException("ROM file specified more than once");
+                    }
+
                     rom = args[++index];
                     break;
                 case "--disk" when index + 1 < args.Length:
+                    if (disk is not null)
+                    {
+                        throw new ArgumentException("disk file specified more than once");
+                    }
+
                     disk = args[++index];
                     break;
                 case "--read-only":

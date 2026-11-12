@@ -45,6 +45,8 @@ internal static partial class SdlUiTests
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--boot"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--initialize", "--boot", "--start-module", "Input", "--disk", "work.img"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--command", "Start"]));
+        TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--rom", "first.mem", "--rom", "second.mem"]));
+        TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--disk", "first.img", "--disk", "second.img"]));
     }
 
     private static void EncodesKeyboardEvents()
