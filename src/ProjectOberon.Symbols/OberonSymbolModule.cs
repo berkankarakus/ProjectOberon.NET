@@ -15,6 +15,8 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     public IReadOnlyList<bool>? ParameterReadOnly { get; init; }
     public IReadOnlyList<int>? ParameterTypeForms { get; init; }
     public IReadOnlyList<int?>? ParameterArrayLengths { get; init; }
+    public IReadOnlyList<int?>? ParameterBaseTypeForms { get; init; }
+    public IReadOnlyList<int?>? ParameterBaseTypeSizes { get; init; }
     public int? TypeForm { get; init; }
 }
 
@@ -72,6 +74,12 @@ public static class OberonSymbolModuleReader
                 ParameterArrayLengths = typeInfo.Parameters?
                     .Select(parameter => parameter.ArrayLength)
                     .ToArray(),
+                ParameterBaseTypeForms = typeInfo.Parameters?
+                    .Select(parameter => parameter.BaseTypeForm)
+                    .ToArray(),
+                ParameterBaseTypeSizes = typeInfo.Parameters?
+                    .Select(parameter => parameter.BaseTypeSize)
+                    .ToArray(),
                 TypeForm = typeInfo.TypeForm
             });
 
@@ -90,7 +98,7 @@ public static class OberonSymbolModuleReader
         var reference = reader.ReadSignedByte();
         if (reference < 0)
         {
-            return new SymbolTypeInfo(false, 0, false, -1, null, null, null, null);
+            return new SymbolTypeInfo(false, 0, false, -1, null, null, null, null, null, null, null);
         }
 
         var form = reader.ReadSignedByte();
@@ -99,23 +107,28 @@ public static class OberonSymbolModuleReader
         IReadOnlyList<bool>? parameterReadOnly = null;
         IReadOnlyList<SymbolParameterInfo>? parameters = null;
         int? arrayLength = null;
+        int? baseTypeForm = null;
+        int? baseTypeSize = null;
+        int? typeSize = null;
         int? resultTypeForm = null;
         var hasResult = false;
         switch (form)
         {
             case 7:
-                SkipType(ref reader);
+                var baseType = SkipType(ref reader);
+                baseTypeForm = baseType.TypeForm;
+                baseTypeSize = baseType.Size;
                 break;
             case 12:
                 SkipType(ref reader);
                 arrayLength = reader.ReadNum();
-                reader.ReadNum();
+                typeSize = reader.ReadNum();
                 break;
             case 13:
                 SkipType(ref reader);
                 reader.ReadNum();
                 reader.ReadNum();
-                reader.ReadNum();
+                typeSize = reader.ReadNum();
                 SkipRecordFields(ref reader);
                 break;
             case 10:
@@ -157,7 +170,10 @@ public static class OberonSymbolModuleReader
             parameterReadOnly,
             arrayLength,
             parameters,
-            resultTypeForm);
+            resultTypeForm,
+            baseTypeForm,
+            baseTypeSize,
+            typeSize);
     }
 
     private static void SkipRecordFields(ref SymbolReader reader)
@@ -193,7 +209,12 @@ public static class OberonSymbolModuleReader
 
             var readOnly = reader.ReadSignedByte() != 0;
             var type = SkipType(ref reader);
-            parameters.Add(new SymbolParameterInfo(readOnly, type.TypeForm, type.ArrayLength));
+            parameters.Add(new SymbolParameterInfo(
+                readOnly,
+                type.TypeForm,
+                type.ArrayLength,
+                type.BaseTypeForm,
+                type.Size));
         }
     }
 
@@ -220,12 +241,17 @@ public static class OberonSymbolModuleReader
         IReadOnlyList<bool>? ParameterReadOnly,
         int? ArrayLength,
         IReadOnlyList<SymbolParameterInfo>? Parameters,
-        int? ResultTypeForm);
+        int? ResultTypeForm,
+        int? BaseTypeForm,
+        int? BaseTypeSize,
+        int? Size);
 
     private readonly record struct SymbolParameterInfo(
         bool ReadOnly,
         int TypeForm,
-        int? ArrayLength);
+        int? ArrayLength,
+        int? BaseTypeForm,
+        int? BaseTypeSize);
 
     private ref struct SymbolReader
     {

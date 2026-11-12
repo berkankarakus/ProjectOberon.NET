@@ -16,6 +16,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalVariableDataFixup();
         EmitsExternalVarParameterCall();
         EmitsExternalFixedArrayParameterCall();
+        EmitsExternalPointerParameterCall();
         RejectsInvalidExternalImportTables();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
@@ -358,6 +359,35 @@ internal static class OberonCompilerRscTests
             .Select(Risc5Disassembler.Format)
             .Contains("ADD r0, r13, 0x0000"));
         TestAssertions.True(module.FixupProgram > 0);
+    }
+
+    private static void EmitsExternalPointerParameterCall()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Set", 1, 0)
+            {
+                IsProcedure = true,
+                ParameterCount = 1,
+                ParameterReadOnly = [true],
+                ParameterTypeForms = [(int)OberonCompilerTypeForm.Pointer],
+                ParameterBaseTypeForms = [(int)OberonCompilerTypeForm.Record],
+                ParameterBaseTypeSizes = [0]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; TYPE Node = RECORD END; Ptr = POINTER TO Node; VAR value: Ptr; BEGIN IO.Set(value); END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var importedModule = result.ModuleScope!.Objects.Single(obj => obj.Name == "IO");
+        var parameter = importedModule.FindMember("Set")!.Type!.Parameters[0];
+
+        TestAssertions.Equal(OberonCompilerTypeForm.Pointer, parameter.Type!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, parameter.Type.Base!.Form);
+        TestAssertions.Equal(0, parameter.Type.Base.Size);
     }
 
     private static void EmitsStringPayload()

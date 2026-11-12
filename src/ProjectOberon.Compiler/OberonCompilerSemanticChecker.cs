@@ -423,6 +423,23 @@ public sealed class OberonCompilerSemanticChecker
         }
         if (expected.Form == OberonCompilerTypeForm.Pointer
             && actual.Form == OberonCompilerTypeForm.Nil) return true;
+        if (expected.Form == OberonCompilerTypeForm.Pointer
+            && actual.Form == OberonCompilerTypeForm.Pointer)
+        {
+            if (expected.Base is null || actual.Base is null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(expected.Base, actual.Base))
+            {
+                return true;
+            }
+
+            return expected.Base.Form == OberonCompilerTypeForm.Record
+                && actual.Base.Form == OberonCompilerTypeForm.Record
+                && expected.Base.Size == actual.Base.Size;
+        }
         if (expected.Form == OberonCompilerTypeForm.Array
             && actual.Form == OberonCompilerTypeForm.Array)
         {

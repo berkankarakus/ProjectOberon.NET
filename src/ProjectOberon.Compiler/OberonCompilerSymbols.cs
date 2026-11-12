@@ -328,7 +328,9 @@ public sealed class OberonCompilerSymbols
                             index,
                             export.ParameterReadOnly,
                             export.ParameterTypeForms,
-                            export.ParameterArrayLengths))),
+                            export.ParameterArrayLengths,
+                            export.ParameterBaseTypeForms,
+                            export.ParameterBaseTypeSizes))),
                 Value = export.Value,
                 ReadOnly = true,
                 OriginalName = export.Name,
@@ -414,7 +416,9 @@ public sealed class OberonCompilerSymbols
         int index,
         IReadOnlyList<bool>? parameterReadOnly,
         IReadOnlyList<int>? parameterTypeForms,
-        IReadOnlyList<int?>? parameterArrayLengths)
+        IReadOnlyList<int?>? parameterArrayLengths,
+        IReadOnlyList<int?>? parameterBaseTypeForms,
+        IReadOnlyList<int?>? parameterBaseTypeSizes)
     {
         var isReadOnly = true;
         if (parameterReadOnly is not null && index < parameterReadOnly.Count)
@@ -429,6 +433,12 @@ public sealed class OberonCompilerSymbols
             var arrayLength = parameterArrayLengths is not null && index < parameterArrayLengths.Count
                 ? parameterArrayLengths[index]
                 : null;
+            var baseTypeForm = parameterBaseTypeForms is not null && index < parameterBaseTypeForms.Count
+                ? parameterBaseTypeForms[index]
+                : null;
+            var baseTypeSize = parameterBaseTypeSizes is not null && index < parameterBaseTypeSizes.Count
+                ? parameterBaseTypeSizes[index]
+                : null;
             if (typeForm == (int)OberonCompilerTypeForm.Array
                 && arrayLength is int fixedLength
                 && fixedLength >= 0)
@@ -441,6 +451,24 @@ public sealed class OberonCompilerSymbols
             else if (typeForm == (int)OberonCompilerTypeForm.Array && arrayLength == -1)
             {
                 type = CreateArray(IntegerType, -1, 8);
+            }
+            else if (typeForm == (int)OberonCompilerTypeForm.Pointer)
+            {
+                if (baseTypeForm == (int)OberonCompilerTypeForm.Record
+                    && baseTypeSize is int recordSize)
+                {
+                    var recordType = CreateRecord();
+                    recordType.Size = recordSize;
+                    type = CreatePointer(recordType);
+                }
+                else
+                {
+                    var importedBaseType = CreateImportedPrimitiveType(baseTypeForm);
+                    if (importedBaseType is not null)
+                    {
+                        type = CreatePointer(importedBaseType);
+                    }
+                }
             }
             else
             {
