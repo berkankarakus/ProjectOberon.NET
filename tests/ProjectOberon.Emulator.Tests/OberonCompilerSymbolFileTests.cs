@@ -130,7 +130,7 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal((int)OberonCompilerTypeForm.Array, module.Exports[0].TypeForm);
         TestAssertions.Equal(3, module.Exports[0].ArrayLength);
         TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, module.Exports[0].BaseTypeForm);
-        TestAssertions.Equal(4, module.Exports[0].BaseTypeSize);
+        TestAssertions.True(module.Exports[0].BaseTypeSize is null);
         TestAssertions.Equal(12, module.Exports[0].TypeSize);
     }
 
