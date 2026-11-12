@@ -74,7 +74,10 @@ internal sealed record UiOptions(
                         throw new ArgumentException("--steps-per-frame must be an unsigned integer");
                     break;
                 case "--scale" when index + 1 < args.Length:
-                    if (!double.TryParse(args[++index], NumberStyles.Float, CultureInfo.InvariantCulture, out scale) || scale < 0.5 || scale > 4.0)
+                    if (!double.TryParse(args[++index], NumberStyles.Float, CultureInfo.InvariantCulture, out scale)
+                        || !double.IsFinite(scale)
+                        || scale < 0.5
+                        || scale > 4.0)
                         throw new ArgumentException("--scale must be between 0.5 and 4.0");
                     break;
                 case "--no-flip-y":

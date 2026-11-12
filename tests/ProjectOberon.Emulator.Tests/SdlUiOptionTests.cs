@@ -34,6 +34,8 @@ internal static partial class SdlUiTests
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--read-only"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--scale", "0.4"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--scale", "4.1"]));
+        TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--scale", "NaN"]));
+        TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--scale", "Infinity"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--steps-per-frame", "x"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--unknown"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--disk"]));
