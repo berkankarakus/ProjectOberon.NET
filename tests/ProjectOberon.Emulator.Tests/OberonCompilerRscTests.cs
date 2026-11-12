@@ -8,6 +8,7 @@ internal static class OberonCompilerRscTests
         EmitsStringPayload();
         EmitsImportsAndExportedCommands();
         EmitsExternalProcedureFixup();
+        ExecutesExternalProcedureCall();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
         ExecutesCompilerProducedStringBody();
@@ -70,6 +71,48 @@ internal static class OberonCompilerRscTests
         var roundTrip = RscModuleReader.Parse(RscModuleWriter.Write(module));
         TestAssertions.Equal(module.FixupProgram, roundTrip.FixupProgram);
         TestAssertions.True(module.Code.SequenceEqual(roundTrip.Code));
+    }
+
+    private static void ExecutesExternalProcedureCall()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Run", 1, 0) { IsProcedure = true }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; BEGIN IO.Run; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == "Demo" ? bytes : null);
+        loader.RegisterExternal(symbols);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+        var called = false;
+        var initialProgramCounter = cpu.PcByte;
+        var dispatcher = new OberonHostCallDispatcher();
+        runtime.BindExternal(
+            new OberonExternalModuleBinding("IO", 0x3000, 0x4000, [0])
+            {
+                EntryHandlers =
+                [
+                    context =>
+                    {
+                        called = true;
+                        context.Cpu.SetProgramCounter(Memory.RomBase);
+                    }
+                ]
+            },
+            dispatcher);
+
+        var image = runtime.MemoryLoader.Load("Demo");
+        runtime.Initialize(image, dispatcher);
+
+        TestAssertions.True(called);
+        TestAssertions.Equal(initialProgramCounter, cpu.PcByte);
     }
 
     private static void EmitsStringPayload()
