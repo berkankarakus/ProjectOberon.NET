@@ -36,6 +36,26 @@ internal static partial class OberonDiskFormatTests
         TestAssertions.Equal(512 + 65 * OberonDiskLayout.SectorLength, header.TotalLength);
     }
 
+    private static void RoundTripsEmptyFileHeader()
+    {
+        var sector = new byte[OberonDiskLayout.SectorLength];
+        OberonFileHeaderCodec.Write(
+            sector,
+            "Empty.Text",
+            allocatedPages: 0,
+            lastPageLength: OberonFileHeader.HeaderSize,
+            date: 0,
+            extensions: [],
+            pages: [29]
+        );
+
+        var header = OberonFileHeaderCodec.Read(sector, 29);
+
+        TestAssertions.Equal(0, header.AllocatedPages);
+        TestAssertions.Equal(OberonFileHeader.HeaderSize, header.LastPageLength);
+        TestAssertions.Equal(0, header.ContentLength);
+    }
+
     private static void RejectsInvalidFileHeader()
     {
         var sector = new byte[OberonDiskLayout.SectorLength];

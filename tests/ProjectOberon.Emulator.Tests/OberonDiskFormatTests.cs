@@ -5,6 +5,7 @@ internal static partial class OberonDiskFormatTests
         MapsLogicalSectorsToPhysicalSectors();
         RejectsInvalidLogicalAddresses();
         RoundTripsFileHeaderAndExtensions();
+        RoundTripsEmptyFileHeader();
         RejectsInvalidFileHeader();
         RejectsMissingFilePages();
         RoundTripsDirectoryPage();
