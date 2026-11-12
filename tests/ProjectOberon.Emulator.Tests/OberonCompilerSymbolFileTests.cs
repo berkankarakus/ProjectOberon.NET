@@ -8,6 +8,7 @@ internal static class OberonCompilerSymbolFileTests
         ReadsFunctionResultMetadata();
         ReadsTypeFormMetadata();
         ReadsOpenArrayParameterMetadata();
+        ReadsPointerParameterMetadata();
         RejectsUnexportedSymbols();
         RejectsInvalidModuleNames();
         RejectsNonAsciiNestedNames();
@@ -95,6 +96,30 @@ internal static class OberonCompilerSymbolFileTests
 
         TestAssertions.Equal((int)OberonCompilerTypeForm.Array, module.Exports[0].ParameterTypeForms![0]);
         TestAssertions.Equal(-1, module.Exports[0].ParameterArrayLengths![0]);
+    }
+
+    private static void ReadsPointerParameterMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var record = symbols.CreateRecord();
+        var pointer = symbols.CreatePointer(record);
+        var parameter = symbols.Declare(
+            "value",
+            OberonCompilerObjectClass.Parameter,
+            pointer,
+            readOnly: true);
+        var procedureType = symbols.CreateProcedure(symbols.NoneType, [parameter]);
+        var procedure = symbols.Declare(
+            "Set",
+            OberonCompilerObjectClass.Procedure,
+            procedureType,
+            exported: true);
+        var data = OberonCompilerSymbolFileWriter.Write("Demo", [procedure]);
+        var module = OberonSymbolModuleReader.Parse(data);
+
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Pointer, module.Exports[0].ParameterTypeForms![0]);
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Record, module.Exports[0].ParameterBaseTypeForms![0]);
+        TestAssertions.Equal(0, module.Exports[0].ParameterBaseTypeSizes![0]);
     }
 
     private static void RejectsUnexportedSymbols()

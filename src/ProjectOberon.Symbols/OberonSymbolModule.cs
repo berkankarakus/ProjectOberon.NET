@@ -214,7 +214,7 @@ public static class OberonSymbolModuleReader
                 type.TypeForm,
                 type.ArrayLength,
                 type.BaseTypeForm,
-                type.Size));
+                type.BaseTypeSize));
         }
     }
 
