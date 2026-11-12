@@ -19,6 +19,19 @@ internal static partial class OberonTextTests
         TestAssertions.True(reader.EndOfText);
     }
 
+    private static void ValidatesTextPositions()
+    {
+        var text = new OberonText("abc");
+        var reader = text.OpenReader(text.Length);
+
+        TestAssertions.False(reader.TryRead(out _));
+        TestAssertions.True(reader.EndOfText);
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => text.OpenReader(-1));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => text.OpenReader(text.Length + 1));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => text.Attributes(text.Length));
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => text.Copy(2, 1));
+    }
+
     private static void PreservesDeletedTextInBuffer()
     {
         var text = new OberonText("abc123xyz");
