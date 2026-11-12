@@ -5,7 +5,7 @@ external `RISC-work.img` flow remains a separate integration requirement.
 
 ## Compiler
 
-- [ ] [P0] Complete external RSC call lowering for functions and parameterized calls.
+- [ ] [P0] Complete external RSC call lowering for VAR, open-array and aggregate parameters.
 - [ ] [P0] Generate type descriptors and pointer fixup tables for RSC output, then validate them through module loading.
 - [ ] [P1] Complete aggregate field, array-element and pointer-dereference lowering with record/array execution fixtures.
 - [ ] [P1] Complete record and open-array parameter lowering for all supported forms and cover value/VAR combinations.
