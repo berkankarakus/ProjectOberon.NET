@@ -103,6 +103,11 @@ internal sealed record CompilerOptions(
                 case "-h":
                     return new CompilerOptions(string.Empty, null, null, [], true, true);
                 case "--source":
+                    if (source is not null)
+                    {
+                        throw new ArgumentException("source file specified more than once");
+                    }
+
                     source = ReadValue(args, ref index, "--source");
                     break;
                 case "--symbols":

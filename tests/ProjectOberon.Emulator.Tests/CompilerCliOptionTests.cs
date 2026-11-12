@@ -50,6 +50,8 @@ internal static class CompilerCliOptionTests
         TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse(["First.Mod", "Second.Mod"]));
         TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse([
             "--source", "First.Mod", "Second.Mod"]));
+        TestAssertions.Throws<ArgumentException>(() => CompilerOptions.Parse([
+            "--source", "First.Mod", "--source", "Second.Mod"]));
     }
 
     private static void ParsesImportedSymbols()
