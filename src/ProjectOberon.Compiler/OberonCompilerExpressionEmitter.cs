@@ -73,29 +73,51 @@ public sealed class OberonCompilerExpressionEmitter
 
     private int EmitField(OberonCompilerFieldExpression field, int destination)
     {
-        if (!OberonCompilerTypeRules.IsScalar(field.Field.Type))
-            throw new NotSupportedException("aggregate field loads are not implemented");
-        _addresses.EmitAddress(field, destination);
-        _generator.EmitLoad(destination, destination, 0, OberonCompilerTypeRules.IsByteSized(field.Field.Type));
-        return destination;
+        return EmitScalarAddressLoad(
+            field,
+            field.Field.Type,
+            "aggregate field loads are not implemented",
+            destination
+        );
     }
 
     private int EmitIndex(OberonCompilerIndexExpression index, int destination)
     {
-        if (!OberonCompilerTypeRules.IsScalar(index.ElementType))
-            throw new NotSupportedException("aggregate array element loads are not implemented");
-        _addresses.EmitAddress(index, destination);
-        _generator.EmitLoad(destination, destination, 0, OberonCompilerTypeRules.IsByteSized(index.ElementType));
-        return destination;
+        return EmitScalarAddressLoad(
+            index,
+            index.ElementType,
+            "aggregate array element loads are not implemented",
+            destination
+        );
     }
 
     private int EmitDereference(OberonCompilerDereferenceExpression dereference, int destination)
     {
-        if (!OberonCompilerTypeRules.IsScalar(dereference.ElementType))
-            throw new NotSupportedException("aggregate pointer dereference loads are not implemented");
-        _addresses.EmitAddress(dereference, destination);
-        _generator.EmitLoad(destination, destination, 0,
-            OberonCompilerTypeRules.IsByteSized(dereference.ElementType));
+        return EmitScalarAddressLoad(
+            dereference,
+            dereference.ElementType,
+            "aggregate pointer dereference loads are not implemented",
+            destination
+        );
+    }
+
+    private int EmitScalarAddressLoad(
+        OberonCompilerExpression expression,
+        OberonCompilerType? type,
+        string aggregateError,
+        int destination)
+    {
+        if (!OberonCompilerTypeRules.IsScalar(type))
+        {
+            throw new NotSupportedException(aggregateError);
+        }
+
+        _addresses.EmitAddress(expression, destination);
+        _generator.EmitLoad(
+            destination,
+            destination,
+            0,
+            OberonCompilerTypeRules.IsByteSized(type));
         return destination;
     }
 
