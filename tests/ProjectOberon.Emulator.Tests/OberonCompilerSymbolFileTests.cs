@@ -11,6 +11,7 @@ internal static class OberonCompilerSymbolFileTests
         ReadsRecordTypeSizeMetadata();
         ReadsOpenArrayParameterMetadata();
         ReadsPointerParameterMetadata();
+        ReadsRecordFieldMetadata();
         RejectsUnexportedSymbols();
         RejectsInvalidModuleNames();
         RejectsNonAsciiNestedNames();
@@ -157,6 +158,30 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal((int)OberonCompilerTypeForm.Pointer, module.Exports[0].ParameterTypeForms![0]);
         TestAssertions.Equal((int)OberonCompilerTypeForm.Record, module.Exports[0].ParameterBaseTypeForms![0]);
         TestAssertions.Equal(0, module.Exports[0].ParameterBaseTypeSizes![0]);
+    }
+
+    private static void ReadsRecordFieldMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var record = symbols.CreateRecord();
+        symbols.DeclareField(record, "value", symbols.IntegerType, 0, exported: true);
+        symbols.DeclareField(record, "enabled", symbols.BooleanType, 4, exported: true);
+        var type = symbols.Declare(
+            "Node",
+            OberonCompilerObjectClass.Type,
+            record,
+            exported: true);
+        var data = OberonCompilerSymbolFileWriter.Write("Demo", [type]);
+        var module = OberonSymbolModuleReader.Parse(data);
+
+        var fields = module.Exports[0].RecordFields!;
+        TestAssertions.Equal(2, fields.Count);
+        TestAssertions.Equal("value", fields[0].Name);
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, fields[0].TypeForm);
+        TestAssertions.Equal(0, fields[0].Offset);
+        TestAssertions.Equal("enabled", fields[1].Name);
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Boolean, fields[1].TypeForm);
+        TestAssertions.Equal(4, fields[1].Offset);
     }
 
     private static void RejectsUnexportedSymbols()

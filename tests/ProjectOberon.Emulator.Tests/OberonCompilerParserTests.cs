@@ -479,10 +479,21 @@ internal static class OberonCompilerParserTests
             [new OberonSymbolExport("Node", 5, 0)
             {
                 TypeForm = (int)OberonCompilerTypeForm.Record,
-                TypeSize = 8
+                TypeSize = 8,
+                RecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
             }]);
         var result = new OberonCompilerParser(
-            "MODULE Demo; IMPORT Types; TYPE Value = Types.Node; VAR value: Value; BEGIN END Demo.",
+            "MODULE Demo; IMPORT Types; TYPE Value = Types.Node; VAR value: Value; BEGIN value.value := 1; END Demo.",
             importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
             .ParseModule();
 
@@ -490,6 +501,7 @@ internal static class OberonCompilerParserTests
         var value = result.ModuleScope!.Objects.Single(obj => obj.Name == "Value");
         TestAssertions.Equal(OberonCompilerTypeForm.Record, value.Type!.Form);
         TestAssertions.Equal(8, value.Type.Size);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, value.Type.Fields[0].Type!.Form);
     }
 
     private static void ParsesControlFlowStatements()

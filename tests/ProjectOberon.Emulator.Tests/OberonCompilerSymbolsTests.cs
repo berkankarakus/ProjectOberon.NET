@@ -149,7 +149,18 @@ internal static class OberonCompilerSymbolsTests
                 [new OberonSymbolExport("Node", 5, 0)
                 {
                     TypeForm = (int)OberonCompilerTypeForm.Record,
-                    TypeSize = 8
+                    TypeSize = 8,
+                    RecordFields =
+                    [
+                        new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ]
                 }]));
         var type = module.FindMember("Node");
 
@@ -157,6 +168,8 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.Equal(OberonCompilerObjectClass.Type, type!.Class);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, type.Type!.Form);
         TestAssertions.Equal(8, type.Type.Size);
+        TestAssertions.Equal(0, type.Type.Fields[0].Value);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Type.Fields[0].Type!.Form);
     }
 
     private static void ImportsExternalPointerFunctionResultType()
