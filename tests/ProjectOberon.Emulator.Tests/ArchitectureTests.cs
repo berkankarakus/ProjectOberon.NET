@@ -145,6 +145,16 @@ internal static class ArchitectureTests
 
     private static string RepositoryRoot()
     {
+        var configuredRoot = Environment.GetEnvironmentVariable("PROJECT_OBERON_REPO_ROOT");
+        if (!string.IsNullOrWhiteSpace(configuredRoot))
+        {
+            var fullPath = Path.GetFullPath(configuredRoot);
+            if (File.Exists(Path.Combine(fullPath, "ProjectOberon.NET.slnx")))
+            {
+                return fullPath;
+            }
+        }
+
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory);
              directory is not null;
              directory = directory.Parent)
