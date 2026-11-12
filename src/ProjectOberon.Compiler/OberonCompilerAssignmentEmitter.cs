@@ -47,8 +47,7 @@ public sealed class OberonCompilerAssignmentEmitter
         {
             EmitScalarAddressStore(
                 field,
-                field.Field.Type,
-                "aggregate field stores are not implemented"
+                field.Field.Type
             );
             return;
         }
@@ -57,8 +56,7 @@ public sealed class OberonCompilerAssignmentEmitter
         {
             EmitScalarAddressStore(
                 index,
-                index.ElementType,
-                "aggregate array element stores are not implemented"
+                index.ElementType
             );
             return;
         }
@@ -83,14 +81,8 @@ public sealed class OberonCompilerAssignmentEmitter
 
     private void EmitScalarAddressStore(
         OberonCompilerExpression target,
-        OberonCompilerType? targetType,
-        string aggregateError)
+        OberonCompilerType? targetType)
     {
-        if (!OberonCompilerTypeRules.IsScalar(targetType))
-        {
-            throw new NotSupportedException(aggregateError);
-        }
-
         using var preservedValue = _registers.ReserveRange(0, 1);
         _addresses.EmitAddress(target, 1);
         _generator.EmitStore(
