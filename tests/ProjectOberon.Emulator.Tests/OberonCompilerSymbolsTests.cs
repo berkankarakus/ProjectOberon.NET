@@ -10,6 +10,7 @@ internal static class OberonCompilerSymbolsTests
         CreatesReadOnlyModules();
         ImportsExternalVariableMetadata();
         ImportsExternalRecordVariableMetadata();
+        ImportsExternalArrayVariableMetadata();
         ImportsPrimitiveTypeMetadata();
         ImportsOpaqueRecordTypeMetadata();
         ImportsNestedRecordTypeMetadata();
@@ -136,6 +137,31 @@ internal static class OberonCompilerSymbolsTests
 
         TestAssertions.Equal(OberonCompilerTypeForm.Record, variable.Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, variable.Type.Fields[0].Type!.Form);
+    }
+
+    private static void ImportsExternalArrayVariableMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "State",
+            new OberonSymbolModule(
+                "State",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Values", 2, 0)
+                {
+                    IsProcedure = false,
+                    TypeForm = (int)OberonCompilerTypeForm.Array,
+                    ArrayLength = 2,
+                    BaseTypeForm = (int)OberonCompilerTypeForm.Integer,
+                    BaseTypeSize = 4,
+                    TypeSize = 8
+                }]));
+        var variable = module.FindMember("Values")!;
+
+        TestAssertions.Equal(OberonCompilerTypeForm.Array, variable.Type!.Form);
+        TestAssertions.Equal(2, variable.Type.Length);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, variable.Type.Base!.Form);
     }
 
     private static void ImportsPrimitiveTypeMetadata()
