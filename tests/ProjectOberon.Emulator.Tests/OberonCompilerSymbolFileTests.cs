@@ -6,6 +6,7 @@ internal static class OberonCompilerSymbolFileTests
     {
         WritesFilesAcceptedByTheExistingReader();
         ReadsFunctionResultMetadata();
+        ReadsPointerFunctionResultMetadata();
         ReadsTypeFormMetadata();
         ReadsOpenArrayParameterMetadata();
         ReadsPointerParameterMetadata();
@@ -60,6 +61,25 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.True(module.Exports[0].IsProcedure == true);
         TestAssertions.True(module.Exports[0].HasResult == true);
         TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, module.Exports[0].ResultTypeForm);
+    }
+
+    private static void ReadsPointerFunctionResultMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var record = symbols.CreateRecord();
+        var pointer = symbols.CreatePointer(record);
+        var functionType = symbols.CreateProcedure(pointer, []);
+        var function = symbols.Declare(
+            "Make",
+            OberonCompilerObjectClass.Function,
+            functionType,
+            exported: true);
+        var data = OberonCompilerSymbolFileWriter.Write("Demo", [function]);
+        var module = OberonSymbolModuleReader.Parse(data);
+
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Pointer, module.Exports[0].ResultTypeForm);
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Record, module.Exports[0].ResultBaseTypeForm);
+        TestAssertions.Equal(0, module.Exports[0].ResultBaseTypeSize);
     }
 
     private static void ReadsTypeFormMetadata()

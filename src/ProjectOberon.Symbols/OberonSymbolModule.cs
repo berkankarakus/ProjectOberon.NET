@@ -11,6 +11,8 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     public bool? IsProcedure { get; init; }
     public bool? HasResult { get; init; }
     public int? ResultTypeForm { get; init; }
+    public int? ResultBaseTypeForm { get; init; }
+    public int? ResultBaseTypeSize { get; init; }
     public int ParameterCount { get; init; }
     public IReadOnlyList<bool>? ParameterReadOnly { get; init; }
     public IReadOnlyList<int>? ParameterTypeForms { get; init; }
@@ -66,6 +68,8 @@ public static class OberonSymbolModuleReader
                 IsProcedure = typeInfo.IsProcedure,
                 HasResult = typeInfo.HasResult,
                 ResultTypeForm = typeInfo.ResultTypeForm,
+                ResultBaseTypeForm = typeInfo.ResultBaseTypeForm,
+                ResultBaseTypeSize = typeInfo.ResultBaseTypeSize,
                 ParameterCount = typeInfo.ParameterCount,
                 ParameterReadOnly = typeInfo.ParameterReadOnly,
                 ParameterTypeForms = typeInfo.Parameters?
@@ -98,7 +102,7 @@ public static class OberonSymbolModuleReader
         var reference = reader.ReadSignedByte();
         if (reference < 0)
         {
-            return new SymbolTypeInfo(false, 0, false, -1, null, null, null, null, null, null, null);
+            return new SymbolTypeInfo(false, 0, false, -1, null, null, null, null, null, null, null, null, null);
         }
 
         var form = reader.ReadSignedByte();
@@ -111,6 +115,8 @@ public static class OberonSymbolModuleReader
         int? baseTypeSize = null;
         int? typeSize = null;
         int? resultTypeForm = null;
+        int? resultBaseTypeForm = null;
+        int? resultBaseTypeSize = null;
         var hasResult = false;
         switch (form)
         {
@@ -135,6 +141,8 @@ public static class OberonSymbolModuleReader
                 var resultType = SkipType(ref reader);
                 hasResult = resultType.TypeForm != 9;
                 resultTypeForm = resultType.TypeForm;
+                resultBaseTypeForm = resultType.BaseTypeForm;
+                resultBaseTypeSize = resultType.BaseTypeSize;
                 parameters = SkipProcedureParameters(ref reader);
                 parameterReadOnly = parameters
                     .Select(parameter => parameter.ReadOnly)
@@ -173,7 +181,9 @@ public static class OberonSymbolModuleReader
             resultTypeForm,
             baseTypeForm,
             baseTypeSize,
-            typeSize);
+            typeSize,
+            resultBaseTypeForm,
+            resultBaseTypeSize);
     }
 
     private static void SkipRecordFields(ref SymbolReader reader)
@@ -244,7 +254,9 @@ public static class OberonSymbolModuleReader
         int? ResultTypeForm,
         int? BaseTypeForm,
         int? BaseTypeSize,
-        int? Size);
+        int? Size,
+        int? ResultBaseTypeForm,
+        int? ResultBaseTypeSize);
 
     private readonly record struct SymbolParameterInfo(
         bool ReadOnly,

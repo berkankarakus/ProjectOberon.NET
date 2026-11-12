@@ -316,6 +316,14 @@ public sealed class OberonCompilerSymbols
             if (hasResult)
             {
                 var importedResultType = CreateImportedPrimitiveType(export.ResultTypeForm);
+                if (importedResultType is null
+                    && export.ResultTypeForm == (int)OberonCompilerTypeForm.Pointer)
+                {
+                    importedResultType = CreateImportedPointerType(
+                        export.ResultBaseTypeForm,
+                        export.ResultBaseTypeSize);
+                }
+
                 resultType = importedResultType is null ? IntegerType : importedResultType;
             }
             var procedure = new OberonCompilerObject(export.Name, importedClass)
@@ -409,6 +417,21 @@ public sealed class OberonCompilerSymbols
             (int)OberonCompilerTypeForm.String => StringType,
             _ => null
         };
+    }
+
+    private OberonCompilerType? CreateImportedPointerType(
+        int? baseTypeForm,
+        int? baseTypeSize)
+    {
+        if (baseTypeForm != (int)OberonCompilerTypeForm.Record
+            || baseTypeSize is not int recordSize)
+        {
+            return null;
+        }
+
+        var recordType = CreateRecord();
+        recordType.Size = recordSize;
+        return CreatePointer(recordType);
     }
 
     private OberonCompilerObject DeclareImportedParameter(

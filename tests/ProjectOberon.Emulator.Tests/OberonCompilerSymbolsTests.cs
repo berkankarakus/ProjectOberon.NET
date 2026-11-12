@@ -11,6 +11,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsExternalVariableMetadata();
         ImportsPrimitiveTypeMetadata();
         ImportsExternalFunctionResultType();
+        ImportsExternalPointerFunctionResultType();
     }
 
     private static void InitializesUniverseAndSystemBuiltins()
@@ -133,6 +134,31 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.True(function is not null);
         TestAssertions.Equal(OberonCompilerObjectClass.Function, function!.Class);
         TestAssertions.True(ReferenceEquals(symbols.RealType, function.Type!.Base));
+    }
+
+    private static void ImportsExternalPointerFunctionResultType()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Math",
+            new OberonSymbolModule(
+                "Math",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Make", 1, 4)
+                {
+                    IsProcedure = true,
+                    HasResult = true,
+                    ResultTypeForm = (int)OberonCompilerTypeForm.Pointer,
+                    ResultBaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                    ResultBaseTypeSize = 0
+                }]));
+        var function = module.FindMember("Make");
+
+        TestAssertions.True(function is not null);
+        TestAssertions.Equal(OberonCompilerObjectClass.Function, function!.Class);
+        TestAssertions.Equal(OberonCompilerTypeForm.Pointer, function.Type!.Base!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, function.Type.Base.Base!.Form);
     }
 }
 
