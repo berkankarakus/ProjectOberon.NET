@@ -162,8 +162,7 @@ public sealed class OberonCompilerCallEmitter
                     _addresses.EmitAddress(arguments[index], register);
                 }
             }
-            else if (parameter.Type?.Form == OberonCompilerTypeForm.Array
-                && parameter.Type.Length < 0)
+            else if (OberonCompilerTypeRules.IsOpenArray(parameter.Type))
             {
                 EmitOpenArrayArgument(arguments[index], register);
             }
@@ -197,7 +196,7 @@ public sealed class OberonCompilerCallEmitter
         var type = name.Symbol.Type;
         if (type?.Form != OberonCompilerTypeForm.Array)
             throw new InvalidOperationException($"'{name.Name}' is not an array");
-        if (type.Length >= 0)
+        if (!OberonCompilerTypeRules.IsOpenArray(type))
         {
             OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination + 1);
             _generator.EmitMoveImmediate(destination + 1, type.Length);
@@ -212,5 +211,5 @@ public sealed class OberonCompilerCallEmitter
     }
 
     private static int ParameterRegisterCount(OberonCompilerObject parameter) =>
-        parameter.Type?.Form == OberonCompilerTypeForm.Array && parameter.Type.Length < 0 ? 2 : 1;
+        OberonCompilerTypeRules.IsOpenArray(parameter.Type) ? 2 : 1;
 }

@@ -152,8 +152,7 @@ public sealed class OberonCompilerAddressEmitter
             return true;
         }
 
-        if (symbol.Type?.Form == OberonCompilerTypeForm.Array
-            && symbol.Type.Length < 0)
+        if (OberonCompilerTypeRules.IsOpenArray(symbol.Type))
         {
             return true;
         }

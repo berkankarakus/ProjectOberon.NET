@@ -14,4 +14,7 @@ internal static class OberonCompilerTypeRules
 
     public static bool IsAggregate(OberonCompilerType? type) => type?.Form is
         OberonCompilerTypeForm.Array or OberonCompilerTypeForm.Record;
+
+    public static bool IsOpenArray(OberonCompilerType? type) =>
+        type?.Form == OberonCompilerTypeForm.Array && type.Length < 0;
 }
