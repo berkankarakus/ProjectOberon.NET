@@ -146,12 +146,10 @@ public sealed class OberonCompilerCallEmitter
         if (arguments.Count != parameters.Count)
             throw new InvalidOperationException($"procedure '{procedure.Name}' expects {parameters.Count} arguments");
 
+        var register = 0;
         for (var index = 0; index < parameters.Count; index++)
         {
             var parameter = parameters[index];
-            var register = parameters
-                .Take(index)
-                .Sum(ParameterRegisterCount);
             using var preservedArguments = _registers.ReserveRange(0, register);
             if (OberonCompilerTypeRules.IsScalar(parameter.Type))
             {
@@ -163,23 +161,22 @@ public sealed class OberonCompilerCallEmitter
                 {
                     _addresses.EmitAddress(arguments[index], register);
                 }
-                continue;
             }
-
-            if (parameter.Type?.Form == OberonCompilerTypeForm.Array
+            else if (parameter.Type?.Form == OberonCompilerTypeForm.Array
                 && parameter.Type.Length < 0)
             {
                 EmitOpenArrayArgument(arguments[index], register);
-                continue;
             }
-
-            if (OberonCompilerTypeRules.IsAggregate(parameter.Type))
+            else if (OberonCompilerTypeRules.IsAggregate(parameter.Type))
             {
                 _addresses.EmitAddress(arguments[index], register);
-                continue;
+            }
+            else
+            {
+                throw new NotSupportedException("record parameter lowering is not implemented");
             }
 
-            throw new NotSupportedException("record parameter lowering is not implemented");
+            register += ParameterRegisterCount(parameter);
         }
     }
 
