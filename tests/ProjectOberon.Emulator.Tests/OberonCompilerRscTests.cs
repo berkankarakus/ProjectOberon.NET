@@ -32,6 +32,8 @@ internal static class OberonCompilerRscTests
         RejectsInvalidExternalImportTables();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
+        ExecutesCompilerProducedRecordCopy();
+        ExecutesCompilerProducedArrayCopy();
         ExecutesCompilerProducedStringBody();
         RejectsUnsupportedMinimalRscTypes();
         RejectsPointerTypeDescriptors();
@@ -941,6 +943,52 @@ internal static class OberonCompilerRscTests
 
         TestAssertions.Equal(42u, memory.Read32(image.DataAddress));
         TestAssertions.Equal(image.DataAddress, cpu.Register(13));
+    }
+
+    private static void ExecutesCompilerProducedRecordCopy()
+    {
+        const string source = "MODULE Records; TYPE Node = RECORD value: INTEGER; END; VAR source, target: Node; BEGIN target := source; END Records.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == "Records" ? bytes : null);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+
+        var image = runtime.Start("Records");
+        memory.Write32(image.DataAddress, 0x1234_5678);
+        for (var step = 0; step < 16 && memory.Read32(image.DataAddress + 4) != 0x1234_5678; step++)
+        {
+            cpu.Step();
+        }
+
+        TestAssertions.Equal(0x1234_5678u, memory.Read32(image.DataAddress + 4));
+    }
+
+    private static void ExecutesCompilerProducedArrayCopy()
+    {
+        const string source = "MODULE Arrays; TYPE Values = ARRAY 2 OF INTEGER; VAR source, target: Values; BEGIN target := source; END Arrays.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == "Arrays" ? bytes : null);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+
+        var image = runtime.Start("Arrays");
+        memory.Write32(image.DataAddress, 11);
+        memory.Write32(image.DataAddress + 4, 22);
+        for (var step = 0; step < 24
+            && (memory.Read32(image.DataAddress + 8) != 11
+                || memory.Read32(image.DataAddress + 12) != 22); step++)
+        {
+            cpu.Step();
+        }
+
+        TestAssertions.Equal(11u, memory.Read32(image.DataAddress + 8));
+        TestAssertions.Equal(22u, memory.Read32(image.DataAddress + 12));
     }
 
     private static void RejectsUnsupportedMinimalRscTypes()
