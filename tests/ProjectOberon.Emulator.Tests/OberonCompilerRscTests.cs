@@ -32,6 +32,8 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedBody();
         ExecutesCompilerProducedStringBody();
         RejectsUnsupportedMinimalRscTypes();
+        RejectsPointerTypeDescriptors();
+        RejectsNestedRecordTypeDescriptors();
     }
 
     private static void EmitsMinimalRscModule()
@@ -894,6 +896,24 @@ internal static class OberonCompilerRscTests
     private static void RejectsUnsupportedMinimalRscTypes()
     {
         const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; VAR node: Node; BEGIN END Demo.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.Throws<NotSupportedException>(() =>
+            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
+    }
+
+    private static void RejectsPointerTypeDescriptors()
+    {
+        const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; Ref = POINTER TO Node; VAR node: Ref; BEGIN END Demo.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.Throws<NotSupportedException>(() =>
+            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
+    }
+
+    private static void RejectsNestedRecordTypeDescriptors()
+    {
+        const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; Nodes = ARRAY 2 OF Node; VAR nodes: Nodes; BEGIN END Demo.";
         var result = new OberonCompilerParser(source).ParseModule();
 
         TestAssertions.Throws<NotSupportedException>(() =>
