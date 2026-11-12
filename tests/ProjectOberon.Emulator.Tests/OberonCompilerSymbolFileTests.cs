@@ -8,6 +8,7 @@ internal static class OberonCompilerSymbolFileTests
         RejectsUnexportedSymbols();
         RejectsInvalidModuleNames();
         RejectsNonAsciiNestedNames();
+        RoundTripsSignedNumberBoundaries();
     }
 
     private static void WritesFilesAcceptedByTheExistingReader()
@@ -63,5 +64,37 @@ internal static class OberonCompilerSymbolFileTests
         var type = symbols.Declare("Record", OberonCompilerObjectClass.Type, record, exported: true);
 
         TestAssertions.Throws<ArgumentException>(() => OberonCompilerSymbolFileWriter.Write("Demo", [type]));
+    }
+
+    private static void RoundTripsSignedNumberBoundaries()
+    {
+        var symbols = new OberonCompilerSymbols();
+        symbols.Declare(
+            "Minimum",
+            OberonCompilerObjectClass.Constant,
+            symbols.IntegerType,
+            value: int.MinValue,
+            exported: true);
+        symbols.Declare(
+            "Maximum",
+            OberonCompilerObjectClass.Constant,
+            symbols.IntegerType,
+            value: int.MaxValue,
+            exported: true);
+        symbols.Declare(
+            "Zero",
+            OberonCompilerObjectClass.Constant,
+            symbols.IntegerType,
+            value: 0,
+            exported: true);
+
+        var data = OberonCompilerSymbolFileWriter.Write("Demo", symbols.Universe.Objects
+            .Where(obj => obj.Exported)
+            .ToArray());
+        var module = OberonSymbolModuleReader.Parse(data);
+
+        TestAssertions.Equal(int.MinValue, module.Exports.Single(export => export.Name == "Minimum").Value);
+        TestAssertions.Equal(int.MaxValue, module.Exports.Single(export => export.Name == "Maximum").Value);
+        TestAssertions.Equal(0, module.Exports.Single(export => export.Name == "Zero").Value);
     }
 }
