@@ -19,6 +19,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsExternalFunctionResultType();
         ImportsExternalPointerFunctionResultType();
         ImportsExternalRecordFunctionResultType();
+        ImportsExternalArrayRecordFunctionResultType();
         ImportsExternalRecordParameterMetadata();
         ImportsExternalArrayRecordParameterMetadata();
         ImportsExternalPointerRecordParameterMetadata();
@@ -379,6 +380,43 @@ internal static class OberonCompilerSymbolsTests
 
         TestAssertions.Equal(OberonCompilerTypeForm.Record, type.Fields[0].Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Fields[0].Type!.Fields[0].Type!.Form);
+    }
+
+    private static void ImportsExternalArrayRecordFunctionResultType()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Factory",
+            new OberonSymbolModule(
+                "Factory",
+                0x1234,
+                1,
+                [new OberonSymbolExport("MakeMany", 1, 0)
+                {
+                    IsProcedure = true,
+                    HasResult = true,
+                    ResultTypeForm = (int)OberonCompilerTypeForm.Array,
+                    ResultArrayLength = 2,
+                    ResultBaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                    ResultBaseTypeSize = 4,
+                    ResultBaseRecordFields =
+                    [
+                        new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ]
+                }]));
+        var function = module.FindMember("MakeMany")!;
+
+        TestAssertions.Equal(OberonCompilerTypeForm.Array, function.Type!.Base!.Form);
+        TestAssertions.Equal(2, function.Type.Base.Length);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, function.Type.Base.Base!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, function.Type.Base.Base.Fields[0].Type!.Form);
     }
 
     private static void ImportsExternalRecordFunctionResultType()

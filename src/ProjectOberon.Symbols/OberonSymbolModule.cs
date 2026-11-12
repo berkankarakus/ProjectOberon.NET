@@ -11,6 +11,7 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     public bool? IsProcedure { get; init; }
     public bool? HasResult { get; init; }
     public int? ResultTypeForm { get; init; }
+    public int? ResultArrayLength { get; init; }
     public int? ResultBaseTypeForm { get; init; }
     public int? ResultBaseTypeSize { get; init; }
     public IReadOnlyList<OberonSymbolField>? ResultBaseRecordFields { get; init; }
@@ -89,6 +90,7 @@ public static class OberonSymbolModuleReader
                 IsProcedure = typeInfo.IsProcedure,
                 HasResult = typeInfo.HasResult,
                 ResultTypeForm = typeInfo.ResultTypeForm,
+                ResultArrayLength = typeInfo.ResultArrayLength,
                 ResultBaseTypeForm = typeInfo.ResultBaseTypeForm,
                 ResultBaseTypeSize = typeInfo.ResultBaseTypeSize,
                 ResultBaseRecordFields = typeInfo.ResultBaseFields?.Select(MapField).ToArray(),
@@ -137,7 +139,7 @@ public static class OberonSymbolModuleReader
         var reference = reader.ReadSignedByte();
         if (reference < 0)
         {
-            return new SymbolTypeInfo(false, 0, false, -1, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            return new SymbolTypeInfo(false, 0, false, -1, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         var form = reader.ReadSignedByte();
@@ -157,6 +159,7 @@ public static class OberonSymbolModuleReader
         IReadOnlyList<SymbolFieldInfo>? resultBaseFields = null;
         IReadOnlyList<SymbolFieldInfo>? resultFields = null;
         var hasResult = false;
+        int? resultArrayLength = null;
         switch (form)
         {
             case 7:
@@ -184,6 +187,7 @@ public static class OberonSymbolModuleReader
                 var resultType = SkipType(ref reader);
                 hasResult = resultType.TypeForm != 9;
                 resultTypeForm = resultType.TypeForm;
+                resultArrayLength = resultType.ArrayLength;
                 resultBaseTypeForm = resultType.BaseTypeForm;
                 resultBaseTypeSize = resultType.BaseTypeSize;
                 resultBaseFields = resultType.BaseFields;
@@ -224,6 +228,7 @@ public static class OberonSymbolModuleReader
             arrayLength,
             parameters,
             resultTypeForm,
+            resultArrayLength,
             baseTypeForm,
             baseTypeSize,
             typeSize,
@@ -327,6 +332,7 @@ public static class OberonSymbolModuleReader
         int? ArrayLength,
         IReadOnlyList<SymbolParameterInfo>? Parameters,
         int? ResultTypeForm,
+        int? ResultArrayLength,
         int? BaseTypeForm,
         int? BaseTypeSize,
         int? Size,

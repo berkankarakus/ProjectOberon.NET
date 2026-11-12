@@ -324,6 +324,16 @@ public sealed class OberonCompilerSymbols
                         export.ResultRecordFields);
                 }
                 if (importedResultType is null
+                    && export.ResultTypeForm == (int)OberonCompilerTypeForm.Array)
+                {
+                    importedResultType = CreateImportedArrayType(
+                        export.ResultArrayLength,
+                        export.ResultBaseTypeForm,
+                        export.ResultBaseTypeSize,
+                        null,
+                        export.ResultBaseRecordFields);
+                }
+                if (importedResultType is null
                     && export.ResultTypeForm == (int)OberonCompilerTypeForm.Pointer)
                 {
                     importedResultType = CreateImportedPointerType(
