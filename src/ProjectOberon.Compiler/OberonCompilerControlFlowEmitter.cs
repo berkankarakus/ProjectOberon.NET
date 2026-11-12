@@ -112,18 +112,15 @@ public sealed class OberonCompilerControlFlowEmitter
             {
                 if (label.Start == label.End)
                 {
-                    _generator.EmitMoveImmediate(1, checked((int)label.Start));
-                    _generator.EmitRegister(AluOperation.Sub, 2, 0, 1);
+                    EmitCaseValueDifference(label.Start);
                     _generator.EmitBranch(armLabels[armIndex], ConditionCode.Eq);
                     continue;
                 }
 
                 var nextLabel = new OberonCompilerLabel();
-                _generator.EmitMoveImmediate(1, checked((int)label.Start));
-                _generator.EmitRegister(AluOperation.Sub, 2, 0, 1);
+                EmitCaseValueDifference(label.Start);
                 _generator.EmitBranch(nextLabel, ConditionCode.Lt);
-                _generator.EmitMoveImmediate(1, checked((int)label.End));
-                _generator.EmitRegister(AluOperation.Sub, 2, 0, 1);
+                EmitCaseValueDifference(label.End);
                 _generator.EmitBranch(armLabels[armIndex], ConditionCode.Le);
                 _generator.Bind(nextLabel);
             }
@@ -164,5 +161,11 @@ public sealed class OberonCompilerControlFlowEmitter
         _generator.EmitMoveImmediate(1, 0);
         _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
         _generator.EmitBranch(falseLabel, ConditionCode.Eq);
+    }
+
+    private void EmitCaseValueDifference(long value)
+    {
+        _generator.EmitMoveImmediate(1, checked((int)value));
+        _generator.EmitRegister(AluOperation.Sub, 2, 0, 1);
     }
 }
