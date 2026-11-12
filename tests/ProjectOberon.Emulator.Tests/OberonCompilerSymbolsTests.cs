@@ -18,6 +18,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsExternalPointerFunctionResultType();
         ImportsExternalRecordFunctionResultType();
         ImportsExternalRecordParameterMetadata();
+        ImportsExternalArrayRecordParameterMetadata();
     }
 
     private static void InitializesUniverseAndSystemBuiltins()
@@ -334,6 +335,42 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.Equal(OberonCompilerObjectClass.Function, function.Class);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, function.Type!.Base!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, function.Type.Base.Fields[0].Type!.Form);
+    }
+
+    private static void ImportsExternalArrayRecordParameterMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "IO",
+            new OberonSymbolModule(
+                "IO",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Consume", 1, 7)
+                {
+                    IsProcedure = true,
+                    ParameterCount = 1,
+                    ParameterTypeForms = [(int)OberonCompilerTypeForm.Array],
+                    ParameterArrayLengths = [-1],
+                    ParameterBaseTypeForms = [(int)OberonCompilerTypeForm.Record],
+                    ParameterBaseTypeSizes = [4],
+                    ParameterBaseRecordFields =
+                    [
+                        [new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)]
+                    ]
+                }]));
+        var parameter = module.FindMember("Consume")!.Type!.Parameters[0];
+
+        TestAssertions.Equal(OberonCompilerTypeForm.Array, parameter.Type!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, parameter.Type.Base!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, parameter.Type.Base.Fields[0].Type!.Form);
     }
 
     private static void ImportsExternalRecordParameterMetadata()

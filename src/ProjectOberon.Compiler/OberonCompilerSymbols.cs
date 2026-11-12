@@ -346,6 +346,7 @@ public sealed class OberonCompilerSymbols
                             export.ParameterArrayLengths,
                             export.ParameterBaseTypeForms,
                             export.ParameterBaseTypeSizes,
+                            export.ParameterBaseRecordFields,
                             export.ParameterRecordFields))),
                 Value = export.Value,
                 ReadOnly = true,
@@ -567,6 +568,7 @@ public sealed class OberonCompilerSymbols
         IReadOnlyList<int?>? parameterArrayLengths,
         IReadOnlyList<int?>? parameterBaseTypeForms,
         IReadOnlyList<int?>? parameterBaseTypeSizes,
+        IReadOnlyList<IReadOnlyList<OberonSymbolField>?>? parameterBaseRecordFields,
         IReadOnlyList<IReadOnlyList<OberonSymbolField>?>? parameterRecordFields)
     {
         var isReadOnly = true;
@@ -588,13 +590,17 @@ public sealed class OberonCompilerSymbols
             var baseTypeSize = parameterBaseTypeSizes is not null && index < parameterBaseTypeSizes.Count
                 ? parameterBaseTypeSizes[index]
                 : null;
+            var baseRecordFields = parameterBaseRecordFields is not null && index < parameterBaseRecordFields.Count
+                ? parameterBaseRecordFields[index]
+                : null;
             if (typeForm == (int)OberonCompilerTypeForm.Array)
             {
                 type = CreateImportedArrayType(
                     arrayLength,
                     baseTypeForm,
                     baseTypeSize,
-                    null)
+                    null,
+                    baseRecordFields)
                     ?? (arrayLength == -1
                         ? CreateArray(IntegerType, -1, 8)
                         : arrayLength is int fixedLength && fixedLength >= 0

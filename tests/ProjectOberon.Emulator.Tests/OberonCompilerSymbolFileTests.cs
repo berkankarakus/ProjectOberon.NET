@@ -15,6 +15,7 @@ internal static class OberonCompilerSymbolFileTests
         ReadsOpenArrayParameterMetadata();
         ReadsPointerParameterMetadata();
         ReadsRecordParameterFieldMetadata();
+        ReadsArrayRecordParameterMetadata();
         ReadsRecordFieldMetadata();
         ReadsNestedRecordFieldMetadata();
         RejectsUnexportedSymbols();
@@ -247,6 +248,30 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal(1, fields.Count);
         TestAssertions.Equal("value", fields[0].Name);
         TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, fields[0].TypeForm);
+    }
+
+    private static void ReadsArrayRecordParameterMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var record = symbols.CreateRecord();
+        symbols.DeclareField(record, "value", symbols.IntegerType, 0, exported: true);
+        var parameter = symbols.Declare(
+            "values",
+            OberonCompilerObjectClass.Parameter,
+            symbols.CreateArray(record, -1, 8),
+            readOnly: true);
+        var procedureType = symbols.CreateProcedure(symbols.NoneType, [parameter]);
+        var procedure = symbols.Declare(
+            "Consume",
+            OberonCompilerObjectClass.Procedure,
+            procedureType,
+            exported: true);
+        var module = OberonSymbolModuleReader.Parse(
+            OberonCompilerSymbolFileWriter.Write("Demo", [procedure]));
+
+        var fields = module.Exports[0].ParameterBaseRecordFields![0]!;
+        TestAssertions.Equal(1, fields.Count);
+        TestAssertions.Equal("value", fields[0].Name);
     }
 
     private static void ReadsRecordFieldMetadata()

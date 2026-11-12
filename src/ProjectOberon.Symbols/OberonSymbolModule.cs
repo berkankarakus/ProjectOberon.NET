@@ -20,6 +20,7 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     public IReadOnlyList<int?>? ParameterArrayLengths { get; init; }
     public IReadOnlyList<int?>? ParameterBaseTypeForms { get; init; }
     public IReadOnlyList<int?>? ParameterBaseTypeSizes { get; init; }
+    public IReadOnlyList<IReadOnlyList<OberonSymbolField>?>? ParameterBaseRecordFields { get; init; }
     public IReadOnlyList<IReadOnlyList<OberonSymbolField>?>? ParameterRecordFields { get; init; }
     public int? TypeForm { get; init; }
     public int? TypeSize { get; init; }
@@ -103,6 +104,9 @@ public static class OberonSymbolModuleReader
                     .ToArray(),
                 ParameterBaseTypeSizes = typeInfo.Parameters?
                     .Select(parameter => parameter.BaseTypeSize)
+                    .ToArray(),
+                ParameterBaseRecordFields = typeInfo.Parameters?
+                    .Select(parameter => parameter.BaseFields?.Select(MapField).ToArray())
                     .ToArray(),
                 ParameterRecordFields = typeInfo.Parameters?
                     .Select(parameter => parameter.Fields?.Select(MapField).ToArray())
