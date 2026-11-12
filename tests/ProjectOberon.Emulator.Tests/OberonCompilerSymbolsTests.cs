@@ -11,6 +11,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsExternalVariableMetadata();
         ImportsPrimitiveTypeMetadata();
         ImportsOpaqueRecordTypeMetadata();
+        ImportsArrayTypeMetadata();
         ImportsExternalFunctionResultType();
         ImportsExternalPointerFunctionResultType();
     }
@@ -195,6 +196,32 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.Equal(OberonCompilerObjectClass.Function, function!.Class);
         TestAssertions.Equal(OberonCompilerTypeForm.Pointer, function.Type!.Base!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, function.Type.Base.Base!.Form);
+    }
+
+    private static void ImportsArrayTypeMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Types",
+            new OberonSymbolModule(
+                "Types",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Values", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Array,
+                    ArrayLength = 3,
+                    BaseTypeForm = (int)OberonCompilerTypeForm.Integer,
+                    BaseTypeSize = 4,
+                    TypeSize = 12
+                }]));
+        var type = module.FindMember("Values");
+
+        TestAssertions.True(type is not null);
+        TestAssertions.Equal(OberonCompilerTypeForm.Array, type!.Type!.Form);
+        TestAssertions.Equal(3, type.Type.Length);
+        TestAssertions.Equal(12, type.Type.Size);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Type.Base!.Form);
     }
 }
 
