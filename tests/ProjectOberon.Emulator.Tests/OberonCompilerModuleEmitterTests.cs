@@ -20,6 +20,7 @@ internal static class OberonCompilerModuleEmitterTests
         ReportsExternalProcedureLoweringGap();
         EmitsImportedConstantExpression();
         EmitsAggregateRecordFieldCopy();
+        EmitsNestedImportedRecordFieldCopy();
         EmitsAggregateArrayElementCopy();
     }
 
@@ -179,6 +180,51 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.True(instructions.Contains("STR r0, [r2, 0]"));
         TestAssertions.True(instructions.Contains("LDR r0, [r1, 4]"));
         TestAssertions.True(instructions.Contains("STR r0, [r2, 4]"));
+    }
+
+    private static void EmitsNestedImportedRecordFieldCopy()
+    {
+        var symbols = new OberonSymbolModule(
+            "Types",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Outer", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Record,
+                TypeSize = 8,
+                RecordFields =
+                [
+                    new OberonSymbolField(
+                        "inner",
+                        0,
+                        (int)OberonCompilerTypeForm.Record,
+                        4,
+                        null,
+                        null,
+                        null,
+                        [new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)])
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Records; IMPORT Types; TYPE Outer = Types.Outer; VAR source, target: Outer; BEGIN target.inner.value := source.inner.value; END Records.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
+            .ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join(" | ", result.Diagnostics.Select(diagnostic => diagnostic.Message)));
+        new OberonCompilerModuleEmitter(generator).Emit(result);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Contains("LDR r0, [r0, 0]"));
+        TestAssertions.True(instructions.Contains("STR r0, [r1, 0]"));
     }
 
     private static void EmitsAggregateArrayElementCopy()
