@@ -20,6 +20,7 @@ internal static class OberonCompilerParserTests
         RejectsMismatchedExternalFixedArrayLength();
         ReportsMissingImportedExport();
         ParsesQualifiedImportedType();
+        ParsesQualifiedImportedRecordType();
         ParsesSetLiteral();
         ParsesModuleStatements();
         ParsesArrayIndexSelectors();
@@ -467,6 +468,28 @@ internal static class OberonCompilerParserTests
         TestAssertions.True(result.Succeeded);
         var value = result.ModuleScope!.Objects.Single(obj => obj.Name == "Value");
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, value.Type!.Form);
+    }
+
+    private static void ParsesQualifiedImportedRecordType()
+    {
+        var symbols = new OberonSymbolModule(
+            "Types",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Node", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Record,
+                TypeSize = 8
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Types; TYPE Value = Types.Node; VAR value: Value; BEGIN END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var value = result.ModuleScope!.Objects.Single(obj => obj.Name == "Value");
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, value.Type!.Form);
+        TestAssertions.Equal(8, value.Type.Size);
     }
 
     private static void ParsesControlFlowStatements()
