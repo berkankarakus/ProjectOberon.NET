@@ -403,6 +403,14 @@ public sealed class OberonCompilerSymbols
             {
                 importedType = CreateImportedRecordType(export.TypeSize, export.RecordFields);
             }
+            if (importedType is null
+                && export.TypeForm == (int)OberonCompilerTypeForm.Pointer)
+            {
+                importedType = CreateImportedPointerType(
+                    export.BaseTypeForm,
+                    export.BaseTypeSize,
+                    export.BaseRecordFields);
+            }
 
             if (importedType is null)
             {
@@ -544,14 +552,15 @@ public sealed class OberonCompilerSymbols
 
     private OberonCompilerType? CreateImportedPointerType(
         int? baseTypeForm,
-        int? baseTypeSize)
+        int? baseTypeSize,
+        IReadOnlyList<OberonSymbolField>? baseRecordFields = null)
     {
         if (baseTypeForm != (int)OberonCompilerTypeForm.Record)
         {
             return null;
         }
 
-        var recordType = CreateImportedRecordType(baseTypeSize);
+        var recordType = CreateImportedRecordType(baseTypeSize, baseRecordFields);
         if (recordType is null)
         {
             return null;

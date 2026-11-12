@@ -14,6 +14,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsNestedRecordTypeMetadata();
         ImportsArrayTypeMetadata();
         ImportsArrayOfRecordTypeMetadata();
+        ImportsPointerRecordTypeMetadata();
         ImportsExternalFunctionResultType();
         ImportsExternalPointerFunctionResultType();
         ImportsExternalRecordFunctionResultType();
@@ -152,6 +153,39 @@ internal static class OberonCompilerSymbolsTests
         var type = module.FindMember("Nodes")!.Type!;
 
         TestAssertions.Equal(OberonCompilerTypeForm.Array, type.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, type.Base!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Base.Fields[0].Type!.Form);
+    }
+
+    private static void ImportsPointerRecordTypeMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Types",
+            new OberonSymbolModule(
+                "Types",
+                0x1234,
+                1,
+                [new OberonSymbolExport("NodeRef", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Pointer,
+                    BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                    BaseTypeSize = 4,
+                    BaseRecordFields =
+                    [
+                        new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ]
+                }]));
+        var type = module.FindMember("NodeRef")!.Type!;
+
+        TestAssertions.Equal(OberonCompilerTypeForm.Pointer, type.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, type.Base!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Base.Fields[0].Type!.Form);
     }
