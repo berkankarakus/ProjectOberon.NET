@@ -10,6 +10,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalProcedureFixup();
         ExecutesExternalProcedureCall();
         EmitsExternalFunctionFixup();
+        EmitsExternalRealFunctionExpression();
         EmitsExternalValueParameterFixup();
         EmitsMultipleExternalFixups();
         EmitsExternalVariableDataFixup();
@@ -143,6 +144,30 @@ internal static class OberonCompilerRscTests
 
         TestAssertions.Equal(1, module.FixupProgram);
         TestAssertions.Equal(1u, (module.Code[module.FixupProgram] >> 20) & 0x0f);
+    }
+
+    private static void EmitsExternalRealFunctionExpression()
+    {
+        var symbols = new OberonSymbolModule(
+            "Math",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Measure", 1, 0)
+            {
+                IsProcedure = true,
+                HasResult = true,
+                ResultTypeForm = (int)OberonCompilerTypeForm.Real
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Math; VAR value: REAL; BEGIN value := Math.Measure() + 1.0; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Math"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        TestAssertions.True(module.Code.Any(
+            word => Risc5Disassembler.Format(word).StartsWith("FAD ", StringComparison.Ordinal)));
     }
 
     private static void EmitsExternalValueParameterFixup()
