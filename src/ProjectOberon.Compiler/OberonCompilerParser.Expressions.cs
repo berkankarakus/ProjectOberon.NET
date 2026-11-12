@@ -228,8 +228,25 @@ public sealed partial class OberonCompilerParser
     {
         while (_current.Kind is OberonCompilerTokenKind.Period
             or OberonCompilerTokenKind.LeftBracket
-            or OberonCompilerTokenKind.Arrow)
+            or OberonCompilerTokenKind.Arrow
+            or OberonCompilerTokenKind.LeftParenthesis)
         {
+            if (_current.Kind == OberonCompilerTokenKind.LeftParenthesis)
+            {
+                if (expression is OberonCompilerNameExpression callable
+                    && callable.Symbol?.Class is OberonCompilerObjectClass.Procedure
+                        or OberonCompilerObjectClass.Function)
+                {
+                    expression = new OberonCompilerCallExpression(
+                        callable,
+                        ParseArgumentList());
+                    continue;
+                }
+
+                AddDiagnostic("call target expected before argument list");
+                return expression;
+            }
+
             if (_current.Kind == OberonCompilerTokenKind.Arrow)
             {
                 Next();

@@ -308,10 +308,15 @@ public sealed class OberonCompilerSymbols
         var imported = OpenModule(alias, module.Name, module.Key);
         foreach (var export in module.Exports.Where(export => export.IsProcedure == true))
         {
-            var procedure = new OberonCompilerObject(export.Name, OberonCompilerObjectClass.Procedure)
+            var hasResult = export.HasResult == true;
+            var importedClass = hasResult
+                ? OberonCompilerObjectClass.Function
+                : OberonCompilerObjectClass.Procedure;
+            var resultType = hasResult ? IntegerType : NoneType;
+            var procedure = new OberonCompilerObject(export.Name, importedClass)
             {
                 Type = CreateProcedure(
-                    NoneType,
+                    resultType,
                     Enumerable.Range(0, export.ParameterCount)
                         .Select(index => DeclareImportedParameter(export.Name, index))),
                 Value = export.Value,

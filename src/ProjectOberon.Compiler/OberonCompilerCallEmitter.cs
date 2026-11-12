@@ -89,9 +89,24 @@ public sealed class OberonCompilerCallEmitter
 
         EmitCallArguments(procedure, call.Arguments);
         EmitStaticLink(procedure);
-        var target = ResolveProcedureLabel(procedure) ?? throw new InvalidOperationException(
-            $"function '{call.Procedure.Name}' has no code label");
-        _generator.EmitCall(target);
+        var target = ResolveProcedureLabel(procedure);
+        if (target is null)
+        {
+            if (procedure.Level == 0 && procedure.Key != 0 && _externalProcedureEmitter is not null)
+            {
+                _externalProcedureEmitter(procedure);
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"function '{call.Procedure.Name}' has no code label");
+            }
+        }
+        else
+        {
+            _generator.EmitCall(target);
+        }
+
         if (destination != 0)
         {
             _generator.EmitRegister(AluOperation.Mov, destination, 0, 0);

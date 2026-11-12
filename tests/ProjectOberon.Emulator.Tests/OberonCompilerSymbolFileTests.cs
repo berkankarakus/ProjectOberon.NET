@@ -5,6 +5,7 @@ internal static class OberonCompilerSymbolFileTests
     public static void Run()
     {
         WritesFilesAcceptedByTheExistingReader();
+        ReadsFunctionResultMetadata();
         RejectsUnexportedSymbols();
         RejectsInvalidModuleNames();
         RejectsNonAsciiNestedNames();
@@ -39,6 +40,22 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal(42, module.Exports[2].Value);
         TestAssertions.True(module.Exports[3].IsProcedure ?? false);
         TestAssertions.Equal(0, data.Length % 4);
+    }
+
+    private static void ReadsFunctionResultMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var functionType = symbols.CreateProcedure(symbols.IntegerType, []);
+        var function = symbols.Declare(
+            "Value",
+            OberonCompilerObjectClass.Function,
+            functionType,
+            exported: true);
+        var data = OberonCompilerSymbolFileWriter.Write("Demo", [function]);
+        var module = OberonSymbolModuleReader.Parse(data);
+
+        TestAssertions.True(module.Exports[0].IsProcedure == true);
+        TestAssertions.True(module.Exports[0].HasResult == true);
     }
 
     private static void RejectsUnexportedSymbols()

@@ -9,6 +9,7 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     // Hand-built symbols historically treated class 1 exports as procedures.
     // The reader overrides this for constants, whose type is not a procedure.
     public bool? IsProcedure { get; init; }
+    public bool? HasResult { get; init; }
     public int ParameterCount { get; init; }
 }
 
@@ -56,6 +57,7 @@ public static class OberonSymbolModuleReader
             exports.Add(new OberonSymbolExport(exportName, symbolClass, value)
             {
                 IsProcedure = typeInfo.IsProcedure,
+                HasResult = typeInfo.HasResult,
                 ParameterCount = typeInfo.ParameterCount
             });
 
@@ -74,12 +76,13 @@ public static class OberonSymbolModuleReader
         var reference = reader.ReadSignedByte();
         if (reference < 0)
         {
-            return new SymbolTypeInfo(false, 0);
+            return new SymbolTypeInfo(false, 0, false, -1);
         }
 
         var form = reader.ReadSignedByte();
         var isProcedure = form == 10;
         var parameterCount = 0;
+        var hasResult = false;
         switch (form)
         {
             case 7:
@@ -98,7 +101,8 @@ public static class OberonSymbolModuleReader
                 SkipRecordFields(ref reader);
                 break;
             case 10:
-                SkipType(ref reader);
+                var resultType = SkipType(ref reader);
+                hasResult = resultType.TypeForm != 9;
                 parameterCount = SkipProcedureParameters(ref reader);
                 break;
             case 1:
@@ -122,7 +126,7 @@ public static class OberonSymbolModuleReader
             reader.ReadString();
         }
 
-        return new SymbolTypeInfo(isProcedure, parameterCount);
+        return new SymbolTypeInfo(isProcedure, parameterCount, hasResult, form);
     }
 
     private static void SkipRecordFields(ref SymbolReader reader)
@@ -177,7 +181,11 @@ public static class OberonSymbolModuleReader
         }
     }
 
-    private readonly record struct SymbolTypeInfo(bool IsProcedure, int ParameterCount);
+    private readonly record struct SymbolTypeInfo(
+        bool IsProcedure,
+        int ParameterCount,
+        bool HasResult,
+        int TypeForm);
 
     private ref struct SymbolReader
     {

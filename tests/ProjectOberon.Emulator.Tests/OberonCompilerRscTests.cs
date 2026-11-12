@@ -9,6 +9,7 @@ internal static class OberonCompilerRscTests
         EmitsImportsAndExportedCommands();
         EmitsExternalProcedureFixup();
         ExecutesExternalProcedureCall();
+        EmitsExternalFunctionFixup();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
         ExecutesCompilerProducedStringBody();
@@ -113,6 +114,30 @@ internal static class OberonCompilerRscTests
 
         TestAssertions.True(called);
         TestAssertions.Equal(initialProgramCounter, cpu.PcByte);
+    }
+
+    private static void EmitsExternalFunctionFixup()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Value", 1, 0)
+            {
+                IsProcedure = true,
+                HasResult = true
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; VAR result: INTEGER; BEGIN result := IO.Value(); END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(1, module.FixupProgram);
+        TestAssertions.Equal(1u, (module.Code[module.FixupProgram] >> 20) & 0x0f);
     }
 
     private static void EmitsStringPayload()
