@@ -7,5 +7,6 @@ internal static partial class OberonTextTests
         AppliesStylesAndNotifies();
         ScansOberonTokens();
         WritesFormattedText();
+        WritesNumericBoundaries();
     }
 }
