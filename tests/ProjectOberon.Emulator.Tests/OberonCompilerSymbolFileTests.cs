@@ -10,6 +10,7 @@ internal static class OberonCompilerSymbolFileTests
         ReadsRecordFunctionResultMetadata();
         ReadsTypeFormMetadata();
         ReadsArrayTypeMetadata();
+        ReadsArrayRecordElementMetadata();
         ReadsRecordTypeSizeMetadata();
         ReadsOpenArrayParameterMetadata();
         ReadsPointerParameterMetadata();
@@ -119,6 +120,27 @@ internal static class OberonCompilerSymbolFileTests
         var module = OberonSymbolModuleReader.Parse(data);
 
         TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, module.Exports[0].TypeForm);
+    }
+
+    private static void ReadsArrayRecordElementMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var record = symbols.CreateRecord();
+        symbols.DeclareField(record, "value", symbols.IntegerType, 0, exported: true);
+        var array = symbols.CreateArray(record, 2, 8);
+        var type = symbols.Declare(
+            "Nodes",
+            OberonCompilerObjectClass.Type,
+            array,
+            exported: true);
+        var module = OberonSymbolModuleReader.Parse(
+            OberonCompilerSymbolFileWriter.Write("Demo", [type]));
+
+        var export = module.Exports[0];
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Array, export.TypeForm);
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Record, export.BaseTypeForm);
+        TestAssertions.Equal(1, export.BaseRecordFields!.Count);
+        TestAssertions.Equal("value", export.BaseRecordFields![0].Name);
     }
 
     private static void ReadsRecordTypeSizeMetadata()

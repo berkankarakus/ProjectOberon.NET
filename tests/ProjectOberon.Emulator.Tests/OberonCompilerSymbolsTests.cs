@@ -13,6 +13,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsOpaqueRecordTypeMetadata();
         ImportsNestedRecordTypeMetadata();
         ImportsArrayTypeMetadata();
+        ImportsArrayOfRecordTypeMetadata();
         ImportsExternalFunctionResultType();
         ImportsExternalPointerFunctionResultType();
         ImportsExternalRecordFunctionResultType();
@@ -117,6 +118,41 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.True(type is not null);
         TestAssertions.Equal(OberonCompilerObjectClass.Type, type!.Class);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Type!.Form);
+    }
+
+    private static void ImportsArrayOfRecordTypeMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Types",
+            new OberonSymbolModule(
+                "Types",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Nodes", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Array,
+                    ArrayLength = 2,
+                    BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                    BaseTypeSize = 4,
+                    BaseRecordFields =
+                    [
+                        new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ],
+                    TypeSize = 8
+                }]));
+        var type = module.FindMember("Nodes")!.Type!;
+
+        TestAssertions.Equal(OberonCompilerTypeForm.Array, type.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, type.Base!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Base.Fields[0].Type!.Form);
     }
 
     private static void ImportsExternalFunctionResultType()

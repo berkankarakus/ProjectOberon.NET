@@ -394,7 +394,8 @@ public sealed class OberonCompilerSymbols
                     export.ArrayLength,
                     export.BaseTypeForm,
                     export.BaseTypeSize,
-                    export.TypeSize);
+                    export.TypeSize,
+                    export.BaseRecordFields);
             }
             if (importedType is null
                 && export.TypeForm == (int)OberonCompilerTypeForm.Record)
@@ -471,6 +472,10 @@ public sealed class OberonCompilerSymbols
             && field.BaseTypeForm is int baseTypeForm)
         {
             var baseType = CreateImportedPrimitiveType(baseTypeForm);
+            if (baseType is null && baseTypeForm == (int)OberonCompilerTypeForm.Record)
+            {
+                baseType = CreateImportedRecordType(field.BaseTypeSize, field.BaseRecordFields);
+            }
             if (baseType is null)
             {
                 return null;
@@ -512,7 +517,8 @@ public sealed class OberonCompilerSymbols
         int? length,
         int? baseTypeForm,
         int? baseTypeSize,
-        int? typeSize)
+        int? typeSize,
+        IReadOnlyList<OberonSymbolField>? baseRecordFields = null)
     {
         if (length is not int arrayLength || baseTypeForm is not int elementForm)
         {
@@ -522,7 +528,7 @@ public sealed class OberonCompilerSymbols
         var elementType = CreateImportedPrimitiveType(elementForm);
         if (elementType is null && elementForm == (int)OberonCompilerTypeForm.Record)
         {
-            elementType = CreateImportedRecordType(baseTypeSize);
+            elementType = CreateImportedRecordType(baseTypeSize, baseRecordFields);
         }
         if (elementType is null)
         {
