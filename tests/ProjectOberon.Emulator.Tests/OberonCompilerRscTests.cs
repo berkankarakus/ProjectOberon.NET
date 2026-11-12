@@ -8,6 +8,7 @@ internal static class OberonCompilerRscTests
         EmitsStringPayload();
         EmitsImportsAndExportedCommands();
         EmitsExternalProcedureFixup();
+        EmitsExternalModuleDeterministically();
         ExecutesExternalProcedureCall();
         ExecutesExternalVarParameterCall();
         ExecutesExternalFixedArrayParameterCall();
@@ -92,6 +93,29 @@ internal static class OberonCompilerRscTests
         var roundTrip = RscModuleReader.Parse(RscModuleWriter.Write(module));
         TestAssertions.Equal(module.FixupProgram, roundTrip.FixupProgram);
         TestAssertions.True(module.Code.SequenceEqual(roundTrip.Code));
+    }
+
+    private static void EmitsExternalModuleDeterministically()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Run", 1, 7) { IsProcedure = true }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT IO; BEGIN IO.Run; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+        var emitter = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator());
+
+        var first = emitter.EmitRsc(result);
+        var second = emitter.EmitRsc(result);
+
+        TestAssertions.True(first.Code.SequenceEqual(second.Code));
+        TestAssertions.Equal(first.FixupProgram, second.FixupProgram);
+        TestAssertions.Equal(first.FixupData, second.FixupData);
+        TestAssertions.Equal(first.VariableBytes, second.VariableBytes);
+        TestAssertions.Equal(first.BodyOffset, second.BodyOffset);
     }
 
     private static void ExecutesExternalProcedureCall()
