@@ -14,6 +14,7 @@ internal static class OberonCompilerSymbolsTests
         ImportsNestedRecordTypeMetadata();
         ImportsArrayTypeMetadata();
         ImportsArrayOfRecordTypeMetadata();
+        ImportsRecordFieldArrayRecordMetadata();
         ImportsPointerRecordTypeMetadata();
         ImportsExternalFunctionResultType();
         ImportsExternalPointerFunctionResultType();
@@ -156,6 +157,48 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.Equal(OberonCompilerTypeForm.Array, type.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, type.Base!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, type.Base.Fields[0].Type!.Form);
+    }
+
+    private static void ImportsRecordFieldArrayRecordMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Types",
+            new OberonSymbolModule(
+                "Types",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Container", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Record,
+                    TypeSize = 8,
+                    RecordFields =
+                    [
+                        new OberonSymbolField(
+                            "nodes",
+                            0,
+                            (int)OberonCompilerTypeForm.Array,
+                            8,
+                            2,
+                            (int)OberonCompilerTypeForm.Record,
+                            4,
+                            null,
+                            [new OberonSymbolField(
+                                "value",
+                                0,
+                                (int)OberonCompilerTypeForm.Integer,
+                                4,
+                                null,
+                                null,
+                                null)])
+                    ]
+                }]));
+        var type = module.FindMember("Container")!.Type!;
+        var fieldType = type.Fields[0].Type!;
+
+        TestAssertions.Equal(OberonCompilerTypeForm.Array, fieldType.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, fieldType.Base!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, fieldType.Base.Fields[0].Type!.Form);
     }
 
     private static void ImportsPointerRecordTypeMetadata()
