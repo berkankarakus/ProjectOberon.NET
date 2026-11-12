@@ -27,6 +27,7 @@ internal sealed record Options(
         string? disk = null;
         var diskWritable = true;
         ulong steps = 1000;
+        var stepsSpecified = false;
         var help = false;
         int? trace = null;
         uint? breakpoint = null;
@@ -53,8 +54,14 @@ internal sealed record Options(
                     rom = Next(args, ref index, "--rom");
                     break;
                 case "--steps":
+                    if (stepsSpecified)
+                    {
+                        throw new ArgumentException("step count specified more than once");
+                    }
+
                     if (!ulong.TryParse(Next(args, ref index, "--steps"), out steps))
                         throw new ArgumentException("--steps must be an unsigned integer");
+                    stepsSpecified = true;
                     break;
                 case "--disk":
                     if (disk is not null)
@@ -68,11 +75,21 @@ internal sealed record Options(
                     diskWritable = false;
                     break;
                 case "--trace":
+                    if (trace is not null)
+                    {
+                        throw new ArgumentException("trace count specified more than once");
+                    }
+
                     if (!int.TryParse(Next(args, ref index, "--trace"), out var traceValue) || traceValue < 0)
                         throw new ArgumentException("--trace must be a non-negative integer");
                     trace = traceValue;
                     break;
                 case "--breakpoint":
+                    if (breakpoint is not null)
+                    {
+                        throw new ArgumentException("breakpoint specified more than once");
+                    }
+
                     var breakpointText = Next(args, ref index, "--breakpoint").Replace("0x", string.Empty, StringComparison.OrdinalIgnoreCase);
                     if (!uint.TryParse(breakpointText, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var breakpointValue))
                         throw new ArgumentException("--breakpoint must be a hexadecimal PC address");

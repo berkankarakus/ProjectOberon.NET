@@ -75,5 +75,8 @@ internal static class CliOptionTests
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--disk"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--rom", "first.mem", "--rom", "second.mem"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--disk", "first.img", "--disk", "second.img"]));
+        TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--steps", "1", "--steps", "2"]));
+        TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--trace", "1", "--trace", "2"]));
+        TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--breakpoint", "10", "--breakpoint", "20"]));
     }
 }
