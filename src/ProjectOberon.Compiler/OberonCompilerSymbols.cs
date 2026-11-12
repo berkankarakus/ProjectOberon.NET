@@ -516,7 +516,9 @@ public sealed class OberonCompilerSymbols
             return null;
         }
 
-        var size = typeSize ?? checked(elementType.Size * Math.Max(arrayLength, 0));
+        var size = typeSize ?? (arrayLength < 0
+            ? 8
+            : checked(elementType.Size * arrayLength));
         return CreateArray(elementType, arrayLength, size);
     }
 
@@ -566,18 +568,16 @@ public sealed class OberonCompilerSymbols
             var baseTypeSize = parameterBaseTypeSizes is not null && index < parameterBaseTypeSizes.Count
                 ? parameterBaseTypeSizes[index]
                 : null;
-            if (typeForm == (int)OberonCompilerTypeForm.Array
-                && arrayLength is int fixedLength
-                && fixedLength >= 0)
+            if (typeForm == (int)OberonCompilerTypeForm.Array)
             {
-                type = CreateArray(
-                    IntegerType,
-                    fixedLength,
-                    checked(fixedLength * IntegerType.Size));
-            }
-            else if (typeForm == (int)OberonCompilerTypeForm.Array && arrayLength == -1)
-            {
-                type = CreateArray(IntegerType, -1, 8);
+                type = CreateImportedArrayType(
+                    arrayLength,
+                    baseTypeForm,
+                    baseTypeSize,
+                    null)
+                    ?? (arrayLength == -1
+                        ? CreateArray(IntegerType, -1, 8)
+                        : type);
             }
             else if (typeForm == (int)OberonCompilerTypeForm.Pointer)
             {
