@@ -24,6 +24,9 @@ internal static class OberonCompilerExpressionEmitterTests
         AllocatesScratchRegistersWithoutUsingDestinationPlusOne();
         EmitsFieldAddressThroughDedicatedEmitter();
         EmitsArrayIndexLoadAndStore();
+        ReportsAggregateFieldLoadsExplicitly();
+        ReportsAggregateArrayLoadsExplicitly();
+        ReportsAggregatePointerLoadsExplicitly();
         EmitsThroughInstructionWriterAbstraction();
     }
 
@@ -357,6 +360,49 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("MUL r2, r2, r3", Risc5Disassembler.Format(generator.Code[11]));
         TestAssertions.Equal("ADD r1, r1, r2", Risc5Disassembler.Format(generator.Code[12]));
         TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[13]));
+    }
+
+    private static void ReportsAggregateFieldLoadsExplicitly()
+    {
+        const string source = "MODULE Records; TYPE Holder = RECORD values: ARRAY 2 OF INTEGER; END; VAR holder: Holder; BEGIN END Records.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var holder = result.ModuleScope!.Objects.Single(obj => obj.Name == "holder");
+        var field = new OberonCompilerFieldExpression(
+            new OberonCompilerNameExpression("holder", holder),
+            holder.Type!.Fields[0]);
+
+        var error = TestAssertions.Throws<NotSupportedException>(() =>
+            new OberonCompilerExpressionEmitter(new OberonCompilerCodeGenerator()).EmitExpression(field));
+        TestAssertions.True(error.Message.Contains("aggregate field loads", StringComparison.Ordinal));
+    }
+
+    private static void ReportsAggregateArrayLoadsExplicitly()
+    {
+        const string source = "MODULE Arrays; TYPE Values = ARRAY 2 OF ARRAY 2 OF INTEGER; VAR values: Values; BEGIN END Arrays.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var values = result.ModuleScope!.Objects.Single(obj => obj.Name == "values");
+        var index = new OberonCompilerIndexExpression(
+            new OberonCompilerNameExpression("values", values),
+            new OberonCompilerIntegerLiteralExpression(new OberonCompilerSymbols().IntegerType, 0),
+            values.Type!.Base!);
+
+        var error = TestAssertions.Throws<NotSupportedException>(() =>
+            new OberonCompilerExpressionEmitter(new OberonCompilerCodeGenerator()).EmitExpression(index));
+        TestAssertions.True(error.Message.Contains("aggregate array element loads", StringComparison.Ordinal));
+    }
+
+    private static void ReportsAggregatePointerLoadsExplicitly()
+    {
+        const string source = "MODULE Pointers; TYPE Values = ARRAY 2 OF INTEGER; Ref = POINTER TO Values; VAR value: Ref; BEGIN END Pointers.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var value = result.ModuleScope!.Objects.Single(obj => obj.Name == "value");
+        var dereference = new OberonCompilerDereferenceExpression(
+            new OberonCompilerNameExpression("value", value),
+            value.Type!.Base!);
+
+        var error = TestAssertions.Throws<NotSupportedException>(() =>
+            new OberonCompilerExpressionEmitter(new OberonCompilerCodeGenerator()).EmitExpression(dereference));
+        TestAssertions.True(error.Message.Contains("aggregate pointer dereference loads", StringComparison.Ordinal));
     }
 
     private static void EmitsThroughInstructionWriterAbstraction()
