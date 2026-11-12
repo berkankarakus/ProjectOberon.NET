@@ -281,8 +281,9 @@ dotnet run --project src/ProjectOberon.CompilerCli/ProjectOberon.CompilerCli.csp
 The current import slice preserves exported procedure arity, scalar and record
 results, scalar parameters, fixed/open arrays, pointer targets, record sizes and
 nested record fields. Qualified calls are validated against that metadata.
-External scalar, array, pointer and aggregate record calls—including `VAR`
-forms—are lowered into RSC program/data fixups.
+Imported external variables preserve their scalar, array, pointer and record
+types as well. External scalar, array, pointer and aggregate record
+calls—including `VAR` forms—are lowered into RSC program/data fixups.
 
 The compiler CLI now emits a minimal RSC container. Full type descriptor and
 pointer-fixup generation remains a separate compiler milestone; modules that
