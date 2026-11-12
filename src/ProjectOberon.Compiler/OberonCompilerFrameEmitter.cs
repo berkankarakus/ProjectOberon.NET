@@ -41,13 +41,6 @@ public sealed class OberonCompilerFrameEmitter
         var register = 0;
         foreach (var parameter in procedure.Type!.Parameters)
         {
-            if (OberonCompilerTypeRules.IsScalar(parameter.Type))
-            {
-                _generator.EmitSaveParameter(register, checked((int)parameter.Value));
-                register++;
-                continue;
-            }
-
             if (parameter.Type?.Form == OberonCompilerTypeForm.Array
                 && parameter.Type.Length < 0)
             {
@@ -57,7 +50,8 @@ public sealed class OberonCompilerFrameEmitter
                 continue;
             }
 
-            if (OberonCompilerTypeRules.IsAggregate(parameter.Type))
+            if (OberonCompilerTypeRules.IsScalar(parameter.Type)
+                || OberonCompilerTypeRules.IsAggregate(parameter.Type))
             {
                 _generator.EmitSaveParameter(register, checked((int)parameter.Value));
                 register++;
