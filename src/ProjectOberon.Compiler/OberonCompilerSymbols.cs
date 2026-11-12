@@ -338,7 +338,8 @@ public sealed class OberonCompilerSymbols
                 {
                     importedResultType = CreateImportedPointerType(
                         export.ResultBaseTypeForm,
-                        export.ResultBaseTypeSize);
+                        export.ResultBaseTypeSize,
+                        export.ResultBaseRecordFields);
                 }
 
                 resultType = importedResultType is null ? IntegerType : importedResultType;

@@ -307,7 +307,18 @@ internal static class OberonCompilerSymbolsTests
                     HasResult = true,
                     ResultTypeForm = (int)OberonCompilerTypeForm.Pointer,
                     ResultBaseTypeForm = (int)OberonCompilerTypeForm.Record,
-                    ResultBaseTypeSize = 0
+                    ResultBaseTypeSize = 4,
+                    ResultBaseRecordFields =
+                    [
+                        new OberonSymbolField(
+                            "value",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ]
                 }]));
         var function = module.FindMember("Make");
 
@@ -315,6 +326,7 @@ internal static class OberonCompilerSymbolsTests
         TestAssertions.Equal(OberonCompilerObjectClass.Function, function!.Class);
         TestAssertions.Equal(OberonCompilerTypeForm.Pointer, function.Type!.Base!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, function.Type.Base.Base!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Integer, function.Type.Base.Base.Fields[0].Type!.Form);
     }
 
     private static void ImportsArrayTypeMetadata()
