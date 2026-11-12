@@ -577,7 +577,9 @@ public sealed class OberonCompilerSymbols
                     null)
                     ?? (arrayLength == -1
                         ? CreateArray(IntegerType, -1, 8)
-                        : type);
+                        : arrayLength is int fixedLength && fixedLength >= 0
+                            ? CreateArray(IntegerType, fixedLength, checked(fixedLength * IntegerType.Size))
+                            : type);
             }
             else if (typeForm == (int)OberonCompilerTypeForm.Pointer)
             {

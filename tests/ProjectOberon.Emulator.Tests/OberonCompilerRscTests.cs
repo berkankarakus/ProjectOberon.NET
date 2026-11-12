@@ -16,6 +16,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalVariableDataFixup();
         EmitsExternalVarParameterCall();
         EmitsExternalFixedArrayParameterCall();
+        EmitsExternalRealOpenArrayParameterCall();
         EmitsExternalPointerParameterCall();
         RejectsInvalidExternalImportTables();
         LoadsCompilerProducedRsc();
@@ -358,6 +359,39 @@ internal static class OberonCompilerRscTests
         TestAssertions.True(generator.Code
             .Select(Risc5Disassembler.Format)
             .Contains("ADD r0, r13, 0x0000"));
+        TestAssertions.True(module.FixupProgram > 0);
+    }
+
+    private static void EmitsExternalRealOpenArrayParameterCall()
+    {
+        var symbols = new OberonSymbolModule(
+            "Math",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Consume", 1, 0)
+            {
+                IsProcedure = true,
+                ParameterCount = 1,
+                ParameterReadOnly = [true],
+                ParameterTypeForms = [(int)OberonCompilerTypeForm.Array],
+                ParameterArrayLengths = new int?[] { -1 },
+                ParameterBaseTypeForms = [(int)OberonCompilerTypeForm.Real]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Math; TYPE Values = ARRAY 2 OF REAL; VAR value: Values; BEGIN Math.Consume(value); END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Math"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var imported = result.ModuleScope!.Objects.Single(obj => obj.Name == "Math");
+        var parameter = imported.FindMember("Consume")!.Type!.Parameters[0];
+        TestAssertions.Equal(OberonCompilerTypeForm.Array, parameter.Type!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Real, parameter.Type.Base!.Form);
+        var generator = new OberonCompilerCodeGenerator();
+        var module = new OberonCompilerModuleEmitter(generator).EmitRsc(result);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Contains("MOV r1, 0x0002"));
         TestAssertions.True(module.FixupProgram > 0);
     }
 
