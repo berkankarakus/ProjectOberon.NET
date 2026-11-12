@@ -98,7 +98,10 @@ internal static class OberonCompilerSymbolsTests
                 "Config",
                 0x1234,
                 1,
-                [new OberonSymbolExport("Value", 2, 12)]));
+                [new OberonSymbolExport("Value", 2, 12)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Integer
+                }]));
         var variable = module.FindMember("Value");
 
         TestAssertions.True(variable is not null);
