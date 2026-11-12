@@ -79,6 +79,8 @@ public static class OberonDirectoryPageCodec
             throw new InvalidDataException("invalid Oberon directory page shape");
         }
 
+        ValidateLogicalAddress(page.Children[0], allowZero: true);
+
         var data = new byte[PageSize];
         BinaryPrimitives.WriteInt32LittleEndian(data, DirectoryMark);
         BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(4), page.Entries.Count);
@@ -87,6 +89,8 @@ public static class OberonDirectoryPageCodec
         {
             var offset = HeaderSize + index * EntrySize;
             var entry = page.Entries[index];
+            ValidateLogicalAddress(entry.Address, allowZero: false);
+            ValidateLogicalAddress(page.Children[index + 1], allowZero: true);
             EncodeName(entry.Name).CopyTo(data, offset);
             BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(offset + 32), entry.Address);
             BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(offset + 36), page.Children[index + 1]);
