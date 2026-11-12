@@ -23,6 +23,7 @@ internal static class OberonCompilerParserTests
         ParsesQualifiedImportedRecordType();
         ParsesNestedQualifiedImportedRecordType();
         ParsesQualifiedImportedArrayType();
+        ParsesImportedArrayRecordSelectors();
         ParsesExternalRecordFunctionResult();
         ParsesSetLiteral();
         ParsesModuleStatements();
@@ -572,6 +573,42 @@ internal static class OberonCompilerParserTests
         TestAssertions.Equal(OberonCompilerTypeForm.Record, value.Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, value.Type.Fields[0].Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, value.Type.Fields[0].Type!.Fields[0].Type!.Form);
+    }
+
+    private static void ParsesImportedArrayRecordSelectors()
+    {
+        var symbols = new OberonSymbolModule(
+            "Types",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Nodes", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Array,
+                ArrayLength = 2,
+                BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                BaseTypeSize = 4,
+                BaseRecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ],
+                TypeSize = 8
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Types; TYPE Values = Types.Nodes; VAR values: Values; BEGIN values[0].value := 1; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var values = result.ModuleScope!.Objects.Single(obj => obj.Name == "values");
+        TestAssertions.Equal(OberonCompilerTypeForm.Array, values.Type!.Form);
+        TestAssertions.Equal(OberonCompilerTypeForm.Record, values.Type.Base!.Form);
     }
 
     private static void ParsesExternalRecordFunctionResult()
