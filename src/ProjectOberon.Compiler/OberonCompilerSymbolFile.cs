@@ -24,6 +24,8 @@ public static class OberonCompilerSymbolFileWriter
         var types = new TypeWriter(writer);
         foreach (var export in exports)
         {
+            ArgumentNullException.ThrowIfNull(export);
+
             if (!export.Exported)
             {
                 throw new ArgumentException($"symbol is not exported: {export.Name}", nameof(exports));

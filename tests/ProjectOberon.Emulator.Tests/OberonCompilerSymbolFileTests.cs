@@ -47,6 +47,7 @@ internal static class OberonCompilerSymbolFileTests
         var local = symbols.Declare("local", OberonCompilerObjectClass.Variable, symbols.IntegerType);
 
         TestAssertions.Throws<ArgumentException>(() => OberonCompilerSymbolFileWriter.Write("Demo", [local]));
+        TestAssertions.Throws<ArgumentNullException>(() => OberonCompilerSymbolFileWriter.Write("Demo", [null!]));
     }
 
     private static void RejectsInvalidModuleNames()
