@@ -118,6 +118,11 @@ public static class OberonTextCodec
             offset += length;
         }
 
+        if (reader.Position != data.Length)
+        {
+            throw new InvalidDataException("unexpected trailing bytes in Oberon TextBlock");
+        }
+
         text.Append(buffer);
         text.MarkClean();
         return text;

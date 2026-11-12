@@ -37,6 +37,9 @@ internal static class OberonTextCodecTests
     {
         TestAssertions.ThrowsInvalidData(() => OberonTextCodec.Decode([0, 0, 0, 0, 0]));
         TestAssertions.ThrowsInvalidData(() => OberonTextCodec.Decode([OberonTextCodec.TextTag, 0, 0, 0, 0, 1]));
+
+        var valid = OberonTextCodec.Encode(new OberonText("text"));
+        TestAssertions.ThrowsInvalidData(() => OberonTextCodec.Decode([.. valid, 0xff]));
     }
 
     private static void RejectsUnrepresentableLatin1Text()
