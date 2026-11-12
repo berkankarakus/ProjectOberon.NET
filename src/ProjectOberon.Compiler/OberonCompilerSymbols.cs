@@ -620,7 +620,8 @@ public sealed class OberonCompilerSymbols
             {
                 var importedPointerType = CreateImportedPointerType(
                     baseTypeForm,
-                    baseTypeSize);
+                    baseTypeSize,
+                    baseRecordFields);
                 if (importedPointerType is not null)
                 {
                     type = importedPointerType;
