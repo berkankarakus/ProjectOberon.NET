@@ -12,6 +12,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalFunctionFixup();
         EmitsExternalValueParameterFixup();
         EmitsMultipleExternalFixups();
+        EmitsExternalVariableDataFixup();
         RejectsInvalidExternalImportTables();
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
@@ -233,6 +234,42 @@ internal static class OberonCompilerRscTests
         TestAssertions.True(duplicateResult.Succeeded);
         TestAssertions.Throws<InvalidOperationException>(() =>
             new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(duplicateResult));
+    }
+
+    private static void EmitsExternalVariableDataFixup()
+    {
+        var symbols = new OberonSymbolModule(
+            "Config",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Value", 2, 12)]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Config; VAR result: INTEGER; BEGIN result := Config.Value; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Config"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(1, module.FixupData);
+        TestAssertions.Equal(1u, (module.Code[1] >> 20) & 0x0f);
+        TestAssertions.Equal(1u, module.Code[1] & 0xfff);
+        TestAssertions.Equal(12u, module.Code[2] & 0xff);
+
+        var bytes = RscModuleWriter.Write(module);
+        var loader = new OberonModuleLoader(name => name == "Demo" ? bytes : null);
+        loader.RegisterExternal(symbols);
+        var memory = new Memory(64 * 1024);
+        var runtime = new OberonModuleRuntime(memory, new Risc5Cpu(memory), loader, 0x1000, 0x100);
+        runtime.BindExternal(
+            new OberonExternalModuleBinding(
+                "Config",
+                0x3000,
+                0x4000,
+                Enumerable.Range(0, 13).Select(index => index == 12 ? 0x30u : 0u).ToArray()));
+
+        var image = runtime.MemoryLoader.Load("Demo");
+        TestAssertions.Equal(0x30u, memory.Read32(image.CodeAddress + 8) & 0xffff);
     }
 
     private static void EmitsStringPayload()

@@ -18,6 +18,8 @@ public sealed class OberonCompilerModuleEmitter
     private bool _emitExternalCalls;
     private int? _firstProgramFixup;
     private int _programFixupHead;
+    private int? _firstDataFixup;
+    private int _dataFixupHead;
 
     public OberonCompilerModuleEmitter(OberonCompilerCodeGenerator generator)
     {
@@ -30,7 +32,8 @@ public sealed class OberonCompilerModuleEmitter
             procedureLabelResolver: ResolveProcedureLabel,
             currentLevel: 1,
             stringAddressResolver: ResolveStringAddress,
-            externalProcedureEmitter: EmitExternalProcedureCall);
+            externalProcedureEmitter: EmitExternalProcedureCall,
+            externalVariableAddressEmitter: EmitExternalVariableAddress);
     }
 
     public IReadOnlyList<byte> ModuleData => _moduleData;
@@ -71,6 +74,11 @@ public sealed class OberonCompilerModuleEmitter
         {
             fixupProgram = firstProgramFixup;
         }
+        var fixupData = 0;
+        if (_firstDataFixup is int firstDataFixup)
+        {
+            fixupData = firstDataFixup;
+        }
 
         return new RscModule(
             module.ModuleName ?? throw new InvalidOperationException("module name is missing"),
@@ -87,7 +95,7 @@ public sealed class OberonCompilerModuleEmitter
             [],
             [],
             fixupProgram,
-            0,
+            fixupData,
             0,
             _bodyOffset,
             (byte)'O')
@@ -109,6 +117,8 @@ public sealed class OberonCompilerModuleEmitter
         _emitExternalCalls = emitExternalCalls;
         _firstProgramFixup = null;
         _programFixupHead = 0;
+        _firstDataFixup = null;
+        _dataFixupHead = 0;
         _generator.Reset();
         _procedureLabels.Clear();
         _stringAddresses.Clear();
@@ -132,7 +142,8 @@ public sealed class OberonCompilerModuleEmitter
                 ResolveProcedureLabel,
                 currentLevel: procedure.Symbol.Level + 1,
                 stringAddressResolver: ResolveStringAddress,
-                externalProcedureEmitter: EmitExternalProcedureCall);
+                externalProcedureEmitter: EmitExternalProcedureCall,
+                externalVariableAddressEmitter: EmitExternalVariableAddress);
             if (procedure.Body is not null)
             {
                 procedureStatements.EmitStatementSequence(procedure.Body);
@@ -224,6 +235,49 @@ public sealed class OberonCompilerModuleEmitter
         }
 
         _programFixupHead = fixupPosition;
+    }
+
+    private void EmitExternalVariableAddress(OberonCompilerObject variable, int destination)
+    {
+        if (!_emitExternalCalls)
+        {
+            throw new NotSupportedException(
+                $"external variable '{variable.Name}' requires RSC data fixup lowering");
+        }
+
+        if (!_externalImportNumbers.TryGetValue(variable.Key, out var importNumber))
+        {
+            throw new InvalidOperationException(
+                $"external module key is not imported: {variable.Key}");
+        }
+
+        var fixupPosition = _generator.ProgramCounter;
+
+        if (fixupPosition == 0)
+        {
+            _generator.EmitRegister(AluOperation.Mov, 0, 0, 0);
+            fixupPosition = _generator.ProgramCounter;
+        }
+
+        var previousDistance = fixupPosition - _dataFixupHead;
+        if (previousDistance is < 1 or > 0xfff)
+        {
+            throw new InvalidOperationException("RSC data fixup chain distance is out of range");
+        }
+
+        _generator.EmitLoad(destination, importNumber, previousDistance);
+        _generator.EmitImmediate(
+            AluOperation.Add,
+            destination,
+            destination,
+            checked((int)variable.Value));
+
+        if (_firstDataFixup is null)
+        {
+            _firstDataFixup = fixupPosition;
+        }
+
+        _dataFixupHead = fixupPosition;
     }
 
     private OberonCompilerLabel? ResolveProcedureLabel(OberonCompilerObject procedure) =>

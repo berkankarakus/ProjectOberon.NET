@@ -6,6 +6,7 @@ public sealed class OberonCompilerAddressEmitter
     private readonly Func<OberonCompilerExpression, int, int>? _emitExpression;
     private readonly OberonCompilerRegisterAllocator? _registers;
     private readonly Func<string, int>? _stringAddressResolver;
+    private readonly Action<OberonCompilerObject, int>? _externalVariableAddressEmitter;
     private readonly int _currentLevel;
 
     public OberonCompilerAddressEmitter(
@@ -14,6 +15,23 @@ public sealed class OberonCompilerAddressEmitter
         OberonCompilerRegisterAllocator? registers = null,
         int currentLevel = 1,
         Func<string, int>? stringAddressResolver = null)
+        : this(
+            generator,
+            emitExpression,
+            registers,
+            currentLevel,
+            stringAddressResolver,
+            externalVariableAddressEmitter: null)
+    {
+    }
+
+    internal OberonCompilerAddressEmitter(
+        IOberonCompilerInstructionWriter generator,
+        Func<OberonCompilerExpression, int, int>? emitExpression,
+        OberonCompilerRegisterAllocator? registers,
+        int currentLevel,
+        Func<string, int>? stringAddressResolver,
+        Action<OberonCompilerObject, int>? externalVariableAddressEmitter)
     {
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
@@ -21,6 +39,7 @@ public sealed class OberonCompilerAddressEmitter
         _registers = registers;
         _currentLevel = currentLevel;
         _stringAddressResolver = stringAddressResolver;
+        _externalVariableAddressEmitter = externalVariableAddressEmitter;
     }
 
     public void EmitAddress(OberonCompilerExpression expression, int destination)
@@ -70,6 +89,18 @@ public sealed class OberonCompilerAddressEmitter
         switch (symbol.Class)
         {
             case OberonCompilerObjectClass.Variable:
+                if (symbol.Level == 0)
+                {
+                    if (_externalVariableAddressEmitter is null)
+                    {
+                        throw new NotSupportedException(
+                            $"external variable '{symbol.Name}' requires RSC data fixup lowering");
+                    }
+
+                    _externalVariableAddressEmitter(symbol, destination);
+                    return;
+                }
+
                 var baseRegister = EmitStorageBase(symbol, destination);
                 _generator.EmitImmediate(AluOperation.Add, destination, baseRegister, offset);
                 return;

@@ -108,6 +108,14 @@ public sealed class OberonCompilerExpressionEmitter
             case OberonCompilerObjectClass.Constant:
                 _generator.EmitMoveImmediate(destination, checked((int)symbol.Value));
                 return destination;
+            case OberonCompilerObjectClass.Variable when symbol.Level == 0:
+                _addresses.EmitAddress(name, destination);
+                _generator.EmitLoad(
+                    destination,
+                    destination,
+                    0,
+                    OberonCompilerTypeRules.IsByteSized(symbol.Type));
+                return destination;
             case OberonCompilerObjectClass.Variable when symbol.Level == 1:
                 _generator.EmitLoad(destination, ModuleDataBase, checked((int)symbol.Value),
                     OberonCompilerTypeRules.IsByteSized(symbol.Type));

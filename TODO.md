@@ -10,7 +10,7 @@ external `RISC-work.img` flow remains a separate integration requirement.
 - [ ] [P1] Complete aggregate field, array-element and pointer-dereference lowering with record/array execution fixtures.
 - [ ] [P1] Complete record and open-array parameter lowering for all supported forms and cover value/VAR combinations.
 - [ ] [P1] Implement `IS` type-test lowering with positive, negative and incompatible-type cases.
-- [ ] [P1] Load imported variables and type metadata from SMB files.
+- [ ] [P1] Load imported type metadata from SMB files.
 
 ## Integration
 
