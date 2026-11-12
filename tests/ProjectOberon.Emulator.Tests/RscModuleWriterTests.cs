@@ -73,6 +73,14 @@ internal static partial class RscModuleTests
             "Demo", 1, 1, 0, null!, 0, 0, 0, 0, [], [], [], [], 0, 0, 0, 0, (byte)'O');
 
         TestAssertions.Throws<ArgumentNullException>(() => RscModuleWriter.Write(module));
+
+        var nullImport = new RscModule(
+            "Demo", 1, 1, 0, [null!], 0, 0, 0, 0, [], [], [], [], 0, 0, 0, 0, (byte)'O');
+        var nullCommand = new RscModule(
+            "Demo", 1, 1, 0, [], 0, 0, 0, 0, [], [null!], [], [], 0, 0, 0, 0, (byte)'O');
+
+        TestAssertions.Throws<ArgumentNullException>(() => RscModuleWriter.Write(nullImport));
+        TestAssertions.Throws<ArgumentNullException>(() => RscModuleWriter.Write(nullCommand));
     }
 
     private static void RejectsInvalidNamesAndTrailer()

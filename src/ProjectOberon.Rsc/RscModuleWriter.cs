@@ -112,11 +112,13 @@ public static class RscModuleWriter
 
         foreach (var import in module.Imports)
         {
+            ArgumentNullException.ThrowIfNull(import);
             ValidateString(import.Name, "RSC import name", allowEmpty: false);
         }
 
         foreach (var command in module.Commands)
         {
+            ArgumentNullException.ThrowIfNull(command);
             ValidateString(command.Name, "RSC command name", allowEmpty: false);
         }
 
