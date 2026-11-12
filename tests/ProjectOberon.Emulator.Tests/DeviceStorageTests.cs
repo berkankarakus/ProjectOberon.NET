@@ -38,14 +38,22 @@ internal static partial class DeviceTests
         TestAssertions.Throws<InvalidOperationException>(() => disk.Read(0));
 
         var path = Path.Combine(Path.GetTempPath(), $"project-oberon-invalid-disk-{Guid.NewGuid():N}.img");
+        var invalidPath = Path.Combine(Path.GetTempPath(), $"project-oberon-invalid-disk-{Guid.NewGuid():N}.bad");
         try
         {
             File.WriteAllBytes(path, [1]);
+            File.WriteAllBytes(invalidPath, [1]);
             TestAssertions.Throws<InvalidDataException>(() => disk.Open(path));
             TestAssertions.False(disk.Writable);
             TestAssertions.Equal(0u, disk.SectorCount);
 
             File.WriteAllBytes(path, new byte[DiskImage.SectorSize]);
+            disk.Open(path);
+            TestAssertions.Throws<InvalidDataException>(() => disk.Open(invalidPath));
+            TestAssertions.False(disk.Writable);
+            TestAssertions.Equal(0u, disk.SectorCount);
+            TestAssertions.Throws<InvalidOperationException>(() => disk.Read(0));
+
             disk.Open(path);
             TestAssertions.Throws<ArgumentOutOfRangeException>(() => disk.Read(1));
             TestAssertions.Throws<ArgumentException>(() => disk.Write(0, [1]));
@@ -53,6 +61,7 @@ internal static partial class DeviceTests
         finally
         {
             File.Delete(path);
+            File.Delete(invalidPath);
         }
     }
 
