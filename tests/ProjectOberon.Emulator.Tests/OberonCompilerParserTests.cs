@@ -502,7 +502,7 @@ internal static class OberonCompilerParserTests
             OberonCompilerSymbolFileWriter.Write("Types", [exported]));
 
         var result = new OberonCompilerParser(
-            "MODULE Demo; IMPORT Types; TYPE Item = Types.Derived; VAR item: Item; BEGIN item.derivedValue := 1; END Demo.",
+            "MODULE Demo; IMPORT Types; TYPE Item = Types.Derived; VAR item: Item; BEGIN item.baseValue := 1; item.derivedValue := 2; END Demo.",
             importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = module })
             .ParseModule();
 
