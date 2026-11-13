@@ -67,6 +67,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon compiler expression emitter", OberonCompilerExpressionEmitterTests.Run),
     ("Oberon compiler module emitter", OberonCompilerModuleEmitterTests.Run),
     ("Oberon compiler RSC output", OberonCompilerRscTests.Run),
+    ("Oberon compiler optimization baseline", OberonCompilerOptimizationBaselineTests.Run),
     ("compiler CLI options", CompilerCliOptionTests.Run),
     ("compiler diagnostics", CompilerDiagnosticTests.Run),
     ("CLI instruction trace", CliTraceTests.Run),
