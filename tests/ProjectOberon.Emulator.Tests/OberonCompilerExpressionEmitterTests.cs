@@ -11,6 +11,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsRealArithmetic();
         EmitsRealComparisons();
         EmitsIntegerComparisonsWithImmediateOperands();
+        EmitsReversedIntegerComparisonWithImmediateOperand();
         EmitsPointerValues();
         EmitsPointerDereference();
         EmitsForLoop();
@@ -19,6 +20,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsCaseRange();
         EmitsConstantControlFlowWithoutBranches();
         BranchesDirectlyOnIntegerComparisons();
+        BranchesDirectlyOnReversedIntegerComparisons();
         BranchesDirectlyOnRealComparisons();
         BranchesDirectlyOnSetMembership();
         EmitsSetMembership();
@@ -198,6 +200,19 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.False(instructions.Any(instruction => instruction == "SUB r0, r0, r1"));
     }
 
+    private static void BranchesDirectlyOnReversedIntegerComparisons()
+    {
+        const string source = "MODULE Branch; VAR value, result: INTEGER; BEGIN IF 3 < value THEN result := 1 END; END Branch.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0003"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r0, 0x0003"));
+    }
+
     private static void BranchesDirectlyOnSetMembership()
     {
         const string source = "MODULE SetBranch; VAR value: INTEGER; flags: SET; result: INTEGER; BEGIN IF value IN flags THEN result := 1 END; END SetBranch.";
@@ -255,6 +270,19 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0002"));
         TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0003"));
         TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0002"));
+    }
+
+    private static void EmitsReversedIntegerComparisonWithImmediateOperand()
+    {
+        const string source = "MODULE Compare; VAR value: INTEGER; result: BOOLEAN; BEGIN result := 3 < value; END Compare.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0003"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r0, 0x0003"));
     }
 
     private static void EmitsPointerValues()
