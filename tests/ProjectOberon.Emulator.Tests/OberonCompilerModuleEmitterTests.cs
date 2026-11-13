@@ -18,7 +18,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsSameModuleDeterministically();
         EmitsOpenArrayAndScalarParameterCall();
         ReportsExternalProcedureLoweringGap();
-        ReportsAggregateFunctionResultLoweringGap();
+        EmitsAggregateFunctionResultAddress();
         EmitsImportedConstantExpression();
         EmitsAggregateRecordFieldCopy();
         EmitsNestedImportedRecordFieldCopy();
@@ -151,38 +151,19 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.Equal(1, rsc.FixupProgram);
     }
 
-    private static void ReportsAggregateFunctionResultLoweringGap()
+    private static void EmitsAggregateFunctionResultAddress()
     {
-        var factory = new OberonSymbolModule(
-            "Factory",
-            0x1234,
-            1,
-            [new OberonSymbolExport("Make", 1, 0)
-            {
-                IsProcedure = true,
-                HasResult = true,
-                ResultTypeForm = (int)OberonCompilerTypeForm.Record,
-                ResultBaseTypeSize = 4,
-                ResultRecordFields =
-                [
-                    new OberonSymbolField(
-                        "value",
-                        0,
-                        (int)OberonCompilerTypeForm.Integer,
-                        4,
-                        null,
-                        null,
-                        null)
-                ]
-            }]);
-        var parsed = new OberonCompilerParser(
-            "MODULE Demo; IMPORT Factory; TYPE Node = RECORD value: INTEGER; END; VAR target: Node; BEGIN target := Factory.Make(); END Demo.",
-            importedModules: new Dictionary<string, OberonSymbolModule> { ["Factory"] = factory })
-            .ParseModule();
-        var error = TestAssertions.Throws<NotSupportedException>(() =>
-            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).Emit(parsed));
+        const string source = "MODULE Functions; TYPE Node = RECORD value: INTEGER; END; VAR target: Node; PROCEDURE Make(): Node; VAR value: Node; BEGIN value.value := 1; RETURN value; END Make; BEGIN target := Make(); END Functions.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
 
-        TestAssertions.True(error.Message.Contains("aggregate function result address", StringComparison.Ordinal));
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Count(instruction => instruction.StartsWith("BTL ")) == 1);
+        TestAssertions.True(instructions.Contains("ADD r0, r14, 0x0004"));
+        TestAssertions.True(instructions.Contains("LDR r0, [r1, 0]"));
+        TestAssertions.True(instructions.Contains("STR r0, [r2, 0]"));
     }
 
     private static void EmitsImportedConstantExpression()

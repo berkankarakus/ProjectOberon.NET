@@ -151,44 +151,46 @@ public sealed partial class OberonCompilerParser
         if (_current.Kind == OberonCompilerTokenKind.RightParenthesis)
         {
             Next();
-            return;
         }
-
-        var offset = parameterOffset;
-        while (true)
+        else
         {
-            var byReference = false;
-            if (_current.Kind == OberonCompilerTokenKind.Var)
+            var offset = parameterOffset;
+            while (true)
             {
-                byReference = true;
+                var byReference = false;
+                if (_current.Kind == OberonCompilerTokenKind.Var)
+                {
+                    byReference = true;
+                    Next();
+                }
+
+                var names = ParseIdentifierList();
+                Expect(OberonCompilerTokenKind.Colon, ": expected in parameter declaration");
+                var type = ParseFormalType();
+                foreach (var (name, _) in names)
+                {
+                    offset = Align(offset, 4);
+                    var parameter = _symbols.Declare(
+                        name,
+                        OberonCompilerObjectClass.Parameter,
+                        type,
+                        offset,
+                        readOnly: !byReference);
+                    procedureType.AddParameter(parameter);
+                    offset += ParameterSlotSize(type);
+                }
+
+                if (_current.Kind != OberonCompilerTokenKind.Semicolon)
+                {
+                    break;
+                }
                 Next();
             }
 
-            var names = ParseIdentifierList();
-            Expect(OberonCompilerTokenKind.Colon, ": expected in parameter declaration");
-            var type = ParseFormalType();
-            foreach (var (name, _) in names)
-            {
-                offset = Align(offset, 4);
-                var parameter = _symbols.Declare(
-                    name,
-                    OberonCompilerObjectClass.Parameter,
-                    type,
-                    offset,
-                    readOnly: !byReference);
-                procedureType.AddParameter(parameter);
-                offset += ParameterSlotSize(type);
-            }
-
-            if (_current.Kind != OberonCompilerTokenKind.Semicolon)
-            {
-                break;
-            }
-            Next();
+            procedureType.ParameterCount = procedureType.Parameters.Count;
+            Expect(OberonCompilerTokenKind.RightParenthesis, ") expected after parameter list");
         }
 
-        procedureType.ParameterCount = procedureType.Parameters.Count;
-        Expect(OberonCompilerTokenKind.RightParenthesis, ") expected after parameter list");
         if (_current.Kind == OberonCompilerTokenKind.Colon)
         {
             Next();

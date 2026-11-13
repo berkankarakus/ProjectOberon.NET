@@ -80,8 +80,14 @@ public sealed class OberonCompilerAddressEmitter
         if (expression is OberonCompilerCallExpression call
             && OberonCompilerTypeRules.IsAggregate(call.Procedure.Symbol?.Type?.Base))
         {
-            throw new NotSupportedException(
-                "aggregate function result address lowering is not implemented");
+            if (_emitExpression is null)
+            {
+                throw new InvalidOperationException(
+                    "aggregate function result lowering requires an expression emitter");
+            }
+
+            _emitExpression(call, destination);
+            return;
         }
 
         if (expression is OberonCompilerFieldExpression field)

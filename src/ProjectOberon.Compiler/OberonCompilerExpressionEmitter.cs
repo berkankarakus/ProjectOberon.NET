@@ -151,6 +151,13 @@ public sealed class OberonCompilerExpressionEmitter
     {
         var symbol = name.Symbol ?? throw new InvalidOperationException(
             $"identifier '{name.Name}' is not defined");
+
+        if (OberonCompilerTypeRules.IsAggregate(symbol.Type))
+        {
+            _addresses.EmitAddress(name, destination);
+            return destination;
+        }
+
         switch (symbol.Class)
         {
             case OberonCompilerObjectClass.Constant:

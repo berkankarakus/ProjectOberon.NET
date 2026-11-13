@@ -11,8 +11,8 @@ external `RISC-work.img` flow remains a separate integration requirement.
 - [x] [P0] Preserve imported record base metadata in the compiler type graph.
 - [x] [P0] Emit and link imported record-base descriptors in RSC output; descriptor emission, runtime execution and multi-level extension tests are covered.
 - [x] [P0] Parse recursive pointer-field declarations and include their module root references in RSC output.
-- [ ] [P1] Complete aggregate field, array-element and pointer-dereference expression lowering; assignment-address lowering is covered, but direct aggregate expression materialization is still pending.
-- [ ] [P1] Lower aggregate function results when their address is required by assignment or parameter passing.
+- [x] [P1] Complete aggregate field, array-element and pointer-dereference expression lowering; aggregate expressions use their address as the value representation.
+- [x] [P1] Lower aggregate function results when their address is required by assignment or parameter passing.
 - [x] [P1] Complete record parameter lowering and cover record/open-array value and VAR combinations.
 - [x] [P1] Implement local exact-pointer `IS` lowering with NIL handling.
 - [x] [P1] Extend local `IS` lowering for record extensions and extension-level descriptor lookups.
