@@ -18,11 +18,9 @@ public static class OberonDiskLayout
     {
         ArgumentNullException.ThrowIfNull(disk);
         var physical = PhysicalSector(address);
-        var first = disk.Read(physical);
-        var second = disk.Read(physical + 1);
         var result = new byte[SectorLength];
-        first.CopyTo(result, 0);
-        second.CopyTo(result, DiskImage.SectorSize);
+        disk.Read(physical, result.AsSpan(0, DiskImage.SectorSize));
+        disk.Read(physical + 1, result.AsSpan(DiskImage.SectorSize));
         return result;
     }
 

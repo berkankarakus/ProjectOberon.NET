@@ -29,12 +29,22 @@ public sealed class DiskImage : IDisposable
 
     public byte[] Read(uint sector)
     {
-        CheckSector(sector);
-        SectorRead?.Invoke(sector);
         var data = new byte[SectorSize];
-        _file!.Seek((long)sector * SectorSize, SeekOrigin.Begin);
-        _file.ReadExactly(data);
+        Read(sector, data);
         return data;
+    }
+
+    internal void Read(uint sector, Span<byte> destination)
+    {
+        CheckSector(sector);
+        if (destination.Length != SectorSize)
+        {
+            throw new ArgumentException($"sector must contain {SectorSize} bytes", nameof(destination));
+        }
+
+        SectorRead?.Invoke(sector);
+        _file!.Seek((long)sector * SectorSize, SeekOrigin.Begin);
+        _file.ReadExactly(destination);
     }
 
     public void Write(uint sector, ReadOnlySpan<byte> data)
