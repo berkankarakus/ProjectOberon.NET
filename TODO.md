@@ -45,6 +45,7 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Omit zero-offset record field address adjustments.
 - [x] Fold pure integer unary constants before code generation.
 - [x] Lower left-literal integer comparisons through reversed immediate subtraction.
+- [x] Fold unary REAL literals before code generation.
 - [ ] Measure whether further comparison/branch fusion provides a meaningful gain before introducing a larger control-flow rewrite.
 
 ## Integration

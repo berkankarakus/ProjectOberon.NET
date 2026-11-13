@@ -198,6 +198,14 @@ public sealed class OberonCompilerExpressionEmitter
     private int EmitUnary(OberonCompilerUnaryExpression unary, int destination)
     {
         if (unary.Operator == OberonCompilerTokenKind.Minus
+            && unary.Operand is OberonCompilerRealLiteralExpression realLiteral)
+        {
+            var negated = -(float)realLiteral.Value;
+            _generator.EmitMoveImmediate(destination, BitConverter.SingleToInt32Bits(negated));
+            return destination;
+        }
+
+        if (unary.Operator == OberonCompilerTokenKind.Minus
             && !IsReal(unary.Operand)
             && TryEvaluateInteger(unary, out var constant))
         {

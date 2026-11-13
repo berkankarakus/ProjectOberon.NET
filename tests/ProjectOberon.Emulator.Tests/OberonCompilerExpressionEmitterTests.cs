@@ -9,6 +9,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsPackedByteLoadsAndStores();
         EmitsIntegerRemainder();
         EmitsRealArithmetic();
+        FoldsUnaryRealLiteral();
         EmitsRealComparisons();
         EmitsIntegerComparisonsWithImmediateOperands();
         EmitsReversedIntegerComparisonWithImmediateOperand();
@@ -127,6 +128,20 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("FML r1, r1, r2", Risc5Disassembler.Format(generator.Code[3]));
         TestAssertions.Equal("FAD r0, r0, r1", Risc5Disassembler.Format(generator.Code[4]));
         TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[5]));
+    }
+
+    private static void FoldsUnaryRealLiteral()
+    {
+        const string source = "MODULE Real; VAR result: REAL; BEGIN result := -1.5; END Real.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
+
+        TestAssertions.Equal(2, generator.Code.Count);
+        TestAssertions.Equal("MOV r0, 0xbfc00000", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[1]));
     }
 
     private static void EmitsIntegerRemainder()
