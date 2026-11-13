@@ -61,9 +61,9 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.Equal("SUB r14, r14, 0x0008", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("STR r0, [r14, 4]", Risc5Disassembler.Format(generator.Code[2]));
         TestAssertions.Equal("LDR r0, [r14, 4]", Risc5Disassembler.Format(generator.Code[3]));
-        TestAssertions.Equal("STR r0, [r14, 4]", Risc5Disassembler.Format(generator.Code[6]));
-        TestAssertions.Equal("MOV r0, 0x0002", Risc5Disassembler.Format(generator.Code[10]));
-        TestAssertions.True(Risc5Disassembler.Format(generator.Code[11]).StartsWith("BTL "));
+        TestAssertions.Equal("STR r0, [r14, 4]", Risc5Disassembler.Format(generator.Code[5]));
+        TestAssertions.Equal("MOV r0, 0x0002", Risc5Disassembler.Format(generator.Code[9]));
+        TestAssertions.True(Risc5Disassembler.Format(generator.Code[10]).StartsWith("BTL "));
     }
 
     private static void EmitsScalarVarParameterCall()
@@ -77,10 +77,10 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.Equal("STR r0, [r14, 4]", Risc5Disassembler.Format(generator.Code[2]));
         TestAssertions.Equal("LDR r0, [r14, 4]", Risc5Disassembler.Format(generator.Code[3]));
         TestAssertions.Equal("LDR r0, [r0, 0]", Risc5Disassembler.Format(generator.Code[4]));
-        TestAssertions.Equal("LDR r1, [r14, 4]", Risc5Disassembler.Format(generator.Code[7]));
-        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[8]));
-        TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[12]));
-        TestAssertions.True(Risc5Disassembler.Format(generator.Code[13]).StartsWith("BTL "));
+        TestAssertions.Equal("LDR r1, [r14, 4]", Risc5Disassembler.Format(generator.Code[6]));
+        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[7]));
+        TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[11]));
+        TestAssertions.True(Risc5Disassembler.Format(generator.Code[12]).StartsWith("BTL "));
     }
 
     private static void EmitsFunctionReturnValue()

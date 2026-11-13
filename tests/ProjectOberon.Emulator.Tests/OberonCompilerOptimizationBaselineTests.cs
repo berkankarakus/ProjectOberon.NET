@@ -20,7 +20,7 @@ internal static class OberonCompilerOptimizationBaselineTests
             () => module.Memory.Read32(module.Image.DataAddress + checked((uint)result.Value)) == 13,
             maxSteps: 64);
 
-        AssertBaseline(module, steps, codeWords: 10, rscBytes: 103, runtimeSteps: 10);
+        AssertBaseline(module, steps, codeWords: 9, rscBytes: 99, runtimeSteps: 9);
     }
 
     private static void MeasuresLoopFixture()
@@ -34,7 +34,7 @@ internal static class OberonCompilerOptimizationBaselineTests
             () => module.Memory.Read32(module.Image.DataAddress + checked((uint)total.Value)) == 28,
             maxSteps: 256);
 
-        AssertBaseline(module, steps, codeWords: 23, rscBytes: 149, runtimeSteps: 135);
+        AssertBaseline(module, steps, codeWords: 22, rscBytes: 145, runtimeSteps: 128);
     }
 
     private static void MeasuresAggregateCopyFixture()

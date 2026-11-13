@@ -28,6 +28,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsAggregateArrayElementAddress();
         EmitsAggregatePointerDereferenceAddress();
         EmitsThroughInstructionWriterAbstraction();
+        UsesRegisterFormForLargeIntegerLiterals();
     }
 
     private static void EmitsArithmeticAssignment()
@@ -41,10 +42,9 @@ internal static class OberonCompilerExpressionEmitterTests
 
         TestAssertions.Equal("MOV r0, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("MOV r1, 0x0003", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("MOV r2, 0x0004", Risc5Disassembler.Format(generator.Code[2]));
-        TestAssertions.Equal("MUL r1, r1, r2", Risc5Disassembler.Format(generator.Code[3]));
-        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[4]));
-        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[5]));
+        TestAssertions.Equal("MUL r1, r1, 0x0004", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[4]));
     }
 
     private static void EmitsModuleVariableLoads()
@@ -57,9 +57,8 @@ internal static class OberonCompilerExpressionEmitterTests
         new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
 
         TestAssertions.Equal("LDR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[0]));
-        TestAssertions.Equal("MOV r1, 0x0001", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[2]));
-        TestAssertions.Equal("STR r0, [r13, 4]", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("ADD r0, r0, 0x0001", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("STR r0, [r13, 4]", Risc5Disassembler.Format(generator.Code[2]));
     }
 
     private static void EmitsControlFlow()
@@ -281,11 +280,10 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("ADD r0, r0, 0x0004", Risc5Disassembler.Format(generator.Code[1]));
         TestAssertions.Equal("LDR r0, [r0, 0]", Risc5Disassembler.Format(generator.Code[2]));
-        TestAssertions.Equal("MOV r1, 0x0001", Risc5Disassembler.Format(generator.Code[3]));
-        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[4]));
-        TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[5]));
-        TestAssertions.Equal("ADD r1, r1, 0x0000", Risc5Disassembler.Format(generator.Code[6]));
-        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[7]));
+        TestAssertions.Equal("ADD r0, r0, 0x0001", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("ADD r1, r1, 0x0000", Risc5Disassembler.Format(generator.Code[5]));
+        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[6]));
     }
 
     private static void AllocatesScratchRegistersWithoutUsingDestinationPlusOne()
@@ -304,8 +302,7 @@ internal static class OberonCompilerExpressionEmitterTests
         new OberonCompilerExpressionEmitter(generator).EmitExpression(expression, destination: 11);
 
         TestAssertions.Equal("MOV r11, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
-        TestAssertions.Equal("MOV r0, 0x0003", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("ADD r11, r11, r0", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("ADD r11, r11, 0x0003", Risc5Disassembler.Format(generator.Code[1]));
     }
 
     private static void EmitsAggregateRecordCopy()
@@ -347,19 +344,18 @@ internal static class OberonCompilerExpressionEmitterTests
         new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
 
         TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
-        TestAssertions.Equal("LDR r2, [r13, 16]", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("MOV r3, 0x0004", Risc5Disassembler.Format(generator.Code[2]));
-        TestAssertions.Equal("MUL r2, r2, r3", Risc5Disassembler.Format(generator.Code[3]));
-        TestAssertions.Equal("ADD r0, r0, r2", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("LDR r1, [r13, 16]", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("MOV r2, 0x0004", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("MUL r1, r1, r2", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[4]));
         TestAssertions.Equal("LDR r0, [r0, 0]", Risc5Disassembler.Format(generator.Code[5]));
-        TestAssertions.Equal("MOV r1, 0x0001", Risc5Disassembler.Format(generator.Code[6]));
-        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[7]));
-        TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[8]));
-        TestAssertions.Equal("LDR r2, [r13, 16]", Risc5Disassembler.Format(generator.Code[9]));
-        TestAssertions.Equal("MOV r3, 0x0004", Risc5Disassembler.Format(generator.Code[10]));
-        TestAssertions.Equal("MUL r2, r2, r3", Risc5Disassembler.Format(generator.Code[11]));
-        TestAssertions.Equal("ADD r1, r1, r2", Risc5Disassembler.Format(generator.Code[12]));
-        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[13]));
+        TestAssertions.Equal("ADD r0, r0, 0x0001", Risc5Disassembler.Format(generator.Code[6]));
+        TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[7]));
+        TestAssertions.Equal("LDR r2, [r13, 16]", Risc5Disassembler.Format(generator.Code[8]));
+        TestAssertions.Equal("MOV r3, 0x0004", Risc5Disassembler.Format(generator.Code[9]));
+        TestAssertions.Equal("MUL r2, r2, r3", Risc5Disassembler.Format(generator.Code[10]));
+        TestAssertions.Equal("ADD r1, r1, r2", Risc5Disassembler.Format(generator.Code[11]));
+        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[12]));
     }
 
     private static void EmitsAggregateFieldAddress()
@@ -429,7 +425,22 @@ internal static class OberonCompilerExpressionEmitterTests
         new OberonCompilerExpressionEmitter(writer).EmitExpression(expression, destination: 4);
 
         TestAssertions.Equal("MOV r4, 0x0002", writer.Calls[0]);
-        TestAssertions.Equal("MOV r0, 0x0003", writer.Calls[1]);
+        TestAssertions.Equal("Add r4, r4, 0x0003", writer.Calls[1]);
+    }
+
+    private static void UsesRegisterFormForLargeIntegerLiterals()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var expression = new OberonCompilerBinaryExpression(
+            OberonCompilerTokenKind.Plus,
+            new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, 2),
+            new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, 0x1_0000));
+        var writer = new RecordingInstructionWriter();
+
+        new OberonCompilerExpressionEmitter(writer).EmitExpression(expression, destination: 4);
+
+        TestAssertions.Equal("MOV r4, 0x0002", writer.Calls[0]);
+        TestAssertions.Equal("MOV r0, 0x10000", writer.Calls[1]);
         TestAssertions.Equal("Add r4, r4, r0", writer.Calls[2]);
     }
 
@@ -446,7 +457,7 @@ internal static class OberonCompilerExpressionEmitterTests
         public void EmitMoveFromHigh(int destination) => Calls.Add($"MOV r{destination}, H");
 
         public void EmitImmediate(AluOperation operation, int destination, int left, int immediate) =>
-            throw new NotSupportedException();
+            Calls.Add($"{operation} r{destination}, r{left}, 0x{immediate:x4}");
 
         public void EmitLoad(int destination, int addressRegister, int offset, bool byteValue = false) =>
             throw new NotSupportedException();

@@ -231,6 +231,11 @@ public sealed class OberonCompilerExpressionEmitter
             return EmitTypeTest(binary, destination);
         }
 
+        if (TryEmitIntegerImmediate(binary, destination))
+        {
+            return destination;
+        }
+
         var temporary = _registers.AcquireTemporary(destination);
         using var protectedDestination = _registers.ReserveRangeScope(destination, 1);
         try
@@ -290,6 +295,44 @@ public sealed class OberonCompilerExpressionEmitter
         {
             _registers.ReleaseTemporary(temporary);
         }
+    }
+
+    private bool TryEmitIntegerImmediate(
+        OberonCompilerBinaryExpression binary,
+        int destination)
+    {
+        if (binary.Right is not OberonCompilerIntegerLiteralExpression literal
+            || IsReal(binary)
+            || IsSet(binary)
+            || IsRelation(binary.Operator)
+            || literal.Value is < -0x8000 or > 0xffff)
+        {
+            return false;
+        }
+
+        AluOperation? operation = binary.Operator switch
+        {
+            OberonCompilerTokenKind.Plus => AluOperation.Add,
+            OberonCompilerTokenKind.Minus => AluOperation.Sub,
+            OberonCompilerTokenKind.Multiply => AluOperation.Mul,
+            OberonCompilerTokenKind.Divide => AluOperation.Div,
+            OberonCompilerTokenKind.And => AluOperation.And,
+            OberonCompilerTokenKind.Or => AluOperation.Ior,
+            _ => null
+        };
+
+        if (operation is not AluOperation immediateOperation)
+        {
+            return false;
+        }
+
+        EmitExpression(binary.Left, destination);
+        _generator.EmitImmediate(
+            immediateOperation,
+            destination,
+            destination,
+            checked((int)literal.Value));
+        return true;
     }
 
     private int EmitComparison(
