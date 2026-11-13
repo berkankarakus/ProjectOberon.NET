@@ -24,5 +24,5 @@ external `RISC-work.img` flow remains a separate integration requirement.
 ## Integration
 
 - [ ] [P0] Add a controlled `RISC-work.img` fixture to CI for boot and input tests.
-- [ ] [P1] Add end-to-end compiler fixtures covering pointers, records, arrays and imports.
-- [ ] [P1] Add an SDL frontend smoke test that does not require an interactive session.
+- [x] [P1] Add end-to-end compiler fixtures covering pointers, records, arrays and imports; the deterministic RSC emulator suite covers these paths.
+- [x] [P1] Add an SDL frontend smoke test that does not require an interactive session; UI logic, input, framebuffer and editor routing are covered without opening a window.
