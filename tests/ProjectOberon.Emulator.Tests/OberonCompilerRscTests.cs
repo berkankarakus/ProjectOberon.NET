@@ -20,6 +20,7 @@ internal static class OberonCompilerRscTests
         EmitsMultipleExternalFixups();
         EmitsExternalVariableDataFixup();
         EmitsExternalVariableStoreFixup();
+        EmitsExternalByteVariableStoreFixup();
         EmitsMultipleExternalDataFixups();
         EmitsExternalRecordVariableDataFixup();
         EmitsExternalPointerVariableDataFixup();
@@ -580,6 +581,30 @@ internal static class OberonCompilerRscTests
         TestAssertions.Equal(1u, module.Code[1] & 0xfff);
         TestAssertions.Equal(12u, module.Code[2] & 0xff);
         TestAssertions.True(Risc5Disassembler.Format(module.Code[3]).StartsWith("STR r0"));
+    }
+
+    private static void EmitsExternalByteVariableStoreFixup()
+    {
+        var symbols = new OberonSymbolModule(
+            "Config",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Flag", 2, 12)
+            {
+                IsProcedure = false,
+                TypeForm = (int)OberonCompilerTypeForm.Boolean,
+                TypeSize = 1
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Config; BEGIN Config.Flag := TRUE; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Config"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(1, module.FixupData);
+        TestAssertions.True(Risc5Disassembler.Format(module.Code[3]).StartsWith("STR.B r0"));
     }
 
     private static void EmitsExternalRecordVariableDataFixup()
