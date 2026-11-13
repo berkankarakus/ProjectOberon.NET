@@ -39,6 +39,7 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedStringBody();
         ExecutesCompilerProducedGlobalAssignmentAfterDescriptor();
         ExecutesExactTypeTestAsTrue();
+        EmitsRecordExtensionTypeTestLookup();
         EmitsRecordTypeDescriptor();
         EmitsPointerTypeDescriptorAndRootReferences();
         EmitsRecordExtensionTypeFixup();
@@ -1131,6 +1132,17 @@ internal static class OberonCompilerRscTests
         }
 
         TestAssertions.Equal(42u, image.Memory.Read32(image.Image.DataAddress + 20));
+    }
+
+    private static void EmitsRecordExtensionTypeTestLookup()
+    {
+        const string source = "MODULE Types; TYPE Base = RECORD value: INTEGER; END; Derived = RECORD (Base) extra: INTEGER; END; Ref = POINTER TO Base; VAR node: Ref; result: BOOLEAN; BEGIN result := node IS Derived; END Types.";
+        var parsed = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(parsed);
+        var instructions = definition.Code.Select(Risc5Disassembler.Format).ToArray();
+
+        TestAssertions.True(instructions.Any(instruction => instruction == "LDR r0, [r0, 4]"));
+        TestAssertions.True(instructions.Any(instruction => instruction == "ADD r1, r13, 0x003c"));
     }
 
     private static void ExecutesExactTypeTestAsTrue()

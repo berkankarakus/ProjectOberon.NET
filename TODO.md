@@ -12,7 +12,8 @@ external `RISC-work.img` flow remains a separate integration requirement.
 - [ ] [P1] Complete aggregate field, array-element and pointer-dereference lowering with record/array execution fixtures.
 - [x] [P1] Complete record parameter lowering and cover record/open-array value and VAR combinations.
 - [x] [P1] Implement local exact-pointer `IS` lowering with NIL handling.
-- [ ] [P1] Extend `IS` lowering for record extensions, imported descriptors and non-matching runtime tags.
+- [x] [P1] Extend local `IS` lowering for record extensions and extension-level descriptor lookups.
+- [ ] [P1] Extend `IS` lowering for imported descriptors and non-matching runtime tags.
 - [x] [P1] Complete imported nested array/record type-reference metadata; record fields, array elements and pointer targets are preserved.
 
 ## Integration

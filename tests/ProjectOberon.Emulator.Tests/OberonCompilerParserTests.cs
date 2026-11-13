@@ -15,6 +15,7 @@ internal static class OberonCompilerParserTests
         ParsesCaseLabelRanges();
         ParsesSetMembership();
         ParsesSupportedLocalTypeTest();
+        ParsesRecordExtensionTypeTest();
         ReportsInvalidTypeTestWithoutDuplicateDiagnostic();
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
@@ -397,6 +398,14 @@ internal static class OberonCompilerParserTests
         TestAssertions.True(result.Succeeded);
         TestAssertions.False(result.Diagnostics.Any(diagnostic =>
             diagnostic.Message.Contains("IS", StringComparison.Ordinal)));
+    }
+
+    private static void ParsesRecordExtensionTypeTest()
+    {
+        const string source = "MODULE Types; TYPE Base = RECORD value: INTEGER; END; Derived = RECORD (Base) extra: INTEGER; END; Ref = POINTER TO Base; VAR node: Ref; BEGIN IF node IS Derived THEN END; END Types.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
     }
 
     private static void ImportsExternalProcedures()

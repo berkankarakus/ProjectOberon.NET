@@ -303,7 +303,7 @@ public sealed class OberonCompilerExpressionEmitter
 
         var leftType = ExpressionType(typeTest.Left);
         if (leftType?.Form == OberonCompilerTypeForm.Pointer
-            && leftType.Base == testedType)
+            && IsBaseType(leftType.Base, testedType))
         {
             _generator.EmitMoveImmediate(destination, 1);
             return destination;
@@ -334,6 +334,13 @@ public sealed class OberonCompilerExpressionEmitter
             _generator.Bind(nonNilLabel);
             _generator.EmitImmediate(AluOperation.Add, destination, destination, -8);
             _generator.EmitLoad(destination, destination, 0);
+            if (testedType.ParameterCount > 0)
+            {
+                _generator.EmitLoad(
+                    destination,
+                    destination,
+                    checked(testedType.ParameterCount * sizeof(int)));
+            }
             _generator.EmitImmediate(
                 AluOperation.Add,
                 temporary,
@@ -443,6 +450,21 @@ public sealed class OberonCompilerExpressionEmitter
 
     private static bool IsSet(OberonCompilerBinaryExpression expression) =>
         ExpressionType(expression.Left)?.Form == OberonCompilerTypeForm.Set;
+
+    private static bool IsBaseType(
+        OberonCompilerType? type,
+        OberonCompilerType baseType)
+    {
+        for (var current = type; current is not null; current = current.Base)
+        {
+            if (current == baseType)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression) => expression switch
     {
