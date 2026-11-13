@@ -49,6 +49,7 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedArrayCopy();
         ExecutesCompilerProducedByteArrayCopy();
         ExecutesCompilerProducedFiveByteArrayCopy();
+        ExecutesCompilerProducedSmallByteArrayCopies();
         ExecutesCompilerProducedStringBody();
         ExecutesCompilerProducedGlobalAssignmentAfterDescriptor();
         ExecutesExactTypeTestAsTrue();
@@ -1792,6 +1793,42 @@ internal static class OberonCompilerRscTests
             TestAssertions.Equal(
                 (uint)('A' + index),
                 memory.Read8(image.DataAddress + 8u + (uint)index));
+        }
+    }
+
+    private static void ExecutesCompilerProducedSmallByteArrayCopies()
+    {
+        foreach (var length in new[] { 1, 2, 4 })
+        {
+            var moduleName = $"Bytes{length}";
+            var source = $"MODULE {moduleName}; TYPE Values = ARRAY {length} OF CHAR; VAR source, target: Values; BEGIN target := source; END {moduleName}.";
+            var result = new OberonCompilerParser(source).ParseModule();
+            var target = result.ModuleScope!.Objects.Single(symbol => symbol.Name == "target");
+            var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+            var loader = new OberonModuleLoader(name => name == moduleName
+                ? RscModuleWriter.Write(definition)
+                : null);
+            var memory = new Memory(64 * 1024);
+            var cpu = new Risc5Cpu(memory);
+            var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+            var image = runtime.Start(moduleName);
+
+            for (var index = 0; index < length; index++)
+            {
+                memory.Write8(image.DataAddress + (uint)index, (byte)('a' + index));
+            }
+
+            for (var step = 0; step < 64; step++)
+            {
+                cpu.Step();
+            }
+
+            for (var index = 0; index < length; index++)
+            {
+                TestAssertions.Equal(
+                    (uint)('a' + index),
+                    memory.Read8(image.DataAddress + (uint)target.Value + (uint)index));
+            }
         }
     }
 
