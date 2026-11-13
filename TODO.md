@@ -25,6 +25,16 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] [P1] Complete recursive SMB type reference resolution before importing nested field metadata.
 - [x] [P1] Lower nested dynamic open-array selectors by loading their pointer and length descriptors.
 
+## Compiler optimization
+
+- [x] Establish deterministic compiler code-size and runtime-step baselines.
+- [x] Lower representable integer ALU operands as immediate instructions.
+- [x] Eliminate integer identity operations without changing expression evaluation.
+- [x] Lower integer comparison literals as immediate subtraction operands.
+- [x] Fold side-effect-free literal control-flow conditions.
+- [x] Lower literal `FOR` upper bounds without per-iteration constant loads.
+- [ ] Measure whether comparison/branch fusion provides a meaningful gain before introducing a larger control-flow rewrite.
+
 ## Integration
 
 - [ ] [P0] Provide a CI-owned compatible `RISC-work.img` artifact for boot and input tests; the official `RISC.img` was validated locally, but ROM/disk binaries remain intentionally excluded from this repository.

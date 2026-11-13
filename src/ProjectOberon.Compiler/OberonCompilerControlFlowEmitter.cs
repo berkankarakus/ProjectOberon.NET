@@ -166,8 +166,25 @@ public sealed class OberonCompilerControlFlowEmitter
         bool invert)
     {
         _emitExpression(loop.Control, 0);
-        _emitExpression(loop.End, 1);
-        _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
+
+        if (loop.End is OberonCompilerIntegerLiteralExpression literal
+            && literal.Type.Form is OberonCompilerTypeForm.Byte
+                or OberonCompilerTypeForm.Character
+                or OberonCompilerTypeForm.Integer
+            && literal.Value is >= -0x8000 and <= 0xffff)
+        {
+            _generator.EmitImmediate(
+                AluOperation.Sub,
+                0,
+                0,
+                checked((int)literal.Value));
+        }
+        else
+        {
+            _emitExpression(loop.End, 1);
+            _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
+        }
+
         _generator.EmitBranch(end, condition, link: false, invert: invert);
     }
 
