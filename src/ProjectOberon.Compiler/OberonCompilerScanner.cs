@@ -292,10 +292,10 @@ public sealed class OberonCompilerScanner
     private OberonCompilerToken ScanString(int start, int line, int column)
     {
         Advance();
-        var value = new StringBuilder();
+        var valueStart = _position;
         while (!IsEnd && Peek() != '"' && Peek() >= ' ')
         {
-            value.Append(Advance());
+            Advance();
         }
 
         if (IsEnd || Peek() != '"')
@@ -304,7 +304,7 @@ public sealed class OberonCompilerScanner
         }
         Advance();
         return new OberonCompilerToken(OberonCompilerTokenKind.String, _source[start.._position], start, line, column,
-            StringValue: value.ToString());
+            StringValue: _source[valueStart..(_position - 1)]);
     }
 
     private OberonCompilerToken ScanHexString(int start, int line, int column)
