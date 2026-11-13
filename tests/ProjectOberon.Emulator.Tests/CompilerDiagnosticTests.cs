@@ -7,6 +7,7 @@ internal static class CompilerDiagnosticTests
         FormatsFileLocationAndMessage();
         FormatsMultipleDiagnosticsOnSeparateLines();
         ReportsDynamicOpenArraySelectorLengthRequirement();
+        ReportsNonAddressableAggregateArgument();
     }
 
     private static void FormatsFileLocationAndMessage()
@@ -42,6 +43,20 @@ internal static class CompilerDiagnosticTests
         TestAssertions.True(!module.Succeeded);
         TestAssertions.True(module.Diagnostics.Any(diagnostic => diagnostic.Message.Contains(
             "open array argument 'items' must be a named parameter",
+            StringComparison.Ordinal)));
+    }
+
+    private static void ReportsNonAddressableAggregateArgument()
+    {
+        const string source = "MODULE Records; TYPE Pair = RECORD value: INTEGER; END; PROCEDURE Consume(item: Pair); BEGIN END Consume; BEGIN Consume(1); END Records.";
+        var module = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(!module.Succeeded);
+        TestAssertions.True(module.Diagnostics.Any(diagnostic => diagnostic.Message.Contains(
+            "argument item of 'Consume' expects RECORD",
+            StringComparison.Ordinal)));
+        TestAssertions.True(module.Diagnostics.Any(diagnostic => diagnostic.Message.Contains(
+            "aggregate argument 'item' of 'Consume' must be addressable",
             StringComparison.Ordinal)));
     }
 }
