@@ -54,6 +54,7 @@ public sealed record OberonSymbolModule(
 public static class OberonSymbolModuleReader
 {
     private const byte VersionKey = 1;
+    private const int NoneTypeForm = 9;
 
     public static OberonSymbolModule Parse(ReadOnlySpan<byte> data)
     {
@@ -206,9 +207,12 @@ public static class OberonSymbolModuleReader
                 break;
             case 13:
                 var recordBaseType = SkipType(ref reader, typeReferences);
-                baseTypeForm = recordBaseType.TypeForm;
-                baseTypeSize = recordBaseType.Size;
-                baseFields = recordBaseType.Fields;
+                if (recordBaseType.TypeForm != NoneTypeForm)
+                {
+                    baseTypeForm = recordBaseType.TypeForm;
+                    baseTypeSize = recordBaseType.Size;
+                    baseFields = recordBaseType.Fields;
+                }
                 reader.ReadNum();
                 reader.ReadNum();
                 typeSize = reader.ReadNum();
