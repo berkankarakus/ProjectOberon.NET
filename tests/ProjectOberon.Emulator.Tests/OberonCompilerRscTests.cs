@@ -20,6 +20,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalRealFunctionExpression();
         EmitsExternalValueParameterFixup();
         EmitsMultipleExternalFixups();
+        AcceptsMaximumExternalImportCount();
         EmitsExternalVariableDataFixup();
         EmitsExternalVariableStoreFixup();
         EmitsExternalByteVariableStoreFixup();
@@ -503,6 +504,23 @@ internal static class OberonCompilerRscTests
         TestAssertions.Equal(2u, (module.Code[2] >> 20) & 0x0f);
         TestAssertions.Equal(1u, module.Code[1] & 0xfff);
         TestAssertions.Equal(1u, module.Code[2] & 0xfff);
+    }
+
+    private static void AcceptsMaximumExternalImportCount()
+    {
+        var importNames = string.Join(", ", Enumerable.Range(0, 15).Select(index => $"M{index}"));
+        var imports = Enumerable.Range(0, 15)
+            .ToDictionary(
+                index => $"M{index}",
+                index => new OberonSymbolModule($"M{index}", 0x2000 + index, 1, []));
+        var result = new OberonCompilerParser(
+            $"MODULE Demo; IMPORT {importNames}; BEGIN END Demo.",
+            importedModules: imports)
+            .ParseModule();
+
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(15, module.Imports.Count);
     }
 
     private static void RejectsInvalidExternalImportTables()
