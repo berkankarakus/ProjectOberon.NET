@@ -40,6 +40,7 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedAggregateFieldStore();
         ExecutesCompilerProducedArrayElementLoad();
         ExecutesCompilerProducedArrayElementStore();
+        ExecutesCompilerProducedPointerDereferenceLoad();
         ExecutesCompilerProducedArrayCopy();
         ExecutesCompilerProducedByteArrayCopy();
         ExecutesCompilerProducedStringBody();
@@ -1192,6 +1193,40 @@ internal static class OberonCompilerRscTests
 
         TestAssertions.Equal(11u, memory.Read32(image.DataAddress));
         TestAssertions.Equal(22u, memory.Read32(image.DataAddress + 4));
+    }
+
+    private static void ExecutesCompilerProducedPointerDereferenceLoad()
+    {
+        var symbols = new OberonSymbolModule(
+            "State",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Current", 2, 0)
+            {
+                IsProcedure = false,
+                TypeForm = (int)OberonCompilerTypeForm.Pointer,
+                BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                BaseTypeSize = 4,
+                BaseRecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT State; VAR result: INTEGER; BEGIN result := State.Current^.value; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["State"] = symbols })
+            .ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var instructions = definition.Code.Select(Risc5Disassembler.Format).ToArray();
+
+        TestAssertions.True(instructions.Count(instruction => instruction.StartsWith("LDR r0")) >= 2);
     }
 
     private static void ExecutesCompilerProducedArrayCopy()
