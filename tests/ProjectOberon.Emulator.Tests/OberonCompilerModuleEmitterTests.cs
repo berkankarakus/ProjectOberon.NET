@@ -17,6 +17,7 @@ internal static class OberonCompilerModuleEmitterTests
         DeduplicatesRepeatedStringData();
         EmitsSameModuleDeterministically();
         EmitsOpenArrayAndScalarParameterCall();
+        EmitsOpenArraySelectorArgument();
         ReportsExternalProcedureLoweringGap();
         EmitsAggregateFunctionResultAddress();
         EmitsImportedConstantExpression();
@@ -131,6 +132,19 @@ internal static class OberonCompilerModuleEmitterTests
 
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Contains("MOV r2, 0x0003"));
+    }
+
+    private static void EmitsOpenArraySelectorArgument()
+    {
+        const string source = "MODULE Arrays; TYPE Holder = RECORD values: ARRAY 3 OF INTEGER; END; VAR holder: Holder; PROCEDURE Consume(items: ARRAY OF INTEGER); BEGIN END Consume; BEGIN Consume(holder.values); END Arrays.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Contains("ADD r0, r13, 0x0000"));
+        TestAssertions.True(instructions.Contains("MOV r1, 0x0003"));
     }
 
     private static void ReportsExternalProcedureLoweringGap()

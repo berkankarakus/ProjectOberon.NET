@@ -190,13 +190,10 @@ public sealed class OberonCompilerCallEmitter
             return;
         }
 
-        if (argument is not OberonCompilerNameExpression name || name.Symbol is null)
-            throw new NotSupportedException("open array arguments must be addressable names");
-
         _addresses.EmitAddress(argument, destination);
-        var type = name.Symbol.Type;
+        var type = ExpressionType(argument);
         if (type?.Form != OberonCompilerTypeForm.Array)
-            throw new InvalidOperationException($"'{name.Name}' is not an array");
+            throw new InvalidOperationException("open array argument must be an ARRAY");
         if (!OberonCompilerTypeRules.IsOpenArray(type))
         {
             OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination + 1);
@@ -204,11 +201,34 @@ public sealed class OberonCompilerCallEmitter
             return;
         }
 
-        if (name.Symbol.Class != OberonCompilerObjectClass.Parameter)
+        if (argument is not OberonCompilerNameExpression { Symbol: { } symbol }
+            || symbol.Class != OberonCompilerObjectClass.Parameter)
+        {
             throw new NotSupportedException("open array length source is not available");
-        var lengthBase = _addresses.EmitStorageBase(name.Symbol, destination + 1);
+        }
+
+        var lengthBase = _addresses.EmitStorageBase(symbol, destination + 1);
         _generator.EmitLoad(destination + 1, lengthBase,
-            checked((int)name.Symbol.Value + 4));
+            checked((int)symbol.Value + 4));
+    }
+
+    private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression)
+    {
+        switch (expression)
+        {
+            case OberonCompilerStringLiteralExpression literal:
+                return literal.Type;
+            case OberonCompilerNameExpression name:
+                return name.Symbol?.Type;
+            case OberonCompilerFieldExpression field:
+                return field.Field.Type;
+            case OberonCompilerIndexExpression index:
+                return index.ElementType;
+            case OberonCompilerDereferenceExpression dereference:
+                return dereference.ElementType;
+            default:
+                return null;
+        }
     }
 
     private static int ParameterRegisterCount(OberonCompilerObject parameter) =>
