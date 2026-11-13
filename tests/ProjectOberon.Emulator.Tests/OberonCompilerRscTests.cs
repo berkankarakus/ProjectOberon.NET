@@ -60,6 +60,7 @@ internal static class OberonCompilerRscTests
         EmitsRecursiveRecordDescriptorsDeterministically();
         EmitsImportedRecordBaseDescriptor();
         ExecutesImportedRecordBaseDescriptor();
+        EmitsImportedRecordExtensionChain();
     }
 
     private static void EmitsMinimalRscModule()
@@ -1584,6 +1585,20 @@ internal static class OberonCompilerRscTests
         }
 
         TestAssertions.Equal(42u, memory.Read32(variableDataAddress + 4));
+    }
+
+    private static void EmitsImportedRecordExtensionChain()
+    {
+        var types = CreateRecordTypeModule();
+        const string source = "MODULE Demo; IMPORT Types; TYPE Mid = RECORD (Types.Node) mid: INTEGER; END; Leaf = RECORD (Mid) leaf: INTEGER; END; VAR item: Leaf; BEGIN item.leaf := 42; END Demo.";
+        var result = new OberonCompilerParser(
+            source,
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = types })
+            .ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(60, definition.TypeDescriptorBytes);
+        TestAssertions.True(definition.FixupTypes > 0);
     }
 
     private static (Memory Memory, Risc5Cpu Cpu, OberonModuleImage Image) LoadCompilerModule(
