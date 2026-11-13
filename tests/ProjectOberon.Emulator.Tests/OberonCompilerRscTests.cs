@@ -10,6 +10,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalProcedureFixup();
         EmitsExternalModuleDeterministically();
         EmitsTypeDescriptorsDeterministically();
+        RoundTripsAggregateDescriptorMetadata();
         ReportsTypeDescriptorExtensionLimit();
         ExternalEmissionDoesNotAffectLocalEmission();
         ExecutesExternalProcedureCall();
@@ -162,6 +163,19 @@ internal static class OberonCompilerRscTests
         TestAssertions.True(first.TypeDescriptorPayload.SequenceEqual(second.TypeDescriptorPayload));
         TestAssertions.True(first.PointerReferences.SequenceEqual(second.PointerReferences));
         TestAssertions.Equal(first.FixupTypes, second.FixupTypes);
+    }
+
+    private static void RoundTripsAggregateDescriptorMetadata()
+    {
+        const string source = "MODULE Types; TYPE Node = RECORD next: POINTER TO Node; value: INTEGER; END; VAR node: Node; BEGIN END Types.";
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator())
+            .EmitRsc(new OberonCompilerParser(source).ParseModule());
+        var roundTrip = RscModuleReader.Parse(RscModuleWriter.Write(definition));
+
+        TestAssertions.Equal(definition.TypeDescriptorBytes, roundTrip.TypeDescriptorBytes);
+        TestAssertions.True(definition.TypeDescriptorPayload.SequenceEqual(roundTrip.TypeDescriptorPayload));
+        TestAssertions.True(definition.PointerReferences.SequenceEqual(roundTrip.PointerReferences));
+        TestAssertions.True(definition.Code.SequenceEqual(roundTrip.Code));
     }
 
     private static void ReportsTypeDescriptorExtensionLimit()
