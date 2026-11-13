@@ -8,6 +8,7 @@ internal static class OberonCompilerSymbolFileTests
         ReadsFunctionResultMetadata();
         ReadsPointerFunctionResultMetadata();
         ReadsRecordFunctionResultMetadata();
+        RoundTripsRecordFunctionResultSize();
         ReadsArrayRecordFunctionResultMetadata();
         ReadsPointerRecordTypeMetadata();
         ReadsTypeFormMetadata();
@@ -55,6 +56,27 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal(42, module.Exports[2].Value);
         TestAssertions.True(module.Exports[3].IsProcedure ?? false);
         TestAssertions.Equal(0, data.Length % 4);
+    }
+
+    private static void RoundTripsRecordFunctionResultSize()
+    {
+        var parsed = new OberonCompilerParser(
+            "MODULE Factory; TYPE Result = RECORD value*: INTEGER; END; END Factory.")
+            .ParseModule();
+        var record = parsed.ModuleScope!.Objects.Single(obj => obj.Name == "Result").Type!;
+        var symbols = new OberonCompilerSymbols();
+        var function = symbols.Declare(
+            "Make",
+            OberonCompilerObjectClass.Function,
+            symbols.CreateProcedure(record, []),
+            exported: true);
+        var module = OberonSymbolModuleReader.Parse(
+            OberonCompilerSymbolFileWriter.Write("Factory", [function]));
+
+        var export = module.Exports[0];
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Record, export.ResultTypeForm);
+        TestAssertions.Equal(4, export.ResultTypeSize);
+        TestAssertions.Equal("value", export.ResultRecordFields![0].Name);
     }
 
     private static void ReadsFunctionResultMetadata()
