@@ -1,4 +1,5 @@
 using ProjectOberon.Compiler;
+using ProjectOberon.CompilerCli;
 using ProjectOberon.Emulator;
 using ProjectOberon.Rsc;
 
@@ -33,7 +34,7 @@ try
 
     if (rsc is not null)
     {
-        File.WriteAllBytes(options.RscPath!, RscModuleWriter.Write(rsc));
+        CompilerOutputWriter.Write(options.RscPath!, RscModuleWriter.Write(rsc));
         Console.WriteLine($"rsc: {options.RscPath}");
     }
 
@@ -48,7 +49,7 @@ try
                 OberonCompilerObjectClass.Procedure or
                 OberonCompilerObjectClass.Function)
             .ToArray();
-        File.WriteAllBytes(options.SymbolPath,
+        CompilerOutputWriter.Write(options.SymbolPath,
             OberonCompilerSymbolFileWriter.Write(result.ModuleName!, exports));
         Console.WriteLine($"symbols: {options.SymbolPath}");
     }
