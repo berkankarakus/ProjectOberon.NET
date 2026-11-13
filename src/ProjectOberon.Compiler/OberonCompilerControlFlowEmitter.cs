@@ -192,6 +192,11 @@ public sealed class OberonCompilerControlFlowEmitter
         OberonCompilerExpression condition,
         OberonCompilerLabel falseLabel)
     {
+        if (TryEmitSetMembershipBranch(condition, falseLabel))
+        {
+            return;
+        }
+
         if (TryEmitIntegerComparisonBranch(condition, falseLabel))
         {
             return;
@@ -295,6 +300,25 @@ public sealed class OberonCompilerControlFlowEmitter
         return true;
     }
 
+    private bool TryEmitSetMembershipBranch(
+        OberonCompilerExpression expression,
+        OberonCompilerLabel falseLabel)
+    {
+        if (expression is not OberonCompilerBinaryExpression membership
+            || membership.Operator != OberonCompilerTokenKind.In
+            || !IsInteger(membership.Left)
+            || !IsSet(membership.Right))
+        {
+            return false;
+        }
+
+        _emitExpression(membership.Left, 0);
+        _emitExpression(membership.Right, 1);
+        _generator.EmitRegister(AluOperation.And, 0, 0, 1);
+        _generator.EmitBranch(falseLabel, ConditionCode.Eq);
+        return true;
+    }
+
     private static (ConditionCode Condition, bool Invert) ComparisonBranch(
         OberonCompilerTokenKind operation) => operation switch
     {
@@ -312,4 +336,7 @@ public sealed class OberonCompilerControlFlowEmitter
             OberonCompilerTypeForm.Byte or
             OberonCompilerTypeForm.Character or
             OberonCompilerTypeForm.Integer;
+
+    private static bool IsSet(OberonCompilerExpression expression) =>
+        OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form == OberonCompilerTypeForm.Set;
 }
