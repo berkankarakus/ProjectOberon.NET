@@ -21,6 +21,7 @@ internal static class OberonCompilerParserTests
         RejectsAggregateToScalarAssignment();
         ParsesImportedRecordExtensionMetadata();
         ParsesRecursiveImportedTypeGraph();
+        ParsesImportedPointerFieldMetadata();
         ReportsInvalidTypeTestWithoutDuplicateDiagnostic();
         RejectsUnrelatedRecordTypeTest();
         RejectsUnrelatedImportedRecordTypeTest();
@@ -403,6 +404,22 @@ internal static class OberonCompilerParserTests
         var nodeType = result.ModuleScope!.Objects.Single(obj => obj.Name == "node").Type!;
         TestAssertions.Equal(OberonCompilerTypeForm.Pointer, nodeType.Fields[0].Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, nodeType.Fields[0].Type!.Base!.Form);
+    }
+
+    private static void ParsesImportedPointerFieldMetadata()
+    {
+        var parsed = new OberonCompilerParser(
+            "MODULE Types; TYPE Target* = RECORD value*: INTEGER; END; Holder* = RECORD ref*: POINTER TO Target; END; END Types.")
+            .ParseModule();
+        var exported = parsed.ModuleScope!.Objects.Single(obj => obj.Name == "Holder");
+        var module = OberonSymbolModuleReader.Parse(
+            OberonCompilerSymbolFileWriter.Write("Types", [exported]));
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Types; VAR holder: Types.Holder; BEGIN holder.ref^.value := 1; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = module })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
     }
 
     private static void ReportsInvalidTypeTestWithoutDuplicateDiagnostic()

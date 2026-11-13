@@ -550,7 +550,7 @@ public sealed class OberonCompilerSymbols
 
             if (field.BaseTypeForm == (int)OberonCompilerTypeForm.Record)
             {
-                var recordType = CreateImportedRecordType(field.BaseTypeSize, field.RecordFields);
+                var recordType = CreateImportedRecordType(field.BaseTypeSize, field.BaseRecordFields);
                 if (recordType is not null)
                 {
                     return CreatePointer(recordType);
