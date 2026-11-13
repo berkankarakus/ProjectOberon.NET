@@ -10,6 +10,7 @@ internal static class OberonCompilerSymbolsTests
         CreatesReadOnlyModules();
         ImportsExternalVariableMetadata();
         ImportsExternalRecordVariableMetadata();
+        ImportsExternalRecordExtensionMetadata();
         ImportsExternalArrayVariableMetadata();
         ImportsExternalPointerVariableMetadata();
         ImportsPrimitiveTypeMetadata();
@@ -141,6 +142,52 @@ internal static class OberonCompilerSymbolsTests
 
         TestAssertions.Equal(OberonCompilerTypeForm.Record, variable.Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, variable.Type.Fields[0].Type!.Form);
+    }
+
+    private static void ImportsExternalRecordExtensionMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var module = symbols.ImportModule(
+            "Types",
+            new OberonSymbolModule(
+                "Types",
+                0x1234,
+                1,
+                [new OberonSymbolExport("Derived", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Record,
+                    TypeSize = 8,
+                    BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                    BaseTypeSize = 4,
+                    BaseRecordFields =
+                    [
+                        new OberonSymbolField(
+                            "baseValue",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ],
+                    RecordFields =
+                    [
+                        new OberonSymbolField(
+                            "derivedValue",
+                            4,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ]
+                }]));
+        var type = module.FindMember("Derived")!.Type!;
+
+        TestAssertions.True(type.Base is not null);
+        TestAssertions.Equal(1, type.ParameterCount);
+        TestAssertions.Equal("baseValue", type.Base!.Fields[0].Name);
+        TestAssertions.Equal("derivedValue", type.Fields[0].Name);
     }
 
     private static void ImportsExternalArrayVariableMetadata()
