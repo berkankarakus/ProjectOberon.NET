@@ -321,7 +321,7 @@ public sealed class OberonCompilerSymbols
                     && export.ResultTypeForm == (int)OberonCompilerTypeForm.Record)
                 {
                     importedResultType = CreateImportedRecordType(
-                        export.ResultBaseTypeSize,
+                        export.ResultTypeSize ?? export.ResultBaseTypeSize,
                         export.ResultRecordFields,
                         export.ResultBaseTypeForm,
                         export.ResultBaseTypeSize,

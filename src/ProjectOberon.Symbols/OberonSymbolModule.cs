@@ -11,6 +11,7 @@ public sealed record OberonSymbolExport(string Name, int Class, int Value)
     public bool? IsProcedure { get; init; }
     public bool? HasResult { get; init; }
     public int? ResultTypeForm { get; init; }
+    public int? ResultTypeSize { get; init; }
     public int? ResultArrayLength { get; init; }
     public int? ResultBaseTypeForm { get; init; }
     public int? ResultBaseTypeSize { get; init; }
@@ -90,6 +91,7 @@ public static class OberonSymbolModuleReader
                 IsProcedure = typeInfo.IsProcedure,
                 HasResult = typeInfo.HasResult,
                 ResultTypeForm = typeInfo.ResultTypeForm,
+                ResultTypeSize = typeInfo.Size,
                 ResultArrayLength = typeInfo.ResultArrayLength,
                 ResultBaseTypeForm = typeInfo.ResultBaseTypeForm,
                 ResultBaseTypeSize = typeInfo.ResultBaseTypeSize,
@@ -186,6 +188,7 @@ public static class OberonSymbolModuleReader
             case 10:
                 var resultType = SkipType(ref reader);
                 hasResult = resultType.TypeForm != 9;
+                typeSize = resultType.Size;
                 resultTypeForm = resultType.TypeForm;
                 resultArrayLength = resultType.ArrayLength;
                 resultBaseTypeForm = resultType.BaseTypeForm;

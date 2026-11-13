@@ -109,6 +109,7 @@ internal static class OberonCompilerSymbolFileTests
             OberonCompilerSymbolFileWriter.Write("Demo", [function]));
 
         TestAssertions.Equal((int)OberonCompilerTypeForm.Record, module.Exports[0].ResultTypeForm);
+        TestAssertions.Equal(0, module.Exports[0].ResultTypeSize);
         TestAssertions.Equal(1, module.Exports[0].ResultRecordFields!.Count);
         TestAssertions.Equal("value", module.Exports[0].ResultRecordFields![0].Name);
     }

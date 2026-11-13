@@ -589,6 +589,7 @@ internal static class OberonCompilerSymbolsTests
                     IsProcedure = true,
                     HasResult = true,
                     ResultTypeForm = (int)OberonCompilerTypeForm.Record,
+                    ResultTypeSize = 8,
                     ResultBaseTypeSize = 4,
                     ResultRecordFields =
                     [
@@ -606,6 +607,7 @@ internal static class OberonCompilerSymbolsTests
 
         TestAssertions.Equal(OberonCompilerObjectClass.Function, function.Class);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, function.Type!.Base!.Form);
+        TestAssertions.Equal(8, function.Type.Base.Size);
         TestAssertions.Equal(OberonCompilerTypeForm.Integer, function.Type.Base.Fields[0].Type!.Form);
     }
 
