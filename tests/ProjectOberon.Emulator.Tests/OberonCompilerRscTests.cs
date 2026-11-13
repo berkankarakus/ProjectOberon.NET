@@ -1367,7 +1367,8 @@ internal static class OberonCompilerRscTests
         var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
         var instructions = definition.Code.Select(Risc5Disassembler.Format).ToArray();
 
-        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("MUL ")));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("LSL ")));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("MUL ")));
         TestAssertions.True(instructions.Count(instruction => instruction.StartsWith("LDR r0")) >= 2);
     }
 

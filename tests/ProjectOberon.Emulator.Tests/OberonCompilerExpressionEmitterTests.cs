@@ -29,6 +29,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsConstantAtLastExpressionRegister();
         EmitsFieldAddressThroughDedicatedEmitter();
         EmitsArrayIndexLoadAndStore();
+        EmitsNonPowerOfTwoArrayIndexWithMultiply();
         EmitsAggregateFieldAddress();
         EmitsAggregateArrayElementAddress();
         EmitsAggregatePointerDereferenceAddress();
@@ -428,17 +429,30 @@ internal static class OberonCompilerExpressionEmitterTests
 
         TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("LDR r1, [r13, 16]", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("MOV r2, 0x0004", Risc5Disassembler.Format(generator.Code[2]));
-        TestAssertions.Equal("MUL r1, r1, r2", Risc5Disassembler.Format(generator.Code[3]));
-        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[4]));
-        TestAssertions.Equal("LDR r0, [r0, 0]", Risc5Disassembler.Format(generator.Code[5]));
-        TestAssertions.Equal("ADD r0, r0, 0x0001", Risc5Disassembler.Format(generator.Code[6]));
-        TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[7]));
-        TestAssertions.Equal("LDR r2, [r13, 16]", Risc5Disassembler.Format(generator.Code[8]));
-        TestAssertions.Equal("MOV r3, 0x0004", Risc5Disassembler.Format(generator.Code[9]));
-        TestAssertions.Equal("MUL r2, r2, r3", Risc5Disassembler.Format(generator.Code[10]));
-        TestAssertions.Equal("ADD r1, r1, r2", Risc5Disassembler.Format(generator.Code[11]));
-        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[12]));
+        TestAssertions.Equal("LSL r1, r1, 0x0002", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("LDR r0, [r0, 0]", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("ADD r0, r0, 0x0001", Risc5Disassembler.Format(generator.Code[5]));
+        TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[6]));
+        TestAssertions.Equal("LDR r2, [r13, 16]", Risc5Disassembler.Format(generator.Code[7]));
+        TestAssertions.Equal("LSL r2, r2, 0x0002", Risc5Disassembler.Format(generator.Code[8]));
+        TestAssertions.Equal("ADD r1, r1, r2", Risc5Disassembler.Format(generator.Code[9]));
+        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[10]));
+    }
+
+    private static void EmitsNonPowerOfTwoArrayIndexWithMultiply()
+    {
+        const string source = "MODULE Arrays; TYPE Item = RECORD first, second, third: INTEGER; END; Values = ARRAY 2 OF Item; VAR values: Values; index: INTEGER; BEGIN values[index].third := 1; END Arrays.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("MOV ")
+            && instruction.EndsWith("0x000c", StringComparison.Ordinal)));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("MUL ")));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("LSL ")));
     }
 
     private static void EmitsAggregateFieldAddress()
@@ -466,18 +480,17 @@ internal static class OberonCompilerExpressionEmitterTests
 
         TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("MOV r0, 0x0000", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("MOV r2, 0x0008", Risc5Disassembler.Format(generator.Code[2]));
-        TestAssertions.Equal("MUL r0, r0, r2", Risc5Disassembler.Format(generator.Code[3]));
-        TestAssertions.Equal("ADD r1, r1, r0", Risc5Disassembler.Format(generator.Code[4]));
-        TestAssertions.Equal("ADD r2, r13, 0x0010", Risc5Disassembler.Format(generator.Code[5]));
-        TestAssertions.Equal("LDR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[6]));
-        TestAssertions.Equal("STR r0, [r2, 0]", Risc5Disassembler.Format(generator.Code[7]));
-        TestAssertions.Equal("LDR r0, [r1, 4]", Risc5Disassembler.Format(generator.Code[8]));
-        TestAssertions.Equal("STR r0, [r2, 4]", Risc5Disassembler.Format(generator.Code[9]));
-        TestAssertions.Equal("LDR r0, [r1, 8]", Risc5Disassembler.Format(generator.Code[10]));
-        TestAssertions.Equal("STR r0, [r2, 8]", Risc5Disassembler.Format(generator.Code[11]));
-        TestAssertions.Equal("LDR r0, [r1, 12]", Risc5Disassembler.Format(generator.Code[12]));
-        TestAssertions.Equal("STR r0, [r2, 12]", Risc5Disassembler.Format(generator.Code[13]));
+        TestAssertions.Equal("LSL r0, r0, 0x0003", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("ADD r1, r1, r0", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("ADD r2, r13, 0x0010", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("LDR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[5]));
+        TestAssertions.Equal("STR r0, [r2, 0]", Risc5Disassembler.Format(generator.Code[6]));
+        TestAssertions.Equal("LDR r0, [r1, 4]", Risc5Disassembler.Format(generator.Code[7]));
+        TestAssertions.Equal("STR r0, [r2, 4]", Risc5Disassembler.Format(generator.Code[8]));
+        TestAssertions.Equal("LDR r0, [r1, 8]", Risc5Disassembler.Format(generator.Code[9]));
+        TestAssertions.Equal("STR r0, [r2, 8]", Risc5Disassembler.Format(generator.Code[10]));
+        TestAssertions.Equal("LDR r0, [r1, 12]", Risc5Disassembler.Format(generator.Code[11]));
+        TestAssertions.Equal("STR r0, [r2, 12]", Risc5Disassembler.Format(generator.Code[12]));
     }
 
     private static void EmitsAggregatePointerDereferenceAddress()

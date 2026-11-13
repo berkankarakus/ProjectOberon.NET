@@ -195,20 +195,7 @@ public sealed class OberonCompilerAddressEmitter
             _emitExpression(index.Index, indexRegister);
             if (index.ElementType.Size != 1)
             {
-                var sizeRegister = _registers.AcquireTemporary(indexRegister);
-                try
-                {
-                    _generator.EmitMoveImmediate(sizeRegister, index.ElementType.Size);
-                    _generator.EmitRegister(
-                        AluOperation.Mul,
-                        indexRegister,
-                        indexRegister,
-                        sizeRegister);
-                }
-                finally
-                {
-                    _registers.ReleaseTemporary(sizeRegister);
-                }
+                EmitElementOffset(indexRegister, index.ElementType.Size);
             }
 
             _generator.EmitRegister(AluOperation.Add, destination, destination, indexRegister);
@@ -216,6 +203,40 @@ public sealed class OberonCompilerAddressEmitter
         finally
         {
             _registers.ReleaseTemporary(indexRegister);
+        }
+    }
+
+    private void EmitElementOffset(int indexRegister, int elementSize)
+    {
+        if (elementSize > 1 && (elementSize & (elementSize - 1)) == 0)
+        {
+            var shift = 0;
+            for (var scale = elementSize; scale > 1; scale >>= 1)
+            {
+                shift++;
+            }
+
+            _generator.EmitImmediate(
+                AluOperation.Lsl,
+                indexRegister,
+                indexRegister,
+                shift);
+            return;
+        }
+
+        var sizeRegister = _registers!.AcquireTemporary(indexRegister);
+        try
+        {
+            _generator.EmitMoveImmediate(sizeRegister, elementSize);
+            _generator.EmitRegister(
+                AluOperation.Mul,
+                indexRegister,
+                indexRegister,
+                sizeRegister);
+        }
+        finally
+        {
+            _registers.ReleaseTemporary(sizeRegister);
         }
     }
 }
