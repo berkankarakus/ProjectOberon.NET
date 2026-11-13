@@ -307,7 +307,7 @@ NUL or unrepresentable characters instead of silently replacing data.
 Compiler limitations are currently explicit for aggregate field/array-element
 and pointer-dereference loads, imported descriptor-backed variable offsets,
 record-valued function result copying, imported-descriptor `IS` tests and
-repeated or recursive SMB type references. These are planned compiler
+recursive SMB type references. These are planned compiler
 milestones rather than silently accepted syntax.
 
 Run the fast validation suite after changing compiler or RSC code:

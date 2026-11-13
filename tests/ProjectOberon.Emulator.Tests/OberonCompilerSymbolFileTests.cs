@@ -23,6 +23,7 @@ internal static class OberonCompilerSymbolFileTests
         ReadsRecordParameterFieldMetadata();
         ReadsArrayRecordParameterMetadata();
         ReadsRecordFieldMetadata();
+        ReadsRepeatedFieldTypeReferences();
         ReadsNestedRecordFieldMetadata();
         RejectsUnexportedSymbols();
         RejectsInvalidModuleNames();
@@ -420,6 +421,20 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal("enabled", fields[1].Name);
         TestAssertions.Equal((int)OberonCompilerTypeForm.Boolean, fields[1].TypeForm);
         TestAssertions.Equal(4, fields[1].Offset);
+    }
+
+    private static void ReadsRepeatedFieldTypeReferences()
+    {
+        var parsed = new OberonCompilerParser(
+            "MODULE Types; TYPE Pair* = RECORD first*: INTEGER; second*: INTEGER; END; END Types.")
+            .ParseModule();
+        var pair = parsed.ModuleScope!.Objects.Single(obj => obj.Name == "Pair");
+        var module = OberonSymbolModuleReader.Parse(
+            OberonCompilerSymbolFileWriter.Write("Types", [pair]));
+
+        var fields = module.Exports[0].RecordFields!;
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, fields[0].TypeForm);
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, fields[1].TypeForm);
     }
 
     private static void ReadsNestedRecordFieldMetadata()

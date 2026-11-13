@@ -19,7 +19,7 @@ external `RISC-work.img` flow remains a separate integration requirement.
 - [ ] [P1] Extend `IS` lowering for imported descriptors and non-matching runtime tags.
 - [x] [P1] Complete imported nested array/record type-reference metadata; record fields, array elements and pointer targets are preserved.
 - [x] [P1] Preserve imported record-valued function result sizes in SMB metadata and compiler symbols.
-- [ ] [P1] Resolve repeated and recursive SMB type references before importing field metadata.
+- [ ] [P1] Complete recursive SMB type reference resolution before importing nested field metadata.
 
 ## Integration
 

@@ -58,6 +58,7 @@ public static class OberonSymbolModuleReader
     public static OberonSymbolModule Parse(ReadOnlySpan<byte> data)
     {
         var reader = new SymbolReader(data);
+        var typeReferences = new Dictionary<int, SymbolTypeInfo>();
         reader.ReadInt32();
         var key = reader.ReadInt32();
         var name = reader.ReadString();
@@ -84,7 +85,7 @@ public static class OberonSymbolModuleReader
                 throw new InvalidDataException($"duplicate SMB export: {exportName}");
             }
 
-            var typeInfo = SkipType(ref reader);
+            var typeInfo = SkipType(ref reader, typeReferences);
             var value = symbolClass is 1 or 2 ? reader.ReadNum() : 0;
             exports.Add(new OberonSymbolExport(exportName, symbolClass, value)
             {
@@ -136,12 +137,37 @@ public static class OberonSymbolModuleReader
         return new OberonSymbolModule(name, key, version, exports);
     }
 
-    private static SymbolTypeInfo SkipType(ref SymbolReader reader)
+    private static SymbolTypeInfo SkipType(
+        ref SymbolReader reader,
+        IDictionary<int, SymbolTypeInfo> typeReferences)
     {
         var reference = reader.ReadSignedByte();
         if (reference < 0)
         {
-            return new SymbolTypeInfo(false, 0, false, -1, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            if (!typeReferences.TryGetValue(-reference, out var referencedType))
+            {
+                return new SymbolTypeInfo(
+                    false,
+                    0,
+                    false,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+            }
+
+            return referencedType;
         }
 
         var form = reader.ReadSignedByte();
@@ -165,13 +191,13 @@ public static class OberonSymbolModuleReader
         switch (form)
         {
             case 7:
-                var baseType = SkipType(ref reader);
+                var baseType = SkipType(ref reader, typeReferences);
                 baseTypeForm = baseType.TypeForm;
                 baseTypeSize = baseType.Size;
                 baseFields = baseType.Fields;
                 break;
             case 12:
-                var arrayBaseType = SkipType(ref reader);
+                var arrayBaseType = SkipType(ref reader, typeReferences);
                 baseTypeForm = arrayBaseType.TypeForm;
                 baseTypeSize = arrayBaseType.Size;
                 baseFields = arrayBaseType.Fields;
@@ -179,17 +205,39 @@ public static class OberonSymbolModuleReader
                 typeSize = reader.ReadNum();
                 break;
             case 13:
-                var recordBaseType = SkipType(ref reader);
+                var recordBaseType = SkipType(ref reader, typeReferences);
                 baseTypeForm = recordBaseType.TypeForm;
                 baseTypeSize = recordBaseType.Size;
                 baseFields = recordBaseType.Fields;
                 reader.ReadNum();
                 reader.ReadNum();
                 typeSize = reader.ReadNum();
-                fields = ReadRecordFields(ref reader);
+                if (reference > 0)
+                {
+                    typeReferences[reference] = new SymbolTypeInfo(
+                        false,
+                        0,
+                        false,
+                        form,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        baseTypeForm,
+                        baseTypeSize,
+                        typeSize,
+                        null,
+                        null,
+                        null,
+                        null,
+                        baseFields,
+                        null);
+                }
+                fields = ReadRecordFields(ref reader, typeReferences);
                 break;
             case 10:
-                var resultType = SkipType(ref reader);
+                var resultType = SkipType(ref reader, typeReferences);
                 hasResult = resultType.TypeForm != 9;
                 typeSize = resultType.Size;
                 resultTypeForm = resultType.TypeForm;
@@ -198,7 +246,7 @@ public static class OberonSymbolModuleReader
                 resultBaseTypeSize = resultType.BaseTypeSize;
                 resultBaseFields = resultType.BaseFields;
                 resultFields = resultType.Fields;
-                parameters = SkipProcedureParameters(ref reader);
+                parameters = SkipProcedureParameters(ref reader, typeReferences);
                 parameterReadOnly = parameters
                     .Select(parameter => parameter.ReadOnly)
                     .ToArray();
@@ -225,7 +273,7 @@ public static class OberonSymbolModuleReader
             reader.ReadString();
         }
 
-        return new SymbolTypeInfo(
+        var typeInfo = new SymbolTypeInfo(
             isProcedure,
             parameterCount,
             hasResult,
@@ -244,9 +292,17 @@ public static class OberonSymbolModuleReader
             resultFields,
             baseFields,
             resultBaseFields);
+        if (reference > 0)
+        {
+            typeReferences[reference] = typeInfo;
+        }
+
+        return typeInfo;
     }
 
-    private static IReadOnlyList<SymbolFieldInfo> ReadRecordFields(ref SymbolReader reader)
+    private static IReadOnlyList<SymbolFieldInfo> ReadRecordFields(
+        ref SymbolReader reader,
+        IDictionary<int, SymbolTypeInfo> typeReferences)
     {
         var fields = new List<SymbolFieldInfo>();
         while (true)
@@ -264,7 +320,7 @@ public static class OberonSymbolModuleReader
                 continue;
             }
 
-            var fieldType = SkipType(ref reader);
+            var fieldType = SkipType(ref reader, typeReferences);
             var offset = reader.ReadNum();
             fields.Add(new SymbolFieldInfo(
                 fieldName,
@@ -290,7 +346,9 @@ public static class OberonSymbolModuleReader
         field.Fields?.Select(MapField).ToArray(),
         field.BaseFields?.Select(MapField).ToArray());
 
-    private static IReadOnlyList<SymbolParameterInfo> SkipProcedureParameters(ref SymbolReader reader)
+    private static IReadOnlyList<SymbolParameterInfo> SkipProcedureParameters(
+        ref SymbolReader reader,
+        IDictionary<int, SymbolTypeInfo> typeReferences)
     {
         var parameters = new List<SymbolParameterInfo>();
         while (true)
@@ -302,7 +360,7 @@ public static class OberonSymbolModuleReader
             }
 
             var readOnly = reader.ReadSignedByte() != 0;
-            var type = SkipType(ref reader);
+            var type = SkipType(ref reader, typeReferences);
             parameters.Add(new SymbolParameterInfo(
                 readOnly,
                 type.TypeForm,
