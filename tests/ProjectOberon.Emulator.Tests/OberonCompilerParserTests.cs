@@ -22,6 +22,7 @@ internal static class OberonCompilerParserTests
         ParsesImportedRecordExtensionMetadata();
         ReportsInvalidTypeTestWithoutDuplicateDiagnostic();
         RejectsUnrelatedRecordTypeTest();
+        RejectsPointerToPointerTypeTest();
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
         RejectsMismatchedExternalFixedArrayLength();
@@ -403,6 +404,16 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(result.Succeeded);
         TestAssertions.Equal(1, result.Diagnostics.Count(diagnostic =>
             diagnostic.Message.Contains("related pointer and record types", StringComparison.Ordinal)));
+    }
+
+    private static void RejectsPointerToPointerTypeTest()
+    {
+        const string source = "MODULE Types; TYPE Node = RECORD END; Ref = POINTER TO Node; VAR left, right: Ref; BEGIN IF left IS right THEN END; END Types.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.Equal(1, result.Diagnostics.Count(diagnostic =>
+            diagnostic.Message.Contains("POINTER and a RECORD", StringComparison.Ordinal)));
     }
 
     private static void ParsesSupportedLocalTypeTest()
