@@ -404,6 +404,7 @@ internal static class OberonCompilerParserTests
         var nodeType = result.ModuleScope!.Objects.Single(obj => obj.Name == "node").Type!;
         TestAssertions.Equal(OberonCompilerTypeForm.Pointer, nodeType.Fields[0].Type!.Form);
         TestAssertions.Equal(OberonCompilerTypeForm.Record, nodeType.Fields[0].Type!.Base!.Form);
+        TestAssertions.Equal("next", nodeType.Fields[0].Type!.Base!.Fields[0].Name);
     }
 
     private static void ParsesImportedPointerFieldMetadata()

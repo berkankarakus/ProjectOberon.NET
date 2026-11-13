@@ -209,6 +209,7 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal((int)OberonCompilerTypeForm.Pointer, field.TypeForm);
         TestAssertions.Equal((int)OberonCompilerTypeForm.Record, field.BaseTypeForm);
         TestAssertions.Equal(4, field.BaseTypeSize);
+        TestAssertions.Equal("next", field.BaseRecordFields![0].Name);
     }
 
     private static void ReadsTypeFormMetadata()

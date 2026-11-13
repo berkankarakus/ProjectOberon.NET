@@ -60,6 +60,9 @@ public static class OberonSymbolModuleReader
     {
         var reader = new SymbolReader(data);
         var typeReferences = new Dictionary<int, SymbolTypeInfo>();
+        var mappedFields = new Dictionary<
+            IReadOnlyList<SymbolFieldInfo>,
+            IReadOnlyList<OberonSymbolField>>(ReferenceEqualityComparer.Instance);
         reader.ReadInt32();
         var key = reader.ReadInt32();
         var name = reader.ReadString();
@@ -97,8 +100,12 @@ public static class OberonSymbolModuleReader
                 ResultArrayLength = typeInfo.ResultArrayLength,
                 ResultBaseTypeForm = typeInfo.ResultBaseTypeForm,
                 ResultBaseTypeSize = typeInfo.ResultBaseTypeSize,
-                ResultBaseRecordFields = typeInfo.ResultBaseFields?.Select(MapField).ToArray(),
-                ResultRecordFields = typeInfo.ResultFields?.Select(MapField).ToArray(),
+                ResultBaseRecordFields = typeInfo.ResultBaseFields is null
+                    ? null
+                    : MapFields(typeInfo.ResultBaseFields, mappedFields),
+                ResultRecordFields = typeInfo.ResultFields is null
+                    ? null
+                    : MapFields(typeInfo.ResultFields, mappedFields),
                 ParameterCount = typeInfo.ParameterCount,
                 ParameterReadOnly = typeInfo.ParameterReadOnly,
                 ParameterTypeForms = typeInfo.Parameters?
@@ -114,18 +121,26 @@ public static class OberonSymbolModuleReader
                     .Select(parameter => parameter.BaseTypeSize)
                     .ToArray(),
                 ParameterBaseRecordFields = typeInfo.Parameters?
-                    .Select(parameter => parameter.BaseFields?.Select(MapField).ToArray())
+                    .Select(parameter => parameter.BaseFields is null
+                        ? null
+                        : MapFields(parameter.BaseFields, mappedFields))
                     .ToArray(),
                 ParameterRecordFields = typeInfo.Parameters?
-                    .Select(parameter => parameter.Fields?.Select(MapField).ToArray())
+                    .Select(parameter => parameter.Fields is null
+                        ? null
+                        : MapFields(parameter.Fields, mappedFields))
                     .ToArray(),
                 TypeForm = typeInfo.TypeForm,
                 TypeSize = typeInfo.Size,
                 ArrayLength = typeInfo.ArrayLength,
                 BaseTypeForm = typeInfo.BaseTypeForm,
                 BaseTypeSize = typeInfo.BaseTypeSize,
-                BaseRecordFields = typeInfo.BaseFields?.Select(MapField).ToArray(),
-                RecordFields = typeInfo.Fields?.Select(MapField).ToArray()
+                BaseRecordFields = typeInfo.BaseFields is null
+                    ? null
+                    : MapFields(typeInfo.BaseFields, mappedFields),
+                RecordFields = typeInfo.Fields is null
+                    ? null
+                    : MapFields(typeInfo.Fields, mappedFields)
             });
 
             if (symbolClass == 5)
@@ -216,6 +231,7 @@ public static class OberonSymbolModuleReader
                 reader.ReadNum();
                 reader.ReadNum();
                 typeSize = reader.ReadNum();
+                var recordFields = new List<SymbolFieldInfo>();
                 if (reference > 0)
                 {
                     typeReferences[reference] = new SymbolTypeInfo(
@@ -231,14 +247,14 @@ public static class OberonSymbolModuleReader
                         baseTypeForm,
                         baseTypeSize,
                         typeSize,
-                        null,
+                        recordFields,
                         null,
                         null,
                         null,
                         baseFields,
                         null);
                 }
-                fields = ReadRecordFields(ref reader, typeReferences);
+                fields = ReadRecordFields(ref reader, typeReferences, recordFields);
                 break;
             case 10:
                 var resultType = SkipType(ref reader, typeReferences);
@@ -306,9 +322,15 @@ public static class OberonSymbolModuleReader
 
     private static IReadOnlyList<SymbolFieldInfo> ReadRecordFields(
         ref SymbolReader reader,
-        IDictionary<int, SymbolTypeInfo> typeReferences)
+        IDictionary<int, SymbolTypeInfo> typeReferences,
+        List<SymbolFieldInfo>? target = null)
     {
-        var fields = new List<SymbolFieldInfo>();
+        var fields = target;
+        if (fields is null)
+        {
+            fields = new List<SymbolFieldInfo>();
+        }
+
         while (true)
         {
             var fieldClass = reader.ReadSignedByte();
@@ -339,16 +361,47 @@ public static class OberonSymbolModuleReader
         }
     }
 
-    private static OberonSymbolField MapField(SymbolFieldInfo field) => new(
-        field.Name,
-        field.Offset,
-        field.TypeForm,
-        field.Size,
-        field.ArrayLength,
-        field.BaseTypeForm,
-        field.BaseTypeSize,
-        field.Fields?.Select(MapField).ToArray(),
-        field.BaseFields?.Select(MapField).ToArray());
+    private static IReadOnlyList<OberonSymbolField> MapFields(
+        IReadOnlyList<SymbolFieldInfo> fields,
+        IDictionary<IReadOnlyList<SymbolFieldInfo>, IReadOnlyList<OberonSymbolField>> mappedFields)
+    {
+        if (mappedFields.TryGetValue(fields, out var mapped))
+        {
+            return mapped;
+        }
+
+        var result = new List<OberonSymbolField>();
+        mappedFields.Add(fields, result);
+        foreach (var field in fields)
+        {
+            result.Add(MapField(field, mappedFields));
+        }
+
+        return result;
+    }
+
+    private static OberonSymbolField MapField(
+        SymbolFieldInfo field,
+        IDictionary<IReadOnlyList<SymbolFieldInfo>, IReadOnlyList<OberonSymbolField>> mappedFields)
+    {
+        var fields = field.Fields is null
+            ? null
+            : MapFields(field.Fields, mappedFields);
+        var baseFields = field.BaseFields is null
+            ? null
+            : MapFields(field.BaseFields, mappedFields);
+
+        return new OberonSymbolField(
+            field.Name,
+            field.Offset,
+            field.TypeForm,
+            field.Size,
+            field.ArrayLength,
+            field.BaseTypeForm,
+            field.BaseTypeSize,
+            fields,
+            baseFields);
+    }
 
     private static IReadOnlyList<SymbolParameterInfo> SkipProcedureParameters(
         ref SymbolReader reader,
@@ -391,25 +444,67 @@ public static class OberonSymbolModuleReader
         }
     }
 
-    private readonly record struct SymbolTypeInfo(
-        bool IsProcedure,
-        int ParameterCount,
-        bool HasResult,
-        int TypeForm,
-        IReadOnlyList<bool>? ParameterReadOnly,
-        int? ArrayLength,
-        IReadOnlyList<SymbolParameterInfo>? Parameters,
-        int? ResultTypeForm,
-        int? ResultArrayLength,
-        int? BaseTypeForm,
-        int? BaseTypeSize,
-        int? Size,
-        IReadOnlyList<SymbolFieldInfo>? Fields,
-        int? ResultBaseTypeForm,
-        int? ResultBaseTypeSize,
-        IReadOnlyList<SymbolFieldInfo>? ResultFields,
-        IReadOnlyList<SymbolFieldInfo>? BaseFields,
-        IReadOnlyList<SymbolFieldInfo>? ResultBaseFields);
+    private sealed class SymbolTypeInfo
+    {
+        public SymbolTypeInfo(
+            bool isProcedure,
+            int parameterCount,
+            bool hasResult,
+            int typeForm,
+            IReadOnlyList<bool>? parameterReadOnly,
+            int? arrayLength,
+            IReadOnlyList<SymbolParameterInfo>? parameters,
+            int? resultTypeForm,
+            int? resultArrayLength,
+            int? baseTypeForm,
+            int? baseTypeSize,
+            int? size,
+            IReadOnlyList<SymbolFieldInfo>? fields,
+            int? resultBaseTypeForm,
+            int? resultBaseTypeSize,
+            IReadOnlyList<SymbolFieldInfo>? resultFields,
+            IReadOnlyList<SymbolFieldInfo>? baseFields,
+            IReadOnlyList<SymbolFieldInfo>? resultBaseFields)
+        {
+            IsProcedure = isProcedure;
+            ParameterCount = parameterCount;
+            HasResult = hasResult;
+            TypeForm = typeForm;
+            ParameterReadOnly = parameterReadOnly;
+            ArrayLength = arrayLength;
+            Parameters = parameters;
+            ResultTypeForm = resultTypeForm;
+            ResultArrayLength = resultArrayLength;
+            BaseTypeForm = baseTypeForm;
+            BaseTypeSize = baseTypeSize;
+            Size = size;
+            Fields = fields;
+            ResultBaseTypeForm = resultBaseTypeForm;
+            ResultBaseTypeSize = resultBaseTypeSize;
+            ResultFields = resultFields;
+            BaseFields = baseFields;
+            ResultBaseFields = resultBaseFields;
+        }
+
+        public bool IsProcedure { get; }
+        public int ParameterCount { get; }
+        public bool HasResult { get; }
+        public int TypeForm { get; }
+        public IReadOnlyList<bool>? ParameterReadOnly { get; }
+        public int? ArrayLength { get; }
+        public IReadOnlyList<SymbolParameterInfo>? Parameters { get; }
+        public int? ResultTypeForm { get; }
+        public int? ResultArrayLength { get; }
+        public int? BaseTypeForm { get; }
+        public int? BaseTypeSize { get; }
+        public int? Size { get; }
+        public IReadOnlyList<SymbolFieldInfo>? Fields { get; }
+        public int? ResultBaseTypeForm { get; }
+        public int? ResultBaseTypeSize { get; }
+        public IReadOnlyList<SymbolFieldInfo>? ResultFields { get; }
+        public IReadOnlyList<SymbolFieldInfo>? BaseFields { get; }
+        public IReadOnlyList<SymbolFieldInfo>? ResultBaseFields { get; }
+    }
 
     private readonly record struct SymbolParameterInfo(
         bool ReadOnly,
