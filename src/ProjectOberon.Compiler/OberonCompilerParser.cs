@@ -20,6 +20,7 @@ public sealed partial class OberonCompilerParser
     private OberonCompilerToken _current;
     private int _declarationSection;
     private int _dataOffset;
+    private OberonCompilerType? _pendingRecordType;
 
     public OberonCompilerParser(
         string source,

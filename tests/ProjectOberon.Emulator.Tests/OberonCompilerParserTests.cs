@@ -16,6 +16,7 @@ internal static class OberonCompilerParserTests
         ParsesSetMembership();
         ParsesSupportedLocalTypeTest();
         ParsesRecordExtensionTypeTest();
+        ParsesRecursivePointerFieldType();
         ReportsInvalidTypeTestWithoutDuplicateDiagnostic();
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
@@ -406,6 +407,16 @@ internal static class OberonCompilerParserTests
         var result = new OberonCompilerParser(source).ParseModule();
 
         TestAssertions.True(result.Succeeded);
+    }
+
+    private static void ParsesRecursivePointerFieldType()
+    {
+        const string source = "MODULE Types; TYPE Node = RECORD next: POINTER TO Node; value: INTEGER; END; VAR node: Node; BEGIN END Types.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var nodeType = result.ModuleScope!.Objects.Single(obj => obj.Name == "Node").Type!;
+        TestAssertions.True(ReferenceEquals(nodeType, nodeType.Fields[0].Type!.Base));
     }
 
     private static void ImportsExternalProcedures()

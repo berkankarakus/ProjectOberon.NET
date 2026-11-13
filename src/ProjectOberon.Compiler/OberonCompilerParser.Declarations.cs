@@ -245,8 +245,25 @@ public sealed partial class OberonCompilerParser
             Next();
             var exported = TakeExportMarker();
             Expect(OberonCompilerTokenKind.Equal, "= expected in type declaration");
+            OberonCompilerObject? declaration = null;
+            OberonCompilerType? placeholder = null;
+            if (_current.Kind == OberonCompilerTokenKind.Record)
+            {
+                placeholder = _symbols.CreateRecord();
+                declaration = _symbols.Declare(
+                    name,
+                    OberonCompilerObjectClass.Type,
+                    placeholder,
+                    exported: exported);
+                _pendingRecordType = placeholder;
+            }
+
             var type = ParseType();
-            _symbols.Declare(name, OberonCompilerObjectClass.Type, type, exported: exported);
+            if (declaration is null)
+            {
+                _symbols.Declare(name, OberonCompilerObjectClass.Type, type, exported: exported);
+            }
+
             Expect(OberonCompilerTokenKind.Semicolon, "; expected after type declaration");
         }
     }
@@ -349,7 +366,15 @@ public sealed partial class OberonCompilerParser
             }
         }
 
-        var record = _symbols.CreateRecord(baseType, (baseType?.ParameterCount ?? -1) + 1);
+        var record = _pendingRecordType;
+        _pendingRecordType = null;
+        if (record is null)
+        {
+            record = _symbols.CreateRecord();
+        }
+
+        record.Base = baseType;
+        record.ParameterCount = (baseType?.ParameterCount ?? -1) + 1;
         var offset = baseType?.Size ?? 0;
         while (_current.Kind == OberonCompilerTokenKind.Identifier)
         {

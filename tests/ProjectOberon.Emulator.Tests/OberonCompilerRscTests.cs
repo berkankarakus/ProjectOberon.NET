@@ -40,6 +40,7 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedGlobalAssignmentAfterDescriptor();
         ExecutesExactTypeTestAsTrue();
         EmitsRecordExtensionTypeTestLookup();
+        EmitsRecursivePointerFieldRootReference();
         EmitsRecordTypeDescriptor();
         EmitsPointerTypeDescriptorAndRootReferences();
         EmitsRecordExtensionTypeFixup();
@@ -1143,6 +1144,16 @@ internal static class OberonCompilerRscTests
 
         TestAssertions.True(instructions.Any(instruction => instruction == "LDR r0, [r0, 4]"));
         TestAssertions.True(instructions.Any(instruction => instruction == "ADD r1, r13, 0x003c"));
+    }
+
+    private static void EmitsRecursivePointerFieldRootReference()
+    {
+        const string source = "MODULE Types; TYPE Node = RECORD next: POINTER TO Node; value: INTEGER; END; VAR node: Node; BEGIN END Types.";
+        var parsed = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(parsed);
+
+        TestAssertions.Equal(24, definition.TypeDescriptorBytes);
+        TestAssertions.True(definition.PointerReferences.SequenceEqual([24]));
     }
 
     private static void ExecutesExactTypeTestAsTrue()
