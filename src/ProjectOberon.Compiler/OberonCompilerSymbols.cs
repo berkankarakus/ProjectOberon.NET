@@ -330,11 +330,11 @@ public sealed class OberonCompilerSymbols
                 {
                     importedResultType = CreateImportedRecordType(
                         export.ResultTypeSize ?? export.ResultBaseTypeSize,
+                        importedTypeContext,
                         export.ResultRecordFields,
                         export.ResultBaseTypeForm,
                         export.ResultBaseTypeSize,
-                        export.ResultBaseRecordFields,
-                        importedTypeContext);
+                        export.ResultBaseRecordFields);
                 }
                 if (importedResultType is null
                     && export.ResultTypeForm == (int)OberonCompilerTypeForm.Array)
@@ -455,11 +455,11 @@ public sealed class OberonCompilerSymbols
         {
             importedType = CreateImportedRecordType(
                 export.TypeSize,
+                context,
                 export.RecordFields,
                 export.BaseTypeForm,
                 export.BaseTypeSize,
-                export.BaseRecordFields,
-                context);
+                export.BaseRecordFields);
         }
         if (importedType is null
             && export.TypeForm == (int)OberonCompilerTypeForm.Pointer)
@@ -498,11 +498,11 @@ public sealed class OberonCompilerSymbols
 
     private OberonCompilerType? CreateImportedRecordType(
         int? typeSize,
+        ImportedTypeContext context,
         IReadOnlyList<OberonSymbolField>? fields = null,
         int? baseTypeForm = null,
         int? baseTypeSize = null,
-        IReadOnlyList<OberonSymbolField>? baseFields = null,
-        ImportedTypeContext? context = null)
+        IReadOnlyList<OberonSymbolField>? baseFields = null)
     {
         if (typeSize is not int recordSize)
         {
@@ -515,8 +515,7 @@ public sealed class OberonCompilerSymbols
             recordFields = baseFields;
         }
 
-        if (context is not null
-            && recordFields is not null
+        if (recordFields is not null
             && context.RecordTypes.TryGetValue(recordFields, out var existingRecordType))
         {
             return existingRecordType;
@@ -530,7 +529,10 @@ public sealed class OberonCompilerSymbols
                 return null;
             }
 
-            baseType = CreateImportedRecordType(baseTypeSize, baseFields, context: context);
+            baseType = CreateImportedRecordType(
+                baseTypeSize,
+                context,
+                fields: baseFields);
             if (baseType is null)
             {
                 return null;
@@ -540,7 +542,7 @@ public sealed class OberonCompilerSymbols
         var recordType = CreateRecord(baseType, (baseType?.ParameterCount ?? -1) + 1);
         recordType.IsImported = true;
         recordType.Size = recordSize;
-        if (context is not null && recordFields is not null)
+        if (recordFields is not null)
         {
             context.RecordTypes[recordFields] = recordType;
         }
@@ -558,7 +560,7 @@ public sealed class OberonCompilerSymbols
 
     private OberonCompilerType? CreateImportedFieldType(
         OberonSymbolField field,
-        ImportedTypeContext? context)
+        ImportedTypeContext context)
     {
         if (field.TypeForm == (int)OberonCompilerTypeForm.Array
             && field.ArrayLength is int arrayLength
@@ -569,8 +571,8 @@ public sealed class OberonCompilerSymbols
             {
                 baseType = CreateImportedRecordType(
                     field.BaseTypeSize,
-                    field.BaseRecordFields,
-                    context: context);
+                    context,
+                    fields: field.BaseRecordFields);
             }
             if (baseType is null)
             {
@@ -593,8 +595,8 @@ public sealed class OberonCompilerSymbols
             {
                 var recordType = CreateImportedRecordType(
                     field.BaseTypeSize,
-                    field.BaseRecordFields,
-                    context: context);
+                    context,
+                    fields: field.BaseRecordFields);
                 if (recordType is not null)
                 {
                     return CreatePointer(recordType);
@@ -608,11 +610,11 @@ public sealed class OberonCompilerSymbols
         {
             return CreateImportedRecordType(
                 field.Size,
+                context,
                 field.RecordFields,
                 field.BaseTypeForm,
                 field.BaseTypeSize,
-                field.BaseRecordFields,
-                context);
+                field.BaseRecordFields);
         }
 
         return CreateImportedPrimitiveType(field.TypeForm);
@@ -624,7 +626,7 @@ public sealed class OberonCompilerSymbols
         int? baseTypeSize,
         int? typeSize,
         IReadOnlyList<OberonSymbolField>? baseRecordFields,
-        ImportedTypeContext? context)
+        ImportedTypeContext context)
     {
         if (length is not int arrayLength || baseTypeForm is not int elementForm)
         {
@@ -634,7 +636,10 @@ public sealed class OberonCompilerSymbols
         var elementType = CreateImportedPrimitiveType(elementForm);
         if (elementType is null && elementForm == (int)OberonCompilerTypeForm.Record)
         {
-            elementType = CreateImportedRecordType(baseTypeSize, baseRecordFields, context: context);
+            elementType = CreateImportedRecordType(
+                baseTypeSize,
+                context,
+                fields: baseRecordFields);
         }
         if (elementType is null)
         {
@@ -653,14 +658,17 @@ public sealed class OberonCompilerSymbols
         int? baseTypeForm,
         int? baseTypeSize,
         IReadOnlyList<OberonSymbolField>? baseRecordFields,
-        ImportedTypeContext? context)
+        ImportedTypeContext context)
     {
         if (baseTypeForm != (int)OberonCompilerTypeForm.Record)
         {
             return null;
         }
 
-        var recordType = CreateImportedRecordType(baseTypeSize, baseRecordFields, context: context);
+        var recordType = CreateImportedRecordType(
+            baseTypeSize,
+            context,
+            fields: baseRecordFields);
         if (recordType is null)
         {
             return null;
@@ -749,8 +757,8 @@ public sealed class OberonCompilerSymbols
                     parameterBaseTypeSizes is not null && index < parameterBaseTypeSizes.Count
                         ? parameterBaseTypeSizes[index]
                         : null,
-                    fields,
-                    context: context);
+                    context,
+                    fields);
                 if (importedRecordType is not null)
                 {
                     type = importedRecordType;
