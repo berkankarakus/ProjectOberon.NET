@@ -48,6 +48,7 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedStringBody();
         ExecutesCompilerProducedGlobalAssignmentAfterDescriptor();
         ExecutesExactTypeTestAsTrue();
+        EmitsImportedTypeTestDescriptorLookup();
         EmitsRecordExtensionTypeTestLookup();
         EmitsRecursivePointerFieldRootReference();
         EmitsRecordTypeDescriptor();
@@ -1364,6 +1365,40 @@ internal static class OberonCompilerRscTests
         }
 
         TestAssertions.Equal(42u, image.Memory.Read32(image.Image.DataAddress + 20));
+    }
+
+    private static void EmitsImportedTypeTestDescriptorLookup()
+    {
+        var symbols = new OberonSymbolModule(
+            "Types",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Node", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Record,
+                TypeSize = 4,
+                RecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Types; TYPE Ref = POINTER TO Types.Node; VAR node: Ref; result: BOOLEAN; BEGIN result := node IS Types.Node; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(20, definition.TypeDescriptorBytes);
+        TestAssertions.True(definition.Code.Count > 0);
     }
 
     private static void EmitsRecordExtensionTypeTestLookup()

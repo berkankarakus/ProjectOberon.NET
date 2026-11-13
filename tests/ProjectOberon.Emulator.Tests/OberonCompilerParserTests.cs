@@ -17,7 +17,7 @@ internal static class OberonCompilerParserTests
         ParsesSupportedLocalTypeTest();
         ParsesRecordExtensionTypeTest();
         ParsesRecursivePointerFieldType();
-        RejectsImportedTypeTestWithoutLocalDescriptor();
+        ParsesImportedTypeTestWithMaterializedDescriptor();
         RejectsAggregateToScalarAssignment();
         ParsesImportedRecordExtensionMetadata();
         ReportsInvalidTypeTestWithoutDuplicateDiagnostic();
@@ -444,7 +444,7 @@ internal static class OberonCompilerParserTests
         TestAssertions.True(ReferenceEquals(nodeType, nodeType.Fields[0].Type!.Base));
     }
 
-    private static void RejectsImportedTypeTestWithoutLocalDescriptor()
+    private static void ParsesImportedTypeTestWithMaterializedDescriptor()
     {
         var symbols = new OberonSymbolModule(
             "Types",
@@ -471,9 +471,7 @@ internal static class OberonCompilerParserTests
             importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
             .ParseModule();
 
-        TestAssertions.False(result.Succeeded);
-        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
-            diagnostic.Message.Contains("local record type descriptor", StringComparison.Ordinal)));
+        TestAssertions.True(result.Succeeded);
     }
 
     private static void RejectsAggregateToScalarAssignment()
