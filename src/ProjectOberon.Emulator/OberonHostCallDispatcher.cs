@@ -98,6 +98,8 @@ public sealed class OberonHostCallContext
 public sealed class OberonHostCallDispatcher
 {
     private readonly Dictionary<uint, Action<OberonHostCallContext>> _handlers = [];
+    private uint _minimumAddress = Memory.AddressMask;
+    private uint _maximumAddress;
 
     public IReadOnlyCollection<uint> Addresses => _handlers.Keys;
 
@@ -109,15 +111,32 @@ public sealed class OberonHostCallDispatcher
             throw new ArgumentException("host call address must be word-aligned", nameof(address));
         }
 
-        if (!_handlers.TryAdd(address & Memory.AddressMask, handler))
+        var normalizedAddress = address & Memory.AddressMask;
+        if (!_handlers.TryAdd(normalizedAddress, handler))
         {
             throw new InvalidOperationException($"host call address is already registered: 0x{address:x6}");
+        }
+
+        if (normalizedAddress < _minimumAddress)
+        {
+            _minimumAddress = normalizedAddress;
+        }
+
+        if (normalizedAddress > _maximumAddress)
+        {
+            _maximumAddress = normalizedAddress;
         }
     }
 
     internal bool TryDispatch(Memory memory, Risc5Cpu cpu)
     {
-        if (!_handlers.TryGetValue(cpu.PcByte, out var handler))
+        var programCounter = cpu.PcByte;
+        if (programCounter < _minimumAddress || programCounter > _maximumAddress)
+        {
+            return false;
+        }
+
+        if (!_handlers.TryGetValue(programCounter, out var handler))
         {
             return false;
         }
