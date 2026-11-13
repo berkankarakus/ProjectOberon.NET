@@ -90,7 +90,7 @@ public sealed class OberonCompilerExpressionEmitter
         return EmitScalarAddressLoad(
             field,
             field.Field.Type,
-            "aggregate field loads are not implemented",
+            "field expression cannot be loaded as a scalar",
             destination
         );
     }
@@ -106,7 +106,7 @@ public sealed class OberonCompilerExpressionEmitter
         return EmitScalarAddressLoad(
             index,
             index.ElementType,
-            "aggregate array element loads are not implemented",
+            "array element expression cannot be loaded as a scalar",
             destination
         );
     }
@@ -122,7 +122,7 @@ public sealed class OberonCompilerExpressionEmitter
         return EmitScalarAddressLoad(
             dereference,
             dereference.ElementType,
-            "aggregate pointer dereference loads are not implemented",
+            "pointer dereference expression cannot be loaded as a scalar",
             destination
         );
     }
@@ -130,12 +130,12 @@ public sealed class OberonCompilerExpressionEmitter
     private int EmitScalarAddressLoad(
         OberonCompilerExpression expression,
         OberonCompilerType? type,
-        string aggregateError,
+        string nonScalarError,
         int destination)
     {
         if (!OberonCompilerTypeRules.IsScalar(type))
         {
-            throw new NotSupportedException(aggregateError);
+            throw new NotSupportedException(nonScalarError);
         }
 
         _addresses.EmitAddress(expression, destination);
