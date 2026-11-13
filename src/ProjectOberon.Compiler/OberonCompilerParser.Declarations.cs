@@ -208,13 +208,17 @@ public sealed partial class OberonCompilerParser
         Next();
         Expect(OberonCompilerTokenKind.Of, "OF expected in open array parameter");
         var baseType = ParseFormalType();
-        return _symbols.CreateArray(baseType, length: -1, size: 8);
+        return _symbols.CreateArray(
+            baseType,
+            length: -1,
+            size: OberonCompilerOpenArrayLayout.DescriptorSize);
     }
 
     private static int ParameterSlotSize(OberonCompilerType type) => type.Form switch
     {
         OberonCompilerTypeForm.Record => 4,
-        OberonCompilerTypeForm.Array when OberonCompilerTypeRules.IsOpenArray(type) => 8,
+        OberonCompilerTypeForm.Array when OberonCompilerTypeRules.IsOpenArray(type) =>
+            OberonCompilerOpenArrayLayout.DescriptorSize,
         OberonCompilerTypeForm.Array => 4,
         _ => 4
     };

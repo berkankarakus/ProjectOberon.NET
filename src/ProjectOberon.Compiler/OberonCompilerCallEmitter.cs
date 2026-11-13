@@ -209,7 +209,7 @@ public sealed class OberonCompilerCallEmitter
 
         var lengthBase = _addresses.EmitStorageBase(symbol, destination + 1);
         _generator.EmitLoad(destination + 1, lengthBase,
-            checked((int)symbol.Value + 4));
+            checked((int)symbol.Value + OberonCompilerOpenArrayLayout.LengthOffset));
     }
 
     private static int ParameterRegisterCount(OberonCompilerObject parameter) =>
