@@ -21,6 +21,8 @@ public sealed class OberonCompilerModuleEmitter
     private int? _firstDataFixup;
     private int _dataFixupHead;
     private IReadOnlyList<byte> _typeDescriptorPayload = [];
+    private IReadOnlyDictionary<OberonCompilerType, int> _typeDescriptorOffsets =
+        new Dictionary<OberonCompilerType, int>();
     private int _moduleDataOffset;
 
     public OberonCompilerModuleEmitter(OberonCompilerCodeGenerator generator)
@@ -39,6 +41,7 @@ public sealed class OberonCompilerModuleEmitter
     public IReadOnlyList<uint> Emit(OberonCompilerModuleParseResult module)
     {
         _typeDescriptorPayload = [];
+        _typeDescriptorOffsets = new Dictionary<OberonCompilerType, int>();
         _moduleDataOffset = 0;
         return EmitCore(module, emitExternalCalls: false);
     }
@@ -48,6 +51,7 @@ public sealed class OberonCompilerModuleEmitter
         ArgumentNullException.ThrowIfNull(module);
         var descriptors = OberonCompilerTypeDescriptorEmitter.Emit(module);
         _typeDescriptorPayload = descriptors.Payload;
+        _typeDescriptorOffsets = descriptors.Offsets;
         _moduleDataOffset = _typeDescriptorPayload.Count;
         var imports = (module.ModuleScope?.Objects ?? [])
             .Where(symbol => symbol.Class == OberonCompilerObjectClass.Module)
@@ -176,7 +180,8 @@ public sealed class OberonCompilerModuleEmitter
             ResolveStringAddress,
             EmitExternalProcedureCall,
             EmitExternalVariableAddress,
-            _moduleDataOffset);
+            _moduleDataOffset,
+            ResolveTypeDescriptorOffset);
     }
 
     private void ConfigureExternalImports(IReadOnlyList<RscImport> imports)
@@ -328,6 +333,16 @@ public sealed class OberonCompilerModuleEmitter
         _stringAddresses.Add(value, address);
         _nextStringOffset = address + bytes.Length + 1;
         return checked(_moduleDataOffset + address);
+    }
+
+    private int? ResolveTypeDescriptorOffset(OberonCompilerType type)
+    {
+        if (_typeDescriptorOffsets.TryGetValue(type, out var offset))
+        {
+            return offset;
+        }
+
+        return null;
     }
 
     private static int ModuleVariableDataSize(OberonCompilerModuleParseResult module)

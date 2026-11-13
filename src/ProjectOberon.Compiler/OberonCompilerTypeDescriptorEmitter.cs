@@ -5,7 +5,8 @@ namespace ProjectOberon.Compiler;
 internal sealed record OberonCompilerTypeDescriptorResult(
     IReadOnlyList<byte> Payload,
     int FixupTypes,
-    IReadOnlyList<int> PointerReferences);
+    IReadOnlyList<int> PointerReferences,
+    IReadOnlyDictionary<OberonCompilerType, int> Offsets);
 
 internal static class OberonCompilerTypeDescriptorEmitter
 {
@@ -37,7 +38,8 @@ internal static class OberonCompilerTypeDescriptorEmitter
         return new OberonCompilerTypeDescriptorResult(
             payload,
             hasTypeFixup ? fixupTypes : 0,
-            pointerReferences);
+            pointerReferences,
+            offsets);
     }
 
     private static IReadOnlyList<OberonCompilerType> CollectRecordTypes(

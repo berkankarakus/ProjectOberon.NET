@@ -38,6 +38,7 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedArrayCopy();
         ExecutesCompilerProducedStringBody();
         ExecutesCompilerProducedGlobalAssignmentAfterDescriptor();
+        ExecutesExactTypeTestAsTrue();
         EmitsRecordTypeDescriptor();
         EmitsPointerTypeDescriptorAndRootReferences();
         EmitsRecordExtensionTypeFixup();
@@ -1130,6 +1131,23 @@ internal static class OberonCompilerRscTests
         }
 
         TestAssertions.Equal(42u, image.Memory.Read32(image.Image.DataAddress + 20));
+    }
+
+    private static void ExecutesExactTypeTestAsTrue()
+    {
+        const string source = "MODULE Types; TYPE Node = RECORD value: INTEGER; END; Ref = POINTER TO Node; VAR node: Ref; result: BOOLEAN; BEGIN result := node IS Node; END Types.";
+        var parsed = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(parsed);
+        var loaded = LoadCompilerModule(definition, "Types");
+
+        for (var step = 0; step < 32 && loaded.Memory.Read8(loaded.Image.DataAddress + 24) != 1; step++)
+        {
+            loaded.Cpu.Step();
+        }
+
+        TestAssertions.Equal(1u, loaded.Memory.Read8(loaded.Image.DataAddress + 24));
+        TestAssertions.True(definition.Code.Select(Risc5Disassembler.Format)
+            .Any(instruction => instruction == "MOV r0, 0x0001"));
     }
 
     private static void EmitsPointerTypeDescriptorAndRootReferences()

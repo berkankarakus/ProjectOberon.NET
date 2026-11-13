@@ -251,7 +251,11 @@ public sealed class OberonCompilerSemanticChecker
                 return _booleanType;
             }
 
-            AddDiagnostic("IS expressions are not supported by the compiler yet");
+            if (leftType.Base != rightType)
+            {
+                AddDiagnostic("IS requires a pointer to the tested record type");
+            }
+
             return _booleanType;
         }
 

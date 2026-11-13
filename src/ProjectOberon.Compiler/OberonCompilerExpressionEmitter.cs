@@ -9,6 +9,7 @@ public sealed class OberonCompilerExpressionEmitter
     private readonly OberonCompilerRegisterAllocator _registers;
     private readonly Func<OberonCompilerCallExpression, int, int>? _emitFunctionCall;
     private readonly int _moduleDataOffset;
+    private readonly Func<OberonCompilerType, int?>? _typeDescriptorResolver;
 
     public OberonCompilerExpressionEmitter(IOberonCompilerInstructionWriter generator)
         : this(
@@ -16,7 +17,8 @@ public sealed class OberonCompilerExpressionEmitter
             new OberonCompilerAddressEmitter(generator),
             new OberonCompilerRegisterAllocator(),
             emitFunctionCall: null,
-            moduleDataOffset: 0)
+            moduleDataOffset: 0,
+            typeDescriptorResolver: null)
     {
     }
 
@@ -25,7 +27,8 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerAddressEmitter addresses,
         OberonCompilerRegisterAllocator registers,
         Func<OberonCompilerCallExpression, int, int>? emitFunctionCall,
-        int moduleDataOffset)
+        int moduleDataOffset,
+        Func<OberonCompilerType, int?>? typeDescriptorResolver)
     {
         ArgumentNullException.ThrowIfNull(generator);
         ArgumentNullException.ThrowIfNull(addresses);
@@ -36,6 +39,7 @@ public sealed class OberonCompilerExpressionEmitter
         _registers = registers;
         _emitFunctionCall = emitFunctionCall;
         _moduleDataOffset = moduleDataOffset;
+        _typeDescriptorResolver = typeDescriptorResolver;
     }
 
     public int EmitExpression(OberonCompilerExpression expression, int destination = 0)
@@ -197,6 +201,11 @@ public sealed class OberonCompilerExpressionEmitter
 
     private int EmitBinary(OberonCompilerBinaryExpression binary, int destination)
     {
+        if (binary.Operator == OberonCompilerTokenKind.Is)
+        {
+            return EmitTypeTest(binary, destination);
+        }
+
         var temporary = _registers.AcquireTemporary(destination);
         using var protectedDestination = _registers.ReserveRange(destination, 1);
         try
@@ -280,6 +289,65 @@ public sealed class OberonCompilerExpressionEmitter
         _generator.EmitRegister(AluOperation.Sub, destination, destination, rightRegister);
         EmitBooleanFromCondition(destination, condition, invert);
         return destination;
+    }
+
+    private int EmitTypeTest(
+        OberonCompilerBinaryExpression typeTest,
+        int destination)
+    {
+        var testedType = ExpressionType(typeTest.Right);
+        if (testedType is null)
+        {
+            throw new NotSupportedException("IS requires a local record type descriptor");
+        }
+
+        var leftType = ExpressionType(typeTest.Left);
+        if (leftType?.Form == OberonCompilerTypeForm.Pointer
+            && leftType.Base == testedType)
+        {
+            _generator.EmitMoveImmediate(destination, 1);
+            return destination;
+        }
+
+        if (_typeDescriptorResolver is null)
+        {
+            throw new NotSupportedException("IS requires a local record type descriptor");
+        }
+
+        var descriptorOffset = _typeDescriptorResolver(testedType);
+        if (descriptorOffset is not int offset)
+        {
+            throw new NotSupportedException("IS requires a local record type descriptor");
+        }
+
+        var temporary = _registers.AcquireTemporary(destination);
+        using var protectedDestination = _registers.ReserveRange(destination, 1);
+        try
+        {
+            EmitExpression(typeTest.Left, destination);
+            _generator.EmitImmediate(AluOperation.Sub, destination, destination, 0);
+            var nonNilLabel = new OberonCompilerLabel();
+            var endLabel = new OberonCompilerLabel();
+            _generator.EmitBranch(nonNilLabel, ConditionCode.Eq, link: false, invert: true);
+            _generator.EmitMoveImmediate(destination, 0);
+            _generator.EmitBranch(endLabel);
+            _generator.Bind(nonNilLabel);
+            _generator.EmitImmediate(AluOperation.Add, destination, destination, -8);
+            _generator.EmitLoad(destination, destination, 0);
+            _generator.EmitImmediate(
+                AluOperation.Add,
+                temporary,
+                ModuleDataBase,
+                checked(_moduleDataOffset + offset));
+            _generator.EmitRegister(AluOperation.Sub, destination, destination, temporary);
+            EmitBooleanFromCondition(destination, ConditionCode.Eq);
+            _generator.Bind(endLabel);
+            return destination;
+        }
+        finally
+        {
+            _registers.ReleaseTemporary(temporary);
+        }
     }
 
     private void EmitRealComparison(
