@@ -8,6 +8,7 @@ internal static partial class SymbolModuleTests
         RejectsUnsupportedVersion();
         RejectsTruncatedModule();
         RejectsInvalidTypeForm();
+        RejectsUnknownTypeReference();
         RejectsNonAsciiStrings();
         RejectsTrailingBytes();
         RejectsInvalidModuleNames();

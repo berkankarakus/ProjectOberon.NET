@@ -162,6 +162,12 @@ public static class OberonSymbolModuleReader
         {
             if (!typeReferences.TryGetValue(-reference, out var referencedType))
             {
+                if (reference < -4)
+                {
+                    throw new InvalidDataException(
+                        $"SMB type reference is not defined: {-reference}");
+                }
+
                 return new SymbolTypeInfo(
                     false,
                     0,
