@@ -34,7 +34,7 @@ internal static class OberonCompilerOptimizationBaselineTests
             () => module.Memory.Read32(module.Image.DataAddress + checked((uint)total.Value)) == 28,
             maxSteps: 256);
 
-        AssertBaseline(module, steps, codeWords: 22, rscBytes: 145, runtimeSteps: 128);
+        AssertBaseline(module, steps, codeWords: 21, rscBytes: 141, runtimeSteps: 120);
     }
 
     private static void MeasuresAggregateCopyFixture()

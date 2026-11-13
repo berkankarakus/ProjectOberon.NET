@@ -10,6 +10,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsIntegerRemainder();
         EmitsRealArithmetic();
         EmitsRealComparisons();
+        EmitsIntegerComparisonsWithImmediateOperands();
         EmitsPointerValues();
         EmitsPointerDereference();
         EmitsForLoop();
@@ -167,6 +168,21 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
         TestAssertions.True(instructions.Any(instruction => instruction == "MOV r0, 0x0001"));
         TestAssertions.True(instructions.Any(instruction => instruction == "MOV r0, 0x0000"));
+    }
+
+    private static void EmitsIntegerComparisonsWithImmediateOperands()
+    {
+        const string source = "MODULE Compare; VAR value: INTEGER; less, equal: BOOLEAN; BEGIN less := value < 3; equal := value = 2; END Compare.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0003"));
+        TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0002"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0003"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0002"));
     }
 
     private static void EmitsPointerValues()
