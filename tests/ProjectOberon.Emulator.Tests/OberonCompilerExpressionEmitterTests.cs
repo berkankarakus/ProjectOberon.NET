@@ -17,6 +17,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsDescendingForLoop();
         EmitsCaseStatement();
         EmitsCaseRange();
+        EmitsConstantControlFlowWithoutBranches();
         EmitsSetMembership();
         EmitsSetLiteralAndOperations();
         EmitsControlFlow();
@@ -152,6 +153,20 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal(1, instructions.Count(instruction => instruction.StartsWith("IOR ")));
         TestAssertions.Equal(1, instructions.Count(instruction => instruction.StartsWith("ANN ")));
         TestAssertions.True(instructions.Any(instruction => instruction == "STR r0, [r13, 0]"));
+    }
+
+    private static void EmitsConstantControlFlowWithoutBranches()
+    {
+        const string source = "MODULE Constants; VAR value: INTEGER; BEGIN IF TRUE THEN value := 1 ELSE value := 2 END; WHILE FALSE DO value := 3 END; REPEAT value := value + 1 UNTIL TRUE END Constants.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("B")));
+        TestAssertions.True(instructions.Any(instruction => instruction == "MOV r0, 0x0001"));
+        TestAssertions.True(instructions.Any(instruction => instruction == "ADD r0, r0, 0x0001"));
     }
 
     private static void EmitsRealComparisons()

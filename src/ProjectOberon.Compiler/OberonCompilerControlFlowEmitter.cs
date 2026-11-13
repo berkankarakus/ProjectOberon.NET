@@ -27,6 +27,12 @@ public sealed class OberonCompilerControlFlowEmitter
     public void EmitIf(OberonCompilerIfStatement conditional)
     {
         ArgumentNullException.ThrowIfNull(conditional);
+
+        if (TryEmitConstantIf(conditional))
+        {
+            return;
+        }
+
         var end = new OberonCompilerLabel();
         foreach (var branch in conditional.Branches)
         {
@@ -47,6 +53,12 @@ public sealed class OberonCompilerControlFlowEmitter
     public void EmitWhile(OberonCompilerWhileStatement loop)
     {
         ArgumentNullException.ThrowIfNull(loop);
+
+        if (TryGetBooleanConstant(loop.Condition, out var condition) && !condition)
+        {
+            return;
+        }
+
         var start = new OberonCompilerLabel();
         var end = new OberonCompilerLabel();
         _generator.Bind(start);
@@ -62,6 +74,12 @@ public sealed class OberonCompilerControlFlowEmitter
         var start = new OberonCompilerLabel();
         _generator.Bind(start);
         _emitStatements(repeat.Body);
+
+        if (TryGetBooleanConstant(repeat.Condition, out var condition) && condition)
+        {
+            return;
+        }
+
         EmitBranchIfFalse(repeat.Condition, start);
     }
 
@@ -167,5 +185,48 @@ public sealed class OberonCompilerControlFlowEmitter
     {
         _generator.EmitMoveImmediate(1, checked((int)value));
         _generator.EmitRegister(AluOperation.Sub, 2, 0, 1);
+    }
+
+    private bool TryEmitConstantIf(OberonCompilerIfStatement conditional)
+    {
+        foreach (var branch in conditional.Branches)
+        {
+            if (!TryGetBooleanConstant(branch.Condition, out _))
+            {
+                return false;
+            }
+        }
+
+        foreach (var branch in conditional.Branches)
+        {
+            if (TryGetBooleanConstant(branch.Condition, out var condition) && condition)
+            {
+                _emitStatements(branch.Body);
+                return true;
+            }
+        }
+
+        if (conditional.ElseBody is not null)
+        {
+            _emitStatements(conditional.ElseBody);
+        }
+
+        return true;
+    }
+
+    private static bool TryGetBooleanConstant(
+        OberonCompilerExpression expression,
+        out bool value)
+    {
+        if (expression is OberonCompilerIntegerLiteralExpression literal
+            && literal.Type.Form == OberonCompilerTypeForm.Boolean
+            && literal.Value is 0 or 1)
+        {
+            value = literal.Value == 1;
+            return true;
+        }
+
+        value = false;
+        return false;
     }
 }
