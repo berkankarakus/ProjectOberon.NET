@@ -367,6 +367,14 @@ public sealed class OberonCompilerSemanticChecker
             {
                 AddDiagnostic($"argument for '{parameter.Name}' must be an ARRAY");
             }
+
+            if (actualType.Form == OberonCompilerTypeForm.Array
+                && actualType.Length < 0
+                && argument is not OberonCompilerNameExpression)
+            {
+                AddDiagnostic(
+                    $"open array argument '{parameter.Name}' must be a named parameter when its length is dynamic");
+            }
         }
         else if (!AreAssignable(expectedType, actualType))
         {
