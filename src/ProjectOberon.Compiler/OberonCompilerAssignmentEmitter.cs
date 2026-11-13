@@ -6,12 +6,14 @@ public sealed class OberonCompilerAssignmentEmitter
     private readonly OberonCompilerAddressEmitter _addresses;
     private readonly OberonCompilerRegisterAllocator _registers;
     private readonly Func<OberonCompilerExpression, int, int> _emitExpression;
+    private readonly int _moduleDataOffset;
 
     public OberonCompilerAssignmentEmitter(
         IOberonCompilerInstructionWriter generator,
         OberonCompilerAddressEmitter addresses,
         OberonCompilerRegisterAllocator registers,
-        Func<OberonCompilerExpression, int, int> emitExpression)
+        Func<OberonCompilerExpression, int, int> emitExpression,
+        int moduleDataOffset = 0)
     {
         ArgumentNullException.ThrowIfNull(generator);
         ArgumentNullException.ThrowIfNull(addresses);
@@ -22,6 +24,7 @@ public sealed class OberonCompilerAssignmentEmitter
         _addresses = addresses;
         _registers = registers;
         _emitExpression = emitExpression;
+        _moduleDataOffset = moduleDataOffset;
     }
 
     public void EmitAssignment(OberonCompilerAssignmentStatement assignment)
@@ -69,6 +72,13 @@ public sealed class OberonCompilerAssignmentEmitter
 
         var offset = checked((int)target.Value);
         if (target.Class == OberonCompilerObjectClass.Parameter && !target.ReadOnly)
+        {
+            _addresses.EmitAddress(name, 1);
+            _generator.EmitStore(0, 1, 0, OberonCompilerTypeRules.IsByteSized(target.Type));
+            return;
+        }
+
+        if (target.Level == 1 && _moduleDataOffset > 0)
         {
             _addresses.EmitAddress(name, 1);
             _generator.EmitStore(0, 1, 0, OberonCompilerTypeRules.IsByteSized(target.Type));

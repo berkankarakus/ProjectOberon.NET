@@ -36,6 +36,7 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedRecordCopy();
         ExecutesCompilerProducedArrayCopy();
         ExecutesCompilerProducedStringBody();
+        ExecutesCompilerProducedGlobalAssignmentAfterDescriptor();
         EmitsRecordTypeDescriptor();
         EmitsPointerTypeDescriptorAndRootReferences();
         EmitsRecordExtensionTypeFixup();
@@ -1196,5 +1197,20 @@ internal static class OberonCompilerRscTests
             .Select(offset => (char)memory.Read8(image.DataAddress + (uint)offset))
             .ToArray();
         TestAssertions.Equal("hello\0", new string(text));
+    }
+
+    private static void ExecutesCompilerProducedGlobalAssignmentAfterDescriptor()
+    {
+        const string source = "MODULE Globals; TYPE Node = RECORD value: INTEGER; END; VAR result: INTEGER; BEGIN result := 42; END Globals.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var loaded = LoadCompilerModule(definition, "Globals");
+
+        for (var step = 0; step < 16 && loaded.Memory.Read32(loaded.Image.DataAddress + 20) != 42; step++)
+        {
+            loaded.Cpu.Step();
+        }
+
+        TestAssertions.Equal(42u, loaded.Memory.Read32(loaded.Image.DataAddress + 20));
     }
 }

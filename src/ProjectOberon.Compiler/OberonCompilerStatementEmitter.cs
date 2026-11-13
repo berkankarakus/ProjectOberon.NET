@@ -72,7 +72,8 @@ public sealed class OberonCompilerStatementEmitter
             generator,
             addresses,
             registers,
-            _expressions.EmitExpression);
+            _expressions.EmitExpression,
+            moduleDataOffset);
         _controlFlow = new OberonCompilerControlFlowEmitter(
             generator,
             _expressions.EmitExpression,
