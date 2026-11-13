@@ -22,6 +22,7 @@ internal static class OberonCompilerParserTests
         ParsesImportedRecordExtensionMetadata();
         ReportsInvalidTypeTestWithoutDuplicateDiagnostic();
         RejectsUnrelatedRecordTypeTest();
+        RejectsUnrelatedImportedRecordTypeTest();
         RejectsPointerToPointerTypeTest();
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
@@ -414,6 +415,34 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(result.Succeeded);
         TestAssertions.Equal(1, result.Diagnostics.Count(diagnostic =>
             diagnostic.Message.Contains("POINTER and a RECORD", StringComparison.Ordinal)));
+    }
+
+    private static void RejectsUnrelatedImportedRecordTypeTest()
+    {
+        var symbols = new OberonSymbolModule(
+            "Types",
+            0x1234,
+            1,
+            [
+                new OberonSymbolExport("Left", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Record,
+                    TypeSize = 4
+                },
+                new OberonSymbolExport("Right", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Record,
+                    TypeSize = 4
+                }
+            ]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Types; TYPE Ref = POINTER TO Types.Left; VAR value: Ref; BEGIN IF value IS Types.Right THEN END; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
+            .ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.Equal(1, result.Diagnostics.Count(diagnostic =>
+            diagnostic.Message.Contains("related pointer and record types", StringComparison.Ordinal)));
     }
 
     private static void ParsesSupportedLocalTypeTest()
