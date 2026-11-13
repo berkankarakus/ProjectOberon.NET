@@ -97,6 +97,12 @@ public sealed class OberonCompilerExpressionEmitter
 
     private int EmitIndex(OberonCompilerIndexExpression index, int destination)
     {
+        if (OberonCompilerTypeRules.IsAggregate(index.ElementType))
+        {
+            _addresses.EmitAddress(index, destination);
+            return destination;
+        }
+
         return EmitScalarAddressLoad(
             index,
             index.ElementType,
