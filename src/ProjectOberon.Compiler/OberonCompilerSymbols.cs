@@ -76,22 +76,17 @@ public sealed class OberonCompilerObject
     public OberonCompilerType? Type { get; internal set; }
     public string? OriginalName { get; internal set; }
     public int Key { get; internal set; }
-    public IReadOnlyList<OberonCompilerObject> Members => _members;
+    public IReadOnlyList<OberonCompilerObject> Members => _members.Items;
 
-    private readonly List<OberonCompilerObject> _members = [];
-    private readonly Dictionary<string, OberonCompilerObject> _memberMap = new(StringComparer.Ordinal);
+    private readonly OberonCompilerNamedCollection<OberonCompilerObject> _members = new(
+        member => member.Name);
 
     public OberonCompilerObject? FindMember(string name) =>
-        _memberMap.TryGetValue(name, out var member) ? member : null;
+        _members.Find(name);
 
     internal bool AddMember(OberonCompilerObject member)
     {
-        if (!_memberMap.TryAdd(member.Name, member))
-        {
-            return false;
-        }
-        _members.Add(member);
-        return true;
+        return _members.TryAdd(member);
     }
 }
 
@@ -105,23 +100,18 @@ public sealed class OberonCompilerScope
 
     public OberonCompilerScope? Parent { get; }
     public int Level { get; }
-    public IReadOnlyList<OberonCompilerObject> Objects => _objects;
+    public IReadOnlyList<OberonCompilerObject> Objects => _objects.Items;
 
-    private readonly List<OberonCompilerObject> _objects = [];
-    private readonly Dictionary<string, OberonCompilerObject> _objectMap = new(StringComparer.Ordinal);
+    private readonly OberonCompilerNamedCollection<OberonCompilerObject> _objects = new(
+        obj => obj.Name);
 
     internal bool TryAdd(OberonCompilerObject obj)
     {
-        if (!_objectMap.TryAdd(obj.Name, obj))
-        {
-            return false;
-        }
-        _objects.Add(obj);
-        return true;
+        return _objects.TryAdd(obj);
     }
 
     internal OberonCompilerObject? FindLocal(string name) =>
-        _objectMap.TryGetValue(name, out var obj) ? obj : null;
+        _objects.Find(name);
 }
 
 public sealed class OberonCompilerSymbols
