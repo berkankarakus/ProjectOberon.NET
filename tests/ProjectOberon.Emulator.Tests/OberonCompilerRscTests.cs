@@ -41,6 +41,7 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedArrayElementLoad();
         ExecutesCompilerProducedArrayElementStore();
         ExecutesCompilerProducedPointerDereferenceLoad();
+        EmitsNestedPointerArraySelectors();
         ExecutesCompilerProducedArrayCopy();
         ExecutesCompilerProducedByteArrayCopy();
         ExecutesCompilerProducedStringBody();
@@ -1226,6 +1227,43 @@ internal static class OberonCompilerRscTests
         var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
         var instructions = definition.Code.Select(Risc5Disassembler.Format).ToArray();
 
+        TestAssertions.True(instructions.Count(instruction => instruction.StartsWith("LDR r0")) >= 2);
+    }
+
+    private static void EmitsNestedPointerArraySelectors()
+    {
+        var symbols = new OberonSymbolModule(
+            "State",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Current", 2, 0)
+            {
+                IsProcedure = false,
+                TypeForm = (int)OberonCompilerTypeForm.Pointer,
+                BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                BaseTypeSize = 8,
+                BaseRecordFields =
+                [
+                    new OberonSymbolField(
+                        "values",
+                        0,
+                        (int)OberonCompilerTypeForm.Array,
+                        8,
+                        2,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4)
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT State; VAR result: INTEGER; BEGIN result := State.Current^.values[1]; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["State"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var instructions = definition.Code.Select(Risc5Disassembler.Format).ToArray();
+
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("MUL ")));
         TestAssertions.True(instructions.Count(instruction => instruction.StartsWith("LDR r0")) >= 2);
     }
 
