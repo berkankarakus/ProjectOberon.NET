@@ -2,10 +2,8 @@
 
 The deterministic validation gate is `bash scripts/verify-dotnet.sh`. The
 external `RISC-work.img` flow remains a separate integration requirement. The
-current ABI also cannot carry the length of a nested dynamic open-array
-selector; the semantic checker rejects that form with a deterministic error.
-Compiler roadmap batches 51-75 are complete; the unchecked integration item
-below requires an external disk artifact.
+Compiler roadmap batches 51-75 and the five follow-up batches are complete.
+The unchecked integration item below still requires a CI-owned disk artifact.
 
 ## Compiler
 
@@ -25,9 +23,10 @@ below requires an external disk artifact.
 - [x] [P1] Complete imported nested array/record type-reference metadata; record fields, array elements and pointer targets are preserved.
 - [x] [P1] Preserve imported record-valued function result sizes in SMB metadata and compiler symbols.
 - [x] [P1] Complete recursive SMB type reference resolution before importing nested field metadata.
+- [x] [P1] Lower nested dynamic open-array selectors by loading their pointer and length descriptors.
 
 ## Integration
 
-- [ ] [P0] Provide a CI-owned compatible `RISC-work.img` artifact for boot and input tests; ROM/disk binaries are intentionally excluded from this repository.
+- [ ] [P0] Provide a CI-owned compatible `RISC-work.img` artifact for boot and input tests; the official `RISC.img` was validated locally, but ROM/disk binaries remain intentionally excluded from this repository.
 - [x] [P1] Add end-to-end compiler fixtures covering pointers, records, arrays and imports; the deterministic RSC emulator suite covers these paths.
 - [x] [P1] Add an SDL frontend smoke test that does not require an interactive session; UI logic, input, framebuffer and editor routing are covered without opening a window.
