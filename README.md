@@ -293,20 +293,21 @@ Global variables and strings are addressed after the descriptor section. RSC
 descriptor support for imported record bases and imported descriptor-backed
 variable offsets remains a separate compiler milestone.
 
-The generated RSC currently supports scalar data and character-array string
-payloads. The reader and writer reject duplicate import or command names and
-validate command, entry, body and fixup offsets before the module reaches the
-emulator memory loader. This keeps malformed artifacts as compiler/loader
-errors instead of turning them into ambiguous runtime behavior.
+The generated RSC currently supports scalar data, whole record/array copies and
+character-array string payloads. The reader and writer reject duplicate import
+or command names and validate command, entry, body and fixup offsets before the
+module reaches the emulator memory loader. This keeps malformed artifacts as
+compiler/loader errors instead of turning them into ambiguous runtime behavior.
 
 Disk codecs apply the same strictness to names: directory and file-header
 names must be ASCII and fit the Oberon field width, and truncated extension
 pages are rejected before their addresses are read. Text/rider codecs reject
 NUL or unrepresentable characters instead of silently replacing data.
 
-Compiler limitations are currently explicit for aggregate field/array loads and
-stores, imported descriptor-backed variable offsets, record-valued function
-result copying, and `IS` type-test lowering. These are planned compiler
+Compiler limitations are currently explicit for aggregate field/array-element
+and pointer-dereference loads, imported descriptor-backed variable offsets,
+record-valued function result copying, imported-descriptor `IS` tests and
+repeated or recursive SMB type references. These are planned compiler
 milestones rather than silently accepted syntax.
 
 Run the fast validation suite after changing compiler or RSC code:
