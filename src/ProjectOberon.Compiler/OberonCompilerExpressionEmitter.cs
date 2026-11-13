@@ -113,6 +113,12 @@ public sealed class OberonCompilerExpressionEmitter
 
     private int EmitDereference(OberonCompilerDereferenceExpression dereference, int destination)
     {
+        if (OberonCompilerTypeRules.IsAggregate(dereference.ElementType))
+        {
+            _addresses.EmitAddress(dereference, destination);
+            return destination;
+        }
+
         return EmitScalarAddressLoad(
             dereference,
             dereference.ElementType,

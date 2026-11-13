@@ -26,7 +26,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsArrayIndexLoadAndStore();
         EmitsAggregateFieldAddress();
         EmitsAggregateArrayElementAddress();
-        ReportsAggregatePointerLoadsExplicitly();
+        EmitsAggregatePointerDereferenceAddress();
         EmitsThroughInstructionWriterAbstraction();
     }
 
@@ -401,18 +401,20 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("STR r0, [r2, 12]", Risc5Disassembler.Format(generator.Code[13]));
     }
 
-    private static void ReportsAggregatePointerLoadsExplicitly()
+    private static void EmitsAggregatePointerDereferenceAddress()
     {
-        const string source = "MODULE Pointers; TYPE Values = ARRAY 2 OF INTEGER; Ref = POINTER TO Values; VAR value: Ref; BEGIN END Pointers.";
+        const string source = "MODULE Pointers; TYPE Values = ARRAY 2 OF INTEGER; Ref = POINTER TO Values; VAR value: Ref; target: Values; BEGIN target := value^; END Pointers.";
         var result = new OberonCompilerParser(source).ParseModule();
-        var value = result.ModuleScope!.Objects.Single(obj => obj.Name == "value");
-        var dereference = new OberonCompilerDereferenceExpression(
-            new OberonCompilerNameExpression("value", value),
-            value.Type!.Base!);
+        var generator = new OberonCompilerCodeGenerator();
 
-        var error = TestAssertions.Throws<NotSupportedException>(() =>
-            new OberonCompilerExpressionEmitter(new OberonCompilerCodeGenerator()).EmitExpression(dereference));
-        TestAssertions.True(error.Message.Contains("aggregate pointer dereference loads", StringComparison.Ordinal));
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        TestAssertions.Equal("LDR r1, [r13, 0]", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("ADD r2, r13, 0x0004", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("LDR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("STR r0, [r2, 0]", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("LDR r0, [r1, 4]", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("STR r0, [r2, 4]", Risc5Disassembler.Format(generator.Code[5]));
     }
 
     private static void EmitsThroughInstructionWriterAbstraction()
