@@ -38,16 +38,16 @@ public sealed class OberonHostCallContext
     public string ReadCString(uint address, int maximumLength = 256)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumLength);
-        var bytes = new List<byte>();
+        var bytes = new byte[maximumLength];
         for (var index = 0; index < maximumLength; index++)
         {
             var value = Memory.Read8(address + checked((uint)index));
             if (value == 0)
             {
-                return System.Text.Encoding.Latin1.GetString(bytes.ToArray());
+                return System.Text.Encoding.Latin1.GetString(bytes, 0, index);
             }
 
-            bytes.Add(value);
+            bytes[index] = value;
         }
 
         throw new InvalidDataException("Oberon string is not NUL-terminated within the host buffer limit");

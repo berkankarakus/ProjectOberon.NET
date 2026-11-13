@@ -38,7 +38,12 @@ public sealed class Machine : IDisposable
             Cpu.Step(irq || _timerPhase == TimerInterruptPeriod - 1);
         }
 
-        _timerPhase = (_timerPhase + 1) % TimerInterruptPeriod;
+        _timerPhase++;
+        if (_timerPhase == TimerInterruptPeriod)
+        {
+            _timerPhase = 0;
+        }
+
         Memory.AdvanceTime();
     }
 

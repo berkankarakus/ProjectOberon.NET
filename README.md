@@ -450,6 +450,10 @@ count; it does not modify the disk image.
 Runtime failures from the CLI and SDL frontend are printed with the exception
 type, message, CPU steps, PC, selected registers, flags and stack trace. This
 makes a host-call or emulator fault actionable even when the SDL window closes.
+The reported CPU step counter includes dispatched host calls as one emulator
+step, even though those steps do not decode a RISC5 instruction. CLI `--trace`
+indexes only the post-start debugger run, so compare its index with the final
+CPU step counter only after accounting for boot and host-call work.
 
 For performance or hang investigation, the repository targets .NET 10 and the
 cross-platform `dotnet-trace` tool can collect a managed trace:
