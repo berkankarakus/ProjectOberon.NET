@@ -191,7 +191,7 @@ public sealed class OberonCompilerCallEmitter
         }
 
         _addresses.EmitAddress(argument, destination);
-        var type = ExpressionType(argument);
+        var type = OberonCompilerExpressionTypeResolver.Resolve(argument);
         if (type?.Form != OberonCompilerTypeForm.Array)
             throw new InvalidOperationException("open array argument must be an ARRAY");
         if (!OberonCompilerTypeRules.IsOpenArray(type))
@@ -210,25 +210,6 @@ public sealed class OberonCompilerCallEmitter
         var lengthBase = _addresses.EmitStorageBase(symbol, destination + 1);
         _generator.EmitLoad(destination + 1, lengthBase,
             checked((int)symbol.Value + 4));
-    }
-
-    private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression)
-    {
-        switch (expression)
-        {
-            case OberonCompilerStringLiteralExpression literal:
-                return literal.Type;
-            case OberonCompilerNameExpression name:
-                return name.Symbol?.Type;
-            case OberonCompilerFieldExpression field:
-                return field.Field.Type;
-            case OberonCompilerIndexExpression index:
-                return index.ElementType;
-            case OberonCompilerDereferenceExpression dereference:
-                return dereference.ElementType;
-            default:
-                return null;
-        }
     }
 
     private static int ParameterRegisterCount(OberonCompilerObject parameter) =>

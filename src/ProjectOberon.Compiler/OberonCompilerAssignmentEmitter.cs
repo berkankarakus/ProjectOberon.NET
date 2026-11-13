@@ -30,7 +30,7 @@ public sealed class OberonCompilerAssignmentEmitter
     public void EmitAssignment(OberonCompilerAssignmentStatement assignment)
     {
         ArgumentNullException.ThrowIfNull(assignment);
-        var targetType = ExpressionType(assignment.Target);
+        var targetType = OberonCompilerExpressionTypeResolver.Resolve(assignment.Target);
         if (OberonCompilerTypeRules.IsAggregate(targetType))
         {
             if (assignment.Value is OberonCompilerStringLiteralExpression literal
@@ -154,29 +154,6 @@ public sealed class OberonCompilerAssignmentEmitter
         {
             _generator.EmitMoveImmediate(0, 0);
             _generator.EmitStore(0, 2, offset, byteValue: true);
-        }
-    }
-
-    private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression)
-    {
-        switch (expression)
-        {
-            case OberonCompilerLiteralExpression literal:
-                return literal.Type;
-            case OberonCompilerNameExpression name:
-                return name.Symbol?.Type;
-            case OberonCompilerCallExpression call:
-                return call.Procedure.Symbol?.Type?.Base;
-            case OberonCompilerFieldExpression field:
-                return field.Field.Type;
-            case OberonCompilerIndexExpression index:
-                return index.ElementType;
-            case OberonCompilerDereferenceExpression dereference:
-                return dereference.ElementType;
-            case OberonCompilerUnaryExpression unary:
-                return ExpressionType(unary.Operand);
-            default:
-                return null;
         }
     }
 

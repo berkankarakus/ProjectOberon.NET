@@ -320,13 +320,13 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerBinaryExpression typeTest,
         int destination)
     {
-        var testedType = ExpressionType(typeTest.Right);
+        var testedType = OberonCompilerExpressionTypeResolver.Resolve(typeTest.Right);
         if (testedType is null)
         {
             throw new NotSupportedException("IS requires a local record type descriptor");
         }
 
-        var leftType = ExpressionType(typeTest.Left);
+        var leftType = OberonCompilerExpressionTypeResolver.Resolve(typeTest.Left);
         if (leftType?.Form == OberonCompilerTypeForm.Pointer
             && OberonCompilerTypeRules.IsBaseType(leftType.Base, testedType))
         {
@@ -468,25 +468,13 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual or
         OberonCompilerTokenKind.In;
 
-    private static bool IsReal(OberonCompilerExpression expression) => ExpressionType(expression)?.Form == OberonCompilerTypeForm.Real;
+    private static bool IsReal(OberonCompilerExpression expression) =>
+        OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form == OberonCompilerTypeForm.Real;
 
     private static bool IsReal(OberonCompilerBinaryExpression expression) =>
         IsReal(expression.Left) || IsReal(expression.Right);
 
     private static bool IsSet(OberonCompilerBinaryExpression expression) =>
-        ExpressionType(expression.Left)?.Form == OberonCompilerTypeForm.Set;
-
-    private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression) => expression switch
-    {
-        OberonCompilerLiteralExpression literal => literal.Type,
-        OberonCompilerNameExpression name => name.Symbol?.Type,
-        OberonCompilerCallExpression call => call.Procedure.Symbol?.Type?.Base,
-        OberonCompilerFieldExpression field => field.Field.Type,
-        OberonCompilerIndexExpression index => index.ElementType,
-        OberonCompilerDereferenceExpression dereference => dereference.ElementType,
-        OberonCompilerUnaryExpression unary => ExpressionType(unary.Operand),
-        OberonCompilerBinaryExpression binary => ExpressionType(binary.Left),
-        _ => null
-    };
+        OberonCompilerExpressionTypeResolver.Resolve(expression.Left)?.Form == OberonCompilerTypeForm.Set;
 
 }
