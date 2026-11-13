@@ -315,6 +315,9 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.Equal("LDR r0, [r13, 0]", instructions[0]);
         TestAssertions.True(instructions.Count(instruction => instruction.StartsWith("BEQ ")) >= 3);
+        TestAssertions.True(instructions.Contains("SUB r2, r0, 0x0000"));
+        TestAssertions.True(instructions.Contains("SUB r2, r0, 0x0001"));
+        TestAssertions.False(instructions.Contains("MOV r1, 0x0000"));
         TestAssertions.True(instructions.Contains("MOV r0, 0x0003"));
     }
 
@@ -329,6 +332,8 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BLT ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BLE ")));
+        TestAssertions.True(instructions.Contains("SUB r2, r0, 0x0001"));
+        TestAssertions.True(instructions.Contains("SUB r2, r0, 0x0003"));
     }
 
     private static void EmitsSetMembership()

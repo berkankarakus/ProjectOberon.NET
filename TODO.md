@@ -38,6 +38,7 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Fold pure integer constant expression trees before code generation.
 - [x] Specialize non-zero constant `FOR` steps and direct increments.
 - [x] Fuse REAL comparison conditions directly into floating-point branches.
+- [x] Lower small `CASE` labels as immediate selector differences.
 - [ ] Measure whether further comparison/branch fusion provides a meaningful gain before introducing a larger control-flow rewrite.
 
 ## Integration

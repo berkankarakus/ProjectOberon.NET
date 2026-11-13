@@ -229,6 +229,16 @@ public sealed class OberonCompilerControlFlowEmitter
 
     private void EmitCaseValueDifference(long value)
     {
+        if (value is >= -0x8000 and <= 0xffff)
+        {
+            _generator.EmitImmediate(
+                AluOperation.Sub,
+                2,
+                0,
+                checked((int)value));
+            return;
+        }
+
         _generator.EmitMoveImmediate(1, checked((int)value));
         _generator.EmitRegister(AluOperation.Sub, 2, 0, 1);
     }
