@@ -150,10 +150,13 @@ public sealed class OberonCompilerAssignmentEmitter
             _generator.EmitStore(0, 2, offset, byteValue: true);
         }
 
-        for (var offset = copied; offset < targetLength; offset++)
+        if (copied < targetLength)
         {
             _generator.EmitMoveImmediate(0, 0);
-            _generator.EmitStore(0, 2, offset, byteValue: true);
+            for (var offset = copied; offset < targetLength; offset++)
+            {
+                _generator.EmitStore(0, 2, offset, byteValue: true);
+            }
         }
     }
 

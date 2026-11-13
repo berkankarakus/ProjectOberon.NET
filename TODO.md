@@ -40,6 +40,7 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Fuse REAL comparison conditions directly into floating-point branches.
 - [x] Lower small `CASE` labels as immediate selector differences.
 - [x] Scale power-of-two array indexes with shifts instead of multiply sequences.
+- [x] Hoist repeated zero loads when padding string literals.
 - [ ] Measure whether further comparison/branch fusion provides a meaningful gain before introducing a larger control-flow rewrite.
 
 ## Integration

@@ -15,6 +15,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsMultipleAggregateParameterAddresses();
         EmitsPointerParameterCall();
         EmitsStringDataAndCharCopy();
+        EmitsStringPaddingWithOneZeroLoad();
         DeduplicatesRepeatedStringData();
         EmitsSameModuleDeterministically();
         EmitsOpenArrayAndScalarParameterCall();
@@ -568,6 +569,19 @@ internal static class OberonCompilerModuleEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Contains("ADD r1, r13, 0x0008"));
         TestAssertions.True(instructions.Contains("STR.B r0, [r2, 5]"));
+    }
+
+    private static void EmitsStringPaddingWithOneZeroLoad()
+    {
+        const string source = "MODULE Strings; VAR text: ARRAY 8 OF CHAR; BEGIN text := \"hello\"; END Strings.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal(1, instructions.Count(instruction => instruction == "MOV r0, 0x0000"));
+        TestAssertions.Equal(8, instructions.Count(instruction => instruction.StartsWith("STR.B ")));
     }
 
     private static void EmitsSameModuleDeterministically()
