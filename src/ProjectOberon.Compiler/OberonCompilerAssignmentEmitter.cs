@@ -70,6 +70,13 @@ public sealed class OberonCompilerAssignmentEmitter
         if (target.Class is not (OberonCompilerObjectClass.Variable or OberonCompilerObjectClass.Parameter))
             throw new InvalidOperationException($"'{name.Name}' is not a variable");
 
+        if (target.Level == 0)
+        {
+            _addresses.EmitAddress(name, 1);
+            _generator.EmitStore(0, 1, 0, OberonCompilerTypeRules.IsByteSized(target.Type));
+            return;
+        }
+
         var offset = checked((int)target.Value);
         if (target.Class == OberonCompilerObjectClass.Parameter && !target.ReadOnly)
         {
