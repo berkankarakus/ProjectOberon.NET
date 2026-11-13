@@ -19,6 +19,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsCaseRange();
         EmitsConstantControlFlowWithoutBranches();
         BranchesDirectlyOnIntegerComparisons();
+        BranchesDirectlyOnRealComparisons();
         BranchesDirectlyOnSetMembership();
         EmitsSetMembership();
         EmitsSetLiteralAndOperations();
@@ -192,6 +193,20 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
         TestAssertions.True(instructions.Any(instruction => instruction == "AND r0, r0, r1"));
         TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
+    }
+
+    private static void BranchesDirectlyOnRealComparisons()
+    {
+        const string source = "MODULE RealBranch; VAR value: REAL; result: INTEGER; BEGIN IF value < 1.5 THEN result := 1 END; END RealBranch.";
+        var parseResult = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(parseResult.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction == "FSB r0, r0, r1"));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNMI ")));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r0, 0x0000"));
     }
 
     private static void EmitsRealComparisons()

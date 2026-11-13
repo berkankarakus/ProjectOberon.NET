@@ -211,6 +211,11 @@ public sealed class OberonCompilerControlFlowEmitter
             return;
         }
 
+        if (TryEmitRealComparisonBranch(condition, falseLabel))
+        {
+            return;
+        }
+
         if (TryEmitIntegerComparisonBranch(condition, falseLabel))
         {
             return;
@@ -314,6 +319,57 @@ public sealed class OberonCompilerControlFlowEmitter
         return true;
     }
 
+    private bool TryEmitRealComparisonBranch(
+        OberonCompilerExpression expression,
+        OberonCompilerLabel falseLabel)
+    {
+        if (expression is not OberonCompilerBinaryExpression comparison
+            || !IsReal(comparison.Left)
+            || !IsReal(comparison.Right)
+            || comparison.Operator is not (
+                OberonCompilerTokenKind.Equal or
+                OberonCompilerTokenKind.NotEqual or
+                OberonCompilerTokenKind.Less or
+                OberonCompilerTokenKind.LessOrEqual or
+                OberonCompilerTokenKind.Greater or
+                OberonCompilerTokenKind.GreaterOrEqual))
+        {
+            return false;
+        }
+
+        _emitExpression(comparison.Left, 0);
+        _emitExpression(comparison.Right, 1);
+        _generator.EmitRegister(AluOperation.Fsb, 0, 0, 1);
+
+        switch (comparison.Operator)
+        {
+            case OberonCompilerTokenKind.Equal:
+                _generator.EmitBranch(falseLabel, ConditionCode.Eq, link: false, invert: true);
+                break;
+            case OberonCompilerTokenKind.NotEqual:
+                _generator.EmitBranch(falseLabel, ConditionCode.Eq);
+                break;
+            case OberonCompilerTokenKind.Less:
+                _generator.EmitBranch(falseLabel, ConditionCode.Mi, link: false, invert: true);
+                break;
+            case OberonCompilerTokenKind.LessOrEqual:
+                var negative = new OberonCompilerLabel();
+                _generator.EmitBranch(negative, ConditionCode.Mi);
+                _generator.EmitBranch(falseLabel, ConditionCode.Eq, link: false, invert: true);
+                _generator.Bind(negative);
+                break;
+            case OberonCompilerTokenKind.Greater:
+                _generator.EmitBranch(falseLabel, ConditionCode.Mi);
+                _generator.EmitBranch(falseLabel, ConditionCode.Eq);
+                break;
+            case OberonCompilerTokenKind.GreaterOrEqual:
+                _generator.EmitBranch(falseLabel, ConditionCode.Mi);
+                break;
+        }
+
+        return true;
+    }
+
     private bool TryEmitSetMembershipBranch(
         OberonCompilerExpression expression,
         OberonCompilerLabel falseLabel)
@@ -350,6 +406,9 @@ public sealed class OberonCompilerControlFlowEmitter
             OberonCompilerTypeForm.Byte or
             OberonCompilerTypeForm.Character or
             OberonCompilerTypeForm.Integer;
+
+    private static bool IsReal(OberonCompilerExpression expression) =>
+        OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form == OberonCompilerTypeForm.Real;
 
     private static bool IsSet(OberonCompilerExpression expression) =>
         OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form == OberonCompilerTypeForm.Set;
