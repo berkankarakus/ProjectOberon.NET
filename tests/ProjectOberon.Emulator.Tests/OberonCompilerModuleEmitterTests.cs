@@ -26,6 +26,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsImportedPointerRecordFieldStore();
         EmitsImportedRecordArrayFieldCopy();
         EmitsAggregateArrayElementCopy();
+        EmitsAggregatePointerDereferenceCopy();
     }
 
     private static void EmitsParameterlessProcedureCall()
@@ -428,6 +429,23 @@ internal static class OberonCompilerModuleEmitterTests
         TestAssertions.True(instructions.Contains("STR r0, [r14, 4]"));
         TestAssertions.True(instructions.Contains("LDR r0, [r13, 0]"));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BTL ")));
+    }
+
+    private static void EmitsAggregatePointerDereferenceCopy()
+    {
+        const string source = "MODULE Pointers; TYPE Values = RECORD left, right: INTEGER; END; Ref = POINTER TO Values; VAR value: Ref; source: Values; BEGIN value^ := source; END Pointers.";
+        var module = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerModuleEmitter(generator).Emit(module);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Contains("ADD r1, r13, 0x0004"));
+        TestAssertions.True(instructions.Contains("LDR r2, [r13, 0]"));
+        TestAssertions.True(instructions.Contains("LDR r0, [r1, 0]"));
+        TestAssertions.True(instructions.Contains("STR r0, [r2, 0]"));
+        TestAssertions.True(instructions.Contains("LDR r0, [r1, 4]"));
+        TestAssertions.True(instructions.Contains("STR r0, [r2, 4]"));
     }
 
     private static void EmitsStringDataAndCharCopy()

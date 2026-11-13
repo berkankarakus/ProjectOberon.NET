@@ -157,12 +157,27 @@ public sealed class OberonCompilerAssignmentEmitter
         }
     }
 
-    private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression) => expression switch
+    private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression)
     {
-        OberonCompilerNameExpression name => name.Symbol?.Type,
-        OberonCompilerFieldExpression field => field.Field.Type,
-        OberonCompilerIndexExpression index => index.ElementType,
-        _ => null
-    };
+        switch (expression)
+        {
+            case OberonCompilerLiteralExpression literal:
+                return literal.Type;
+            case OberonCompilerNameExpression name:
+                return name.Symbol?.Type;
+            case OberonCompilerCallExpression call:
+                return call.Procedure.Symbol?.Type?.Base;
+            case OberonCompilerFieldExpression field:
+                return field.Field.Type;
+            case OberonCompilerIndexExpression index:
+                return index.ElementType;
+            case OberonCompilerDereferenceExpression dereference:
+                return dereference.ElementType;
+            case OberonCompilerUnaryExpression unary:
+                return ExpressionType(unary.Operand);
+            default:
+                return null;
+        }
+    }
 
 }
