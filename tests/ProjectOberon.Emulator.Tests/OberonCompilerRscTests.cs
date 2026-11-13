@@ -48,6 +48,7 @@ internal static class OberonCompilerRscTests
         EmitsRecordExtensionTypeFixup();
         EmitsNestedRecordTypeDescriptor();
         EmitsRecordDescriptorAllocationBoundaries();
+        EmitsRecursiveRecordDescriptorsDeterministically();
     }
 
     private static void EmitsMinimalRscModule()
@@ -1282,6 +1283,19 @@ internal static class OberonCompilerRscTests
         var loaded = LoadCompilerModule(definition, "Demo");
         TestAssertions.Equal(32u, loaded.Memory.Read32(loaded.Image.DataAddress));
         TestAssertions.Equal(64u, loaded.Memory.Read32(loaded.Image.DataAddress + 20));
+    }
+
+    private static void EmitsRecursiveRecordDescriptorsDeterministically()
+    {
+        const string source = "MODULE Demo; TYPE Node = RECORD next: POINTER TO Node; END; VAR node: Node; BEGIN END Demo.";
+        var first = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator())
+            .EmitRsc(new OberonCompilerParser(source).ParseModule());
+        var second = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator())
+            .EmitRsc(new OberonCompilerParser(source).ParseModule());
+
+        TestAssertions.True(first.TypeDescriptorPayload.SequenceEqual(second.TypeDescriptorPayload));
+        TestAssertions.True(first.PointerReferences.SequenceEqual(second.PointerReferences));
+        TestAssertions.True(first.Code.SequenceEqual(second.Code));
     }
 
     private static (Memory Memory, Risc5Cpu Cpu, OberonModuleImage Image) LoadCompilerModule(
