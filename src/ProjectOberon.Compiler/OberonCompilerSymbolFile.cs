@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Text;
@@ -217,15 +218,20 @@ public static class OberonCompilerSymbolFileWriter
 
     private sealed class SymbolFileWriter
     {
-        private readonly List<byte> _data = [];
+        private readonly ArrayBufferWriter<byte> _data = new();
 
-        public void WriteByte(int value) => _data.Add(checked((byte)value));
+        public void WriteByte(int value)
+        {
+            var buffer = _data.GetSpan(1);
+            buffer[0] = checked((byte)value);
+            _data.Advance(1);
+        }
 
         public void WriteInt(int value)
         {
-            Span<byte> bytes = stackalloc byte[sizeof(int)];
-            BinaryPrimitives.WriteInt32LittleEndian(bytes, value);
-            _data.AddRange(bytes.ToArray());
+            var buffer = _data.GetSpan(sizeof(int));
+            BinaryPrimitives.WriteInt32LittleEndian(buffer, value);
+            _data.Advance(sizeof(int));
         }
 
         public void WriteString(string value)
@@ -236,9 +242,11 @@ public static class OberonCompilerSymbolFileWriter
                 throw new ArgumentException("SMB strings must contain ASCII characters", nameof(value));
             }
 
-            var bytes = Encoding.ASCII.GetBytes(value);
-            _data.AddRange(bytes);
-            WriteByte(0);
+            var byteCount = Encoding.ASCII.GetByteCount(value);
+            var buffer = _data.GetSpan(byteCount + 1);
+            Encoding.ASCII.GetBytes(value.AsSpan(), buffer);
+            buffer[byteCount] = 0;
+            _data.Advance(byteCount + 1);
         }
 
         public void WriteNum(int value)
@@ -253,9 +261,15 @@ public static class OberonCompilerSymbolFileWriter
 
         public void Align4()
         {
-            while (_data.Count % sizeof(int) != 0) WriteByte(0);
+            while (_data.WrittenCount % sizeof(int) != 0)
+            {
+                WriteByte(0);
+            }
         }
 
-        public byte[] ToArray() => _data.ToArray();
+        public byte[] ToArray()
+        {
+            return _data.WrittenSpan.ToArray();
+        }
     }
 }
