@@ -27,6 +27,7 @@ internal static class OberonCompilerModuleEmitterTests
         EmitsImportedArrayRecordFieldCopy();
         EmitsImportedPointerRecordFieldStore();
         EmitsImportedRecordArrayFieldCopy();
+        EmitsImportedAggregateParameterCall();
         EmitsAggregateArrayElementCopy();
         EmitsAggregatePointerDereferenceCopy();
     }
@@ -380,6 +381,51 @@ internal static class OberonCompilerModuleEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("LDR r0")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("STR r0")));
+    }
+
+    private static void EmitsImportedAggregateParameterCall()
+    {
+        var symbols = new OberonSymbolModule(
+            "IO",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Use", 1, 7)
+            {
+                IsProcedure = true,
+                ParameterCount = 1,
+                ParameterTypeForms = [(int)OberonCompilerTypeForm.Record],
+                ParameterBaseTypeSizes = [8],
+                ParameterRecordFields =
+                [
+                    [
+                        new OberonSymbolField(
+                            "left",
+                            0,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null),
+                        new OberonSymbolField(
+                            "right",
+                            4,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ]
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Records; IMPORT IO; TYPE Pair = RECORD left, right: INTEGER; END; VAR pair: Pair; BEGIN IO.Use(pair); END Records.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["IO"] = symbols })
+            .ParseModule();
+
+        var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(1, module.Imports.Count);
+        TestAssertions.True(module.FixupProgram > 0);
     }
 
     private static void EmitsAggregateArrayElementCopy()
