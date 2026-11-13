@@ -48,6 +48,7 @@ public sealed class OberonCompilerType
     public int Size { get; internal set; }
     public OberonCompilerType? Base { get; internal set; }
     public OberonCompilerObject? TypeObject { get; internal set; }
+    internal bool IsImported { get; set; }
     public IReadOnlyList<OberonCompilerObject> Fields => _fields;
     public IReadOnlyList<OberonCompilerObject> Parameters => _parameters;
 
@@ -506,6 +507,7 @@ public sealed class OberonCompilerSymbols
         }
 
         var recordType = CreateRecord(baseType, (baseType?.ParameterCount ?? -1) + 1);
+        recordType.IsImported = true;
         recordType.Size = recordSize;
         foreach (var field in fields ?? [])
         {
@@ -596,7 +598,9 @@ public sealed class OberonCompilerSymbols
         var size = typeSize ?? (arrayLength < 0
             ? 8
             : checked(elementType.Size * arrayLength));
-        return CreateArray(elementType, arrayLength, size);
+        var arrayType = CreateArray(elementType, arrayLength, size);
+        arrayType.IsImported = true;
+        return arrayType;
     }
 
     private OberonCompilerType? CreateImportedPointerType(
@@ -615,7 +619,9 @@ public sealed class OberonCompilerSymbols
             return null;
         }
 
-        return CreatePointer(recordType);
+        var pointerType = CreatePointer(recordType);
+        pointerType.IsImported = true;
+        return pointerType;
     }
 
     private OberonCompilerObject DeclareImportedParameter(

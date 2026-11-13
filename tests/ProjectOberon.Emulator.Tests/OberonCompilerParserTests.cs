@@ -17,6 +17,7 @@ internal static class OberonCompilerParserTests
         ParsesSupportedLocalTypeTest();
         ParsesRecordExtensionTypeTest();
         ParsesRecursivePointerFieldType();
+        RejectsImportedTypeTestWithoutLocalDescriptor();
         ReportsInvalidTypeTestWithoutDuplicateDiagnostic();
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
@@ -417,6 +418,38 @@ internal static class OberonCompilerParserTests
         TestAssertions.True(result.Succeeded);
         var nodeType = result.ModuleScope!.Objects.Single(obj => obj.Name == "Node").Type!;
         TestAssertions.True(ReferenceEquals(nodeType, nodeType.Fields[0].Type!.Base));
+    }
+
+    private static void RejectsImportedTypeTestWithoutLocalDescriptor()
+    {
+        var symbols = new OberonSymbolModule(
+            "Types",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Node", 5, 0)
+            {
+                TypeForm = (int)OberonCompilerTypeForm.Record,
+                TypeSize = 4,
+                RecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE TypesTest; IMPORT Types; TYPE Ref = POINTER TO Types.Node; VAR node: Ref; BEGIN IF node IS Types.Node THEN END; END TypesTest.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = symbols })
+            .ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("local record type descriptor", StringComparison.Ordinal)));
     }
 
     private static void ImportsExternalProcedures()

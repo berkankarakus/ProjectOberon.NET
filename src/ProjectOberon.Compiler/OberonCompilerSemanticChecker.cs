@@ -257,6 +257,11 @@ public sealed class OberonCompilerSemanticChecker
                 AddDiagnostic("IS requires related pointer and record types");
             }
 
+            if (leftType.Base?.IsImported == true || rightType.IsImported)
+            {
+                AddDiagnostic("IS requires a local record type descriptor");
+            }
+
             return _booleanType;
         }
 
