@@ -187,6 +187,11 @@ public sealed class OberonCompilerAddressEmitter
         if (_emitExpression is null || _registers is null)
             throw new InvalidOperationException("array index lowering requires an expression emitter");
 
+        if (TryEmitConstantIndexAddress(index, destination))
+        {
+            return;
+        }
+
         using var protectedDestination = _registers.ReserveRangeScope(destination, 1);
         var indexRegister = _registers.AcquireTemporary(destination);
         try
@@ -204,6 +209,43 @@ public sealed class OberonCompilerAddressEmitter
         {
             _registers.ReleaseTemporary(indexRegister);
         }
+    }
+
+    private bool TryEmitConstantIndexAddress(
+        OberonCompilerIndexExpression index,
+        int destination)
+    {
+        if (index.Index is not OberonCompilerIntegerLiteralExpression literal)
+        {
+            return false;
+        }
+
+        long offset;
+        try
+        {
+            offset = checked(literal.Value * index.ElementType.Size);
+        }
+        catch (OverflowException)
+        {
+            return false;
+        }
+
+        if (offset is < -0x8000 or > 0xffff)
+        {
+            return false;
+        }
+
+        EmitAddress(index.Receiver, destination);
+        if (offset != 0)
+        {
+            _generator.EmitImmediate(
+                AluOperation.Add,
+                destination,
+                destination,
+                checked((int)offset));
+        }
+
+        return true;
     }
 
     private void EmitElementOffset(int indexRegister, int elementSize)

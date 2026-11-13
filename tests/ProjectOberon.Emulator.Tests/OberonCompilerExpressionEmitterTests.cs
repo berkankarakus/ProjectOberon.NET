@@ -479,18 +479,15 @@ internal static class OberonCompilerExpressionEmitterTests
         new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
 
         TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
-        TestAssertions.Equal("MOV r0, 0x0000", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("LSL r0, r0, 0x0003", Risc5Disassembler.Format(generator.Code[2]));
-        TestAssertions.Equal("ADD r1, r1, r0", Risc5Disassembler.Format(generator.Code[3]));
-        TestAssertions.Equal("ADD r2, r13, 0x0010", Risc5Disassembler.Format(generator.Code[4]));
-        TestAssertions.Equal("LDR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[5]));
-        TestAssertions.Equal("STR r0, [r2, 0]", Risc5Disassembler.Format(generator.Code[6]));
-        TestAssertions.Equal("LDR r0, [r1, 4]", Risc5Disassembler.Format(generator.Code[7]));
-        TestAssertions.Equal("STR r0, [r2, 4]", Risc5Disassembler.Format(generator.Code[8]));
-        TestAssertions.Equal("LDR r0, [r1, 8]", Risc5Disassembler.Format(generator.Code[9]));
-        TestAssertions.Equal("STR r0, [r2, 8]", Risc5Disassembler.Format(generator.Code[10]));
-        TestAssertions.Equal("LDR r0, [r1, 12]", Risc5Disassembler.Format(generator.Code[11]));
-        TestAssertions.Equal("STR r0, [r2, 12]", Risc5Disassembler.Format(generator.Code[12]));
+        TestAssertions.Equal("ADD r2, r13, 0x0010", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("LDR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[2]));
+        TestAssertions.Equal("STR r0, [r2, 0]", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("LDR r0, [r1, 4]", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("STR r0, [r2, 4]", Risc5Disassembler.Format(generator.Code[5]));
+        TestAssertions.Equal("LDR r0, [r1, 8]", Risc5Disassembler.Format(generator.Code[6]));
+        TestAssertions.Equal("STR r0, [r2, 8]", Risc5Disassembler.Format(generator.Code[7]));
+        TestAssertions.Equal("LDR r0, [r1, 12]", Risc5Disassembler.Format(generator.Code[8]));
+        TestAssertions.Equal("STR r0, [r2, 12]", Risc5Disassembler.Format(generator.Code[9]));
     }
 
     private static void EmitsAggregatePointerDereferenceAddress()
