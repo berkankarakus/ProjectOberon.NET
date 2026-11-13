@@ -166,7 +166,7 @@ public static class OberonSymbolModuleReader
                 var builtinTypeReference = -reference;
                 if (builtinTypeReference <= MaximumBuiltinTypeReference)
                 {
-                    return CreateBuiltinType(builtinTypeReference);
+                    return CreateTypePlaceholder(builtinTypeReference);
                 }
 
                 throw new InvalidDataException(
@@ -178,6 +178,11 @@ public static class OberonSymbolModuleReader
 
         var form = reader.ReadSignedByte();
         var isProcedure = form == 10;
+        if (reference > 0)
+        {
+            typeReferences[reference] = CreateTypePlaceholder(form);
+        }
+
         var parameterCount = 0;
         IReadOnlyList<bool>? parameterReadOnly = null;
         IReadOnlyList<SymbolParameterInfo>? parameters = null;
@@ -310,7 +315,7 @@ public static class OberonSymbolModuleReader
         return typeInfo;
     }
 
-    private static SymbolTypeInfo CreateBuiltinType(int typeForm)
+    private static SymbolTypeInfo CreateTypePlaceholder(int typeForm)
     {
         return new SymbolTypeInfo(
             false,

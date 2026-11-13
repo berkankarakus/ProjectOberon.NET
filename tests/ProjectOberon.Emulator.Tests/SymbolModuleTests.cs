@@ -3,6 +3,7 @@ internal static partial class SymbolModuleTests
     public static void Run()
     {
         ParsesBuiltinTypeReference();
+        ParsesRecursivePointerTypeReference();
         ParsesExportedSymbol();
         ParsesTypeFixupsAndReexport();
         ParsesRecordAndProcedureTypes();

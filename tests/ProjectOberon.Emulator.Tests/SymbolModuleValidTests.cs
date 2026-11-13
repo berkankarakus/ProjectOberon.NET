@@ -19,6 +19,37 @@ internal static partial class SymbolModuleTests
         TestAssertions.Equal(3, module.Exports[0].Value);
     }
 
+    private static void ParsesRecursivePointerTypeReference()
+    {
+        var data = BuildSmb(writer =>
+        {
+            writer.AddByte(5);
+            writer.AddString("Node");
+            writer.AddByte(14);
+            writer.AddByte(7);
+            writer.AddByte(15);
+            writer.AddByte(13);
+            writer.AddByte(0xf7);
+            writer.AddByte(0);
+            writer.AddByte(0);
+            writer.AddByte(4);
+            writer.AddByte(4);
+            writer.AddString("next");
+            writer.AddByte(0xf2);
+            writer.AddByte(0);
+            writer.AddByte(0);
+            writer.AddByte(0);
+            writer.AddByte(0);
+            writer.AddByte(0);
+            writer.AddByte(0);
+        });
+
+        var module = OberonSymbolModuleReader.Parse(data);
+
+        TestAssertions.Equal(7, module.Exports[0].TypeForm);
+        TestAssertions.Equal(13, module.Exports[0].BaseTypeForm);
+    }
+
     private static void ParsesExportedSymbol()
     {
         var data = BuildSmb(writer =>
