@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Text;
 
@@ -167,31 +168,45 @@ public static class RscModuleWriter
 
     private sealed class BufferWriter
     {
-        private readonly List<byte> _data = [];
+        private readonly ArrayBufferWriter<byte> _data = new();
 
-        public void WriteByte(byte value) => _data.Add(value);
+        public void WriteByte(byte value)
+        {
+            var buffer = _data.GetSpan(1);
+            buffer[0] = value;
+            _data.Advance(1);
+        }
 
         public void WriteInt32(int value)
         {
-            Span<byte> bytes = stackalloc byte[sizeof(int)];
-            BinaryPrimitives.WriteInt32LittleEndian(bytes, value);
-            _data.AddRange(bytes.ToArray());
+            var buffer = _data.GetSpan(sizeof(int));
+            BinaryPrimitives.WriteInt32LittleEndian(buffer, value);
+            _data.Advance(sizeof(int));
         }
 
         public void WriteString(string value)
         {
-            _data.AddRange(Encoding.ASCII.GetBytes(value));
-            WriteByte(0);
+            var byteCount = Encoding.ASCII.GetByteCount(value);
+            var buffer = _data.GetSpan(byteCount + 1);
+            Encoding.ASCII.GetBytes(value.AsSpan(), buffer);
+            buffer[byteCount] = 0;
+            _data.Advance(byteCount + 1);
         }
 
         public void WriteBytes(IReadOnlyList<byte> bytes)
         {
+            var buffer = _data.GetSpan(bytes.Count);
             for (var index = 0; index < bytes.Count; index++)
             {
-                _data.Add(bytes[index]);
+                buffer[index] = bytes[index];
             }
+
+            _data.Advance(bytes.Count);
         }
 
-        public byte[] ToArray() => _data.ToArray();
+        public byte[] ToArray()
+        {
+            return _data.WrittenSpan.ToArray();
+        }
     }
 }
