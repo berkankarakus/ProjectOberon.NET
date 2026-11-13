@@ -119,7 +119,11 @@ internal static class OberonCompilerTypeDescriptorEmitter
             words.Add(-1);
         }
 
-        EmitPointerOffsets(record, 0, words);
+        OberonCompilerTypeWalker.VisitPointerLocations(
+            record,
+            0,
+            offset => words.Add(checked((int)offset))
+        );
         words.Add(-1);
     }
 
@@ -163,49 +167,6 @@ internal static class OberonCompilerTypeDescriptorEmitter
 
     }
 
-    private static void EmitPointerOffsets(
-        OberonCompilerType type,
-        int offset,
-        List<int> words)
-    {
-        switch (type.Form)
-        {
-            case OberonCompilerTypeForm.Pointer:
-            case OberonCompilerTypeForm.Nil:
-                words.Add(offset);
-                return;
-            case OberonCompilerTypeForm.Record:
-                if (type.Base is not null)
-                {
-                    EmitPointerOffsets(type.Base, offset, words);
-                }
-
-                foreach (var field in type.Fields)
-                {
-                    EmitPointerOffsets(field.Type!, checked(offset + (int)field.Value), words);
-                }
-
-                return;
-            case OberonCompilerTypeForm.Array:
-                if (type.Base is null || type.Length < 0)
-                {
-                    return;
-                }
-
-                for (var index = 0; index < type.Length; index++)
-                {
-                    EmitPointerOffsets(
-                        type.Base,
-                        checked(offset + index * type.Base.Size),
-                        words);
-                }
-
-                return;
-            default:
-                return;
-        }
-    }
-
     private static IReadOnlyList<int> CollectPointerReferences(
         OberonCompilerModuleParseResult module,
         int variableDataOffset)
@@ -218,59 +179,14 @@ internal static class OberonCompilerTypeDescriptorEmitter
                 continue;
             }
 
-            CollectPointerReferences(
+            OberonCompilerTypeWalker.VisitPointerLocations(
                 symbol.Type,
-                checked(variableDataOffset + (int)symbol.Value),
-                references);
+                checked(variableDataOffset + symbol.Value),
+                offset => references.Add(checked((int)offset))
+            );
         }
 
         return references;
-    }
-
-    private static void CollectPointerReferences(
-        OberonCompilerType type,
-        int offset,
-        List<int> references)
-    {
-        switch (type.Form)
-        {
-            case OberonCompilerTypeForm.Pointer:
-            case OberonCompilerTypeForm.Nil:
-                references.Add(offset);
-                return;
-            case OberonCompilerTypeForm.Record:
-                if (type.Base is not null)
-                {
-                    CollectPointerReferences(type.Base, offset, references);
-                }
-
-                foreach (var field in type.Fields)
-                {
-                    CollectPointerReferences(
-                        field.Type!,
-                        checked(offset + (int)field.Value),
-                        references);
-                }
-
-                return;
-            case OberonCompilerTypeForm.Array:
-                if (type.Base is null || type.Length < 0)
-                {
-                    return;
-                }
-
-                for (var index = 0; index < type.Length; index++)
-                {
-                    CollectPointerReferences(
-                        type.Base,
-                        checked(offset + index * type.Base.Size),
-                        references);
-                }
-
-                return;
-            default:
-                return;
-        }
     }
 
     private static int GetAllocationSize(int recordSize)

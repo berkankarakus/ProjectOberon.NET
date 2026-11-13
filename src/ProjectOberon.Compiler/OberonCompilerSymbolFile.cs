@@ -169,32 +169,16 @@ public static class OberonCompilerSymbolFileWriter
 
         private void WriteHiddenPointers(OberonCompilerType? type, long offset)
         {
-            if (type is null)
-            {
-                return;
-            }
-            if (type.Form is OberonCompilerTypeForm.Pointer or OberonCompilerTypeForm.Nil)
-            {
-                _writer.WriteByte((byte)OberonCompilerObjectClass.Field);
-                _writer.WriteString(string.Empty);
-                _writer.WriteNum(checked((int)offset));
-                return;
-            }
-
-            if (type.Form == OberonCompilerTypeForm.Record)
-            {
-                foreach (var field in type.Fields)
+            OberonCompilerTypeWalker.VisitPointerLocations(
+                type,
+                offset,
+                pointerOffset =>
                 {
-                    WriteHiddenPointers(field.Type, offset + field.Value);
+                    _writer.WriteByte((byte)OberonCompilerObjectClass.Field);
+                    _writer.WriteString(string.Empty);
+                    _writer.WriteNum(checked((int)pointerOffset));
                 }
-            }
-            else if (type.Form == OberonCompilerTypeForm.Array && type.Length >= 0 && type.Base is not null)
-            {
-                for (var index = 0; index < type.Length; index++)
-                {
-                    WriteHiddenPointers(type.Base, offset + (long)type.Base.Size * index);
-                }
-            }
+            );
         }
 
         private void WriteProcedure(OberonCompilerType type)
