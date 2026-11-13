@@ -17,4 +17,26 @@ internal static class OberonCompilerTypeRules
 
     public static bool IsOpenArray(OberonCompilerType? type) =>
         type?.Form == OberonCompilerTypeForm.Array && type.Length < 0;
+
+    public static bool IsBaseType(
+        OberonCompilerType? type,
+        OberonCompilerType baseType)
+    {
+        for (var current = type; current is not null; current = current.Base)
+        {
+            if (current == baseType)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static bool AreRelatedRecordTypes(
+        OberonCompilerType left,
+        OberonCompilerType right)
+    {
+        return IsBaseType(left, right) || IsBaseType(right, left);
+    }
 }

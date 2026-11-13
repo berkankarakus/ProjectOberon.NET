@@ -251,7 +251,8 @@ public sealed class OberonCompilerSemanticChecker
                 return _booleanType;
             }
 
-            if (leftType.Base is null || !AreRelatedRecordTypes(leftType.Base, rightType))
+            if (leftType.Base is null
+                || !OberonCompilerTypeRules.AreRelatedRecordTypes(leftType.Base, rightType))
             {
                 AddDiagnostic("IS requires related pointer and record types");
             }
@@ -481,29 +482,6 @@ public sealed class OberonCompilerSemanticChecker
         OberonCompilerTokenKind.Equal or OberonCompilerTokenKind.NotEqual
         or OberonCompilerTokenKind.Less or OberonCompilerTokenKind.LessOrEqual
         or OberonCompilerTokenKind.Greater or OberonCompilerTokenKind.GreaterOrEqual;
-
-    private static bool AreRelatedRecordTypes(
-        OberonCompilerType left,
-        OberonCompilerType right)
-    {
-        for (var type = left; type is not null; type = type.Base)
-        {
-            if (type == right)
-            {
-                return true;
-            }
-        }
-
-        for (var type = right; type is not null; type = type.Base)
-        {
-            if (type == left)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     private static string TypeName(OberonCompilerType type) => type.Form.ToString().ToUpperInvariant();
 

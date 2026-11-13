@@ -303,7 +303,7 @@ public sealed class OberonCompilerExpressionEmitter
 
         var leftType = ExpressionType(typeTest.Left);
         if (leftType?.Form == OberonCompilerTypeForm.Pointer
-            && IsBaseType(leftType.Base, testedType))
+            && OberonCompilerTypeRules.IsBaseType(leftType.Base, testedType))
         {
             _generator.EmitMoveImmediate(destination, 1);
             return destination;
@@ -450,21 +450,6 @@ public sealed class OberonCompilerExpressionEmitter
 
     private static bool IsSet(OberonCompilerBinaryExpression expression) =>
         ExpressionType(expression.Left)?.Form == OberonCompilerTypeForm.Set;
-
-    private static bool IsBaseType(
-        OberonCompilerType? type,
-        OberonCompilerType baseType)
-    {
-        for (var current = type; current is not null; current = current.Base)
-        {
-            if (current == baseType)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     private static OberonCompilerType? ExpressionType(OberonCompilerExpression expression) => expression switch
     {
