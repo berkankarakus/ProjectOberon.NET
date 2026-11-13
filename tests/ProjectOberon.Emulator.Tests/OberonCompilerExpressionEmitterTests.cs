@@ -24,7 +24,7 @@ internal static class OberonCompilerExpressionEmitterTests
         AllocatesScratchRegistersWithoutUsingDestinationPlusOne();
         EmitsFieldAddressThroughDedicatedEmitter();
         EmitsArrayIndexLoadAndStore();
-        ReportsAggregateFieldLoadsExplicitly();
+        EmitsAggregateFieldAddress();
         ReportsAggregateArrayLoadsExplicitly();
         ReportsAggregatePointerLoadsExplicitly();
         EmitsThroughInstructionWriterAbstraction();
@@ -362,7 +362,7 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[13]));
     }
 
-    private static void ReportsAggregateFieldLoadsExplicitly()
+    private static void EmitsAggregateFieldAddress()
     {
         const string source = "MODULE Records; TYPE Holder = RECORD values: ARRAY 2 OF INTEGER; END; VAR holder: Holder; BEGIN END Records.";
         var result = new OberonCompilerParser(source).ParseModule();
@@ -371,9 +371,11 @@ internal static class OberonCompilerExpressionEmitterTests
             new OberonCompilerNameExpression("holder", holder),
             holder.Type!.Fields[0]);
 
-        var error = TestAssertions.Throws<NotSupportedException>(() =>
-            new OberonCompilerExpressionEmitter(new OberonCompilerCodeGenerator()).EmitExpression(field));
-        TestAssertions.True(error.Message.Contains("aggregate field loads", StringComparison.Ordinal));
+        var generator = new OberonCompilerCodeGenerator();
+        new OberonCompilerExpressionEmitter(generator).EmitExpression(field);
+
+        TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("ADD r0, r0, 0x0000", Risc5Disassembler.Format(generator.Code[1]));
     }
 
     private static void ReportsAggregateArrayLoadsExplicitly()

@@ -81,6 +81,12 @@ public sealed class OberonCompilerExpressionEmitter
 
     private int EmitField(OberonCompilerFieldExpression field, int destination)
     {
+        if (OberonCompilerTypeRules.IsAggregate(field.Field.Type))
+        {
+            _addresses.EmitAddress(field, destination);
+            return destination;
+        }
+
         return EmitScalarAddressLoad(
             field,
             field.Field.Type,
