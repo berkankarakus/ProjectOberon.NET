@@ -171,7 +171,7 @@ internal static class OberonCompilerRscTests
         var error = TestAssertions.Throws<NotSupportedException>(() =>
             new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
 
-        TestAssertions.True(error.Message.Contains("at most three record extensions", StringComparison.Ordinal));
+        TestAssertions.True(error.Message.Contains("at most 3 record extensions", StringComparison.Ordinal));
     }
 
     private static void ExternalEmissionDoesNotAffectLocalEmission()

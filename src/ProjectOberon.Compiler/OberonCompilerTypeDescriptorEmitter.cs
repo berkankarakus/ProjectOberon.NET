@@ -10,6 +10,9 @@ internal sealed record OberonCompilerTypeDescriptorResult(
 
 internal static class OberonCompilerTypeDescriptorEmitter
 {
+    private const int MaximumRecordExtensionCount = 3;
+    private const int MaximumTypeFixupDistance = 0xfff;
+
     public static OberonCompilerTypeDescriptorResult Emit(OberonCompilerModuleParseResult module)
     {
         ArgumentNullException.ThrowIfNull(module);
@@ -98,10 +101,10 @@ internal static class OberonCompilerTypeDescriptorEmitter
         var descriptorStart = words.Count;
         words.Add(GetAllocationSize(record.Size));
 
-        if (record.ParameterCount > 3)
+        if (record.ParameterCount > MaximumRecordExtensionCount)
         {
             throw new NotSupportedException(
-                $"RSC type descriptors support at most three record extensions: {record.ParameterCount}");
+                $"RSC type descriptors support at most {MaximumRecordExtensionCount} record extensions: {record.ParameterCount}");
         }
 
         EmitBaseDescriptorEntries(
@@ -143,12 +146,12 @@ internal static class OberonCompilerTypeDescriptorEmitter
 
             var currentWord = words.Count;
             var previousDistance = currentWord - fixupTypes;
-            if (previousDistance is < 1 or > 0xfff)
+            if (previousDistance is < 1 or > MaximumTypeFixupDistance)
             {
                 throw new InvalidOperationException("RSC type fixup chain distance is out of range");
             }
 
-            if (baseOffset > 0xfff)
+            if (baseOffset > MaximumTypeFixupDistance)
             {
                 throw new NotSupportedException("RSC type descriptor offsets exceed the fixup range");
             }
