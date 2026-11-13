@@ -10,6 +10,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalProcedureFixup();
         EmitsExternalModuleDeterministically();
         EmitsTypeDescriptorsDeterministically();
+        ReportsTypeDescriptorExtensionLimit();
         ExternalEmissionDoesNotAffectLocalEmission();
         ExecutesExternalProcedureCall();
         ExecutesExternalVarParameterCall();
@@ -158,6 +159,17 @@ internal static class OberonCompilerRscTests
         TestAssertions.True(first.TypeDescriptorPayload.SequenceEqual(second.TypeDescriptorPayload));
         TestAssertions.True(first.PointerReferences.SequenceEqual(second.PointerReferences));
         TestAssertions.Equal(first.FixupTypes, second.FixupTypes);
+    }
+
+    private static void ReportsTypeDescriptorExtensionLimit()
+    {
+        const string source = "MODULE Types; TYPE A = RECORD value: INTEGER; END; B = RECORD (A) value: INTEGER; END; C = RECORD (B) value: INTEGER; END; D = RECORD (C) value: INTEGER; END; E = RECORD (D) value: INTEGER; END; VAR item: E; BEGIN END Types.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        var error = TestAssertions.Throws<NotSupportedException>(() =>
+            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
+
+        TestAssertions.True(error.Message.Contains("at most three record extensions", StringComparison.Ordinal));
     }
 
     private static void ExternalEmissionDoesNotAffectLocalEmission()
