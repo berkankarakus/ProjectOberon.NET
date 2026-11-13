@@ -36,6 +36,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsThroughInstructionWriterAbstraction();
         EmitsLargeIntegerLiteralsThroughInstructionWriter();
         FoldsIntegerConstantExpressions();
+        FoldsUnaryIntegerConstantExpressions();
         EliminatesIntegerIdentityOperations();
     }
 
@@ -137,6 +138,21 @@ internal static class OberonCompilerExpressionEmitterTests
 
         TestAssertions.Equal("MOV r0, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[1]));
+    }
+
+    private static void FoldsUnaryIntegerConstantExpressions()
+    {
+        const string source = "MODULE Lower; VAR value: INTEGER; BEGIN value := -(2 + 3); END Lower.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal(2, instructions.Length);
+        TestAssertions.True(instructions[0].StartsWith("MOV "));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("SUB ")));
     }
 
     private static void EmitsSetLiteralAndOperations()
