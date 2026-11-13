@@ -9,6 +9,7 @@ internal static class OberonCompilerRscTests
         EmitsImportsAndExportedCommands();
         EmitsExternalProcedureFixup();
         EmitsExternalModuleDeterministically();
+        EmitsTypeDescriptorsDeterministically();
         ExternalEmissionDoesNotAffectLocalEmission();
         ExecutesExternalProcedureCall();
         ExecutesExternalVarParameterCall();
@@ -143,6 +144,20 @@ internal static class OberonCompilerRscTests
         TestAssertions.Equal(first.FixupData, second.FixupData);
         TestAssertions.Equal(first.VariableBytes, second.VariableBytes);
         TestAssertions.Equal(first.BodyOffset, second.BodyOffset);
+    }
+
+    private static void EmitsTypeDescriptorsDeterministically()
+    {
+        const string source = "MODULE Types; TYPE Base = RECORD value: INTEGER; END; Extended = RECORD (Base) flag: BOOLEAN; END; Ref = POINTER TO Extended; VAR first: Ref; second: Extended; BEGIN END Types.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var emitter = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator());
+
+        var first = emitter.EmitRsc(result);
+        var second = emitter.EmitRsc(result);
+
+        TestAssertions.True(first.TypeDescriptorPayload.SequenceEqual(second.TypeDescriptorPayload));
+        TestAssertions.True(first.PointerReferences.SequenceEqual(second.PointerReferences));
+        TestAssertions.Equal(first.FixupTypes, second.FixupTypes);
     }
 
     private static void ExternalEmissionDoesNotAffectLocalEmission()
