@@ -299,10 +299,9 @@ types as well. External scalar, array, pointer and aggregate record
 calls—including `VAR` forms—are lowered into RSC program/data fixups.
 
 The compiler CLI emits RSC type descriptors for local record types, type-fixup
-chains for local record extensions, and pointer root tables for module data.
-Global variables and strings are addressed after the descriptor section. RSC
-descriptor support for imported record bases and imported descriptor-backed
-variable offsets remains a separate compiler milestone.
+chains for local and imported record extensions, and pointer root tables for
+module data. Global variables and strings are addressed after the descriptor
+section, including imported descriptor-backed variable accesses.
 
 The generated RSC currently supports scalar data, whole record/array copies and
 character-array string payloads. The reader and writer reject duplicate import
@@ -315,11 +314,11 @@ names must be ASCII and fit the Oberon field width, and truncated extension
 pages are rejected before their addresses are read. Text/rider codecs reject
 NUL or unrepresentable characters instead of silently replacing data.
 
-Compiler limitations are currently explicit for aggregate field/array-element
-and pointer-dereference loads, imported descriptor-backed variable offsets,
-record-valued function result copying, imported-descriptor `IS` tests and
-recursive SMB type references. These are planned compiler
-milestones rather than silently accepted syntax.
+The remaining compiler boundaries are explicit: RSC supports at most fifteen
+imports and three record-extension levels, and a nested dynamic open-array
+selector must be passed through a named parameter because its runtime length
+is not present in the current ABI. These cases produce deterministic compiler
+or symbol-file diagnostics rather than silently generating incorrect code.
 
 Run the fast validation suite after changing compiler or RSC code:
 
