@@ -18,6 +18,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsCaseStatement();
         EmitsCaseRange();
         EmitsConstantControlFlowWithoutBranches();
+        BranchesDirectlyOnIntegerComparisons();
         EmitsSetMembership();
         EmitsSetLiteralAndOperations();
         EmitsControlFlow();
@@ -90,7 +91,7 @@ internal static class OberonCompilerExpressionEmitterTests
 
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
-        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BLT ")));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNLT ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
     }
 
@@ -167,6 +168,20 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("B")));
         TestAssertions.True(instructions.Any(instruction => instruction == "MOV r0, 0x0001"));
         TestAssertions.True(instructions.Any(instruction => instruction == "ADD r0, r0, 0x0001"));
+    }
+
+    private static void BranchesDirectlyOnIntegerComparisons()
+    {
+        const string source = "MODULE Branch; VAR value, result: INTEGER; BEGIN IF value < 3 THEN result := 1 END; END Branch.";
+        var parseResult = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(parseResult.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNLT ")));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0000"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "SUB r0, r0, r1"));
     }
 
     private static void EmitsRealComparisons()

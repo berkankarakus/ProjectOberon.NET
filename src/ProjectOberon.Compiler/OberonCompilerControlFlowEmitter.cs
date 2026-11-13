@@ -192,6 +192,11 @@ public sealed class OberonCompilerControlFlowEmitter
         OberonCompilerExpression condition,
         OberonCompilerLabel falseLabel)
     {
+        if (TryEmitIntegerComparisonBranch(condition, falseLabel))
+        {
+            return;
+        }
+
         _emitExpression(condition, 0);
         _generator.EmitMoveImmediate(1, 0);
         _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
@@ -246,4 +251,65 @@ public sealed class OberonCompilerControlFlowEmitter
         value = false;
         return false;
     }
+
+    private bool TryEmitIntegerComparisonBranch(
+        OberonCompilerExpression expression,
+        OberonCompilerLabel falseLabel)
+    {
+        if (expression is not OberonCompilerBinaryExpression comparison
+            || !IsInteger(comparison.Left)
+            || !IsInteger(comparison.Right)
+            || comparison.Operator is not (
+                OberonCompilerTokenKind.Equal or
+                OberonCompilerTokenKind.NotEqual or
+                OberonCompilerTokenKind.Less or
+                OberonCompilerTokenKind.LessOrEqual or
+                OberonCompilerTokenKind.Greater or
+                OberonCompilerTokenKind.GreaterOrEqual))
+        {
+            return false;
+        }
+
+        _emitExpression(comparison.Left, 0);
+        if (comparison.Right is OberonCompilerIntegerLiteralExpression literal
+            && literal.Value is >= -0x8000 and <= 0xffff)
+        {
+            _generator.EmitImmediate(
+                AluOperation.Sub,
+                0,
+                0,
+                checked((int)literal.Value));
+        }
+        else
+        {
+            _emitExpression(comparison.Right, 1);
+            _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
+        }
+
+        var (condition, invert) = ComparisonBranch(comparison.Operator);
+        _generator.EmitBranch(
+            falseLabel,
+            condition,
+            link: false,
+            invert: !invert);
+        return true;
+    }
+
+    private static (ConditionCode Condition, bool Invert) ComparisonBranch(
+        OberonCompilerTokenKind operation) => operation switch
+    {
+        OberonCompilerTokenKind.Equal => (ConditionCode.Eq, false),
+        OberonCompilerTokenKind.NotEqual => (ConditionCode.Eq, true),
+        OberonCompilerTokenKind.Less => (ConditionCode.Lt, false),
+        OberonCompilerTokenKind.LessOrEqual => (ConditionCode.Le, false),
+        OberonCompilerTokenKind.Greater => (ConditionCode.Le, true),
+        OberonCompilerTokenKind.GreaterOrEqual => (ConditionCode.Lt, true),
+        _ => throw new ArgumentOutOfRangeException(nameof(operation))
+    };
+
+    private static bool IsInteger(OberonCompilerExpression expression) =>
+        OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form is
+            OberonCompilerTypeForm.Byte or
+            OberonCompilerTypeForm.Character or
+            OberonCompilerTypeForm.Integer;
 }
