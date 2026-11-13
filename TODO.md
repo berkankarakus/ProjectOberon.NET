@@ -16,7 +16,7 @@ external `RISC-work.img` flow remains a separate integration requirement.
 - [x] [P1] Implement local exact-pointer `IS` lowering with NIL handling.
 - [x] [P1] Extend local `IS` lowering for record extensions and extension-level descriptor lookups.
 - [x] [P1] Diagnose imported `IS` expressions before code emission when no local descriptor is available.
-- [ ] [P1] Extend `IS` lowering for imported descriptors and non-matching runtime tags.
+- [x] [P1] Extend `IS` lowering for imported descriptors and non-matching runtime tags.
 - [x] [P1] Complete imported nested array/record type-reference metadata; record fields, array elements and pointer targets are preserved.
 - [x] [P1] Preserve imported record-valued function result sizes in SMB metadata and compiler symbols.
 - [x] [P1] Complete recursive SMB type reference resolution before importing nested field metadata.

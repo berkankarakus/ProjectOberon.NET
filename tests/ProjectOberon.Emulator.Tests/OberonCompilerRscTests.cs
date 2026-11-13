@@ -50,6 +50,7 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedGlobalAssignmentAfterDescriptor();
         ExecutesExactTypeTestAsTrue();
         EmitsImportedTypeTestDescriptorLookup();
+        ExecutesImportedTypeTestAgainstRuntimeTags();
         EmitsRecordExtensionTypeTestLookup();
         EmitsRecursivePointerFieldRootReference();
         EmitsRecordTypeDescriptor();
@@ -1386,6 +1387,52 @@ internal static class OberonCompilerRscTests
             }]);
     }
 
+    private static OberonSymbolModule CreateRecordHierarchyTypeModule()
+    {
+        var baseFields = new[]
+        {
+            new OberonSymbolField(
+                "value",
+                0,
+                (int)OberonCompilerTypeForm.Integer,
+                4,
+                null,
+                null,
+                null)
+        };
+        return new OberonSymbolModule(
+            "Types",
+            0x4321,
+            1,
+            [
+                new OberonSymbolExport("Node", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Record,
+                    TypeSize = 4,
+                    RecordFields = baseFields
+                },
+                new OberonSymbolExport("Derived", 5, 0)
+                {
+                    TypeForm = (int)OberonCompilerTypeForm.Record,
+                    TypeSize = 8,
+                    BaseTypeForm = (int)OberonCompilerTypeForm.Record,
+                    BaseTypeSize = 4,
+                    BaseRecordFields = baseFields,
+                    RecordFields =
+                    [
+                        new OberonSymbolField(
+                            "extra",
+                            4,
+                            (int)OberonCompilerTypeForm.Integer,
+                            4,
+                            null,
+                            null,
+                            null)
+                    ]
+                }
+            ]);
+    }
+
     private static void EmitsRecordTypeDescriptor()
     {
         const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; VAR node: Node; BEGIN node.value := 42 END Demo.";
@@ -1439,6 +1486,54 @@ internal static class OberonCompilerRscTests
         TestAssertions.True(definition.Code.Count > 0);
     }
 
+    private static void ExecutesImportedTypeTestAgainstRuntimeTags()
+    {
+        var types = CreateRecordHierarchyTypeModule();
+        const string source = "MODULE Demo; IMPORT Types; TYPE Ref = POINTER TO Types.Node; DerivedRef = POINTER TO Types.Derived; VAR node: Ref; result: BOOLEAN; BEGIN result := node IS Types.Derived; END Demo.";
+
+        var matchingResult = RunImportedTypeTest(types, source, descriptorOffset: 20);
+        var unrelatedResult = RunImportedTypeTest(types, source, descriptorOffset: 0);
+
+        TestAssertions.Equal(1u, matchingResult);
+        TestAssertions.Equal(0u, unrelatedResult);
+    }
+
+    private static uint RunImportedTypeTest(
+        OberonSymbolModule types,
+        string source,
+        int descriptorOffset)
+    {
+        var result = new OberonCompilerParser(
+            source,
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = types })
+            .ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        TestAssertions.Equal(40, definition.TypeDescriptorBytes);
+
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == "Demo" ? bytes : null);
+        loader.RegisterExternal(types);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+        runtime.BindExternal(new OberonExternalModuleBinding("Types", 0x5000, 0x6000, [0]));
+
+        var image = runtime.Start("Demo");
+        var variableDataAddress = image.DataAddress + (uint)definition.TypeDescriptorBytes;
+        const uint objectAddress = 0x2000;
+        const uint typeTagAddress = 0x3000;
+        memory.Write32(objectAddress - 8, typeTagAddress);
+        memory.Write32(typeTagAddress + 4, image.DataAddress + (uint)descriptorOffset);
+        memory.Write32(variableDataAddress, objectAddress);
+
+        for (var step = 0; step < 32; step++)
+        {
+            cpu.Step();
+        }
+
+        return memory.Read32(variableDataAddress + 4);
+    }
+
     private static void EmitsRecordExtensionTypeTestLookup()
     {
         const string source = "MODULE Types; TYPE Base = RECORD value: INTEGER; END; Derived = RECORD (Base) extra: INTEGER; END; Ref = POINTER TO Base; VAR node: Ref; result: BOOLEAN; BEGIN result := node IS Derived; END Types.";
@@ -1447,7 +1542,7 @@ internal static class OberonCompilerRscTests
         var instructions = definition.Code.Select(Risc5Disassembler.Format).ToArray();
 
         TestAssertions.True(instructions.Any(instruction => instruction == "LDR r0, [r0, 4]"));
-        TestAssertions.True(instructions.Any(instruction => instruction == "ADD r1, r13, 0x003c"));
+        TestAssertions.True(instructions.Any(instruction => instruction == "ADD r1, r13, 0x0014"));
     }
 
     private static void EmitsRecursivePointerFieldRootReference()

@@ -345,7 +345,7 @@ public sealed class OberonCompilerExpressionEmitter
                 AluOperation.Add,
                 temporary,
                 ModuleDataBase,
-                checked(_moduleDataOffset + offset));
+                checked(offset));
             _generator.EmitRegister(AluOperation.Sub, destination, destination, temporary);
             EmitBooleanFromCondition(destination, ConditionCode.Eq);
             _generator.Bind(endLabel);
