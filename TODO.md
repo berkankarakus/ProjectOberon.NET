@@ -6,7 +6,8 @@ external `RISC-work.img` flow remains a separate integration requirement.
 ## Compiler
 
 - [x] [P0] Complete external RSC call lowering for aggregate record parameters and remaining `VAR` forms; scalar, array, pointer and record layouts are covered.
-- [ ] [P0] Generate type descriptors and pointer fixup tables for RSC output, then validate them through module loading.
+- [x] [P0] Generate local record type descriptors and module pointer root tables for RSC output; validate descriptor loading, type fixups and shifted global data addresses.
+- [ ] [P0] Complete RSC descriptor support for imported record bases, imported variable offsets and recursive pointer-field declarations.
 - [ ] [P1] Complete aggregate field, array-element and pointer-dereference lowering with record/array execution fixtures.
 - [x] [P1] Complete record parameter lowering and cover record/open-array value and VAR combinations.
 - [ ] [P1] Implement `IS` type-test lowering with positive, negative and incompatible-type cases.

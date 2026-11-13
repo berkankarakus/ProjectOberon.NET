@@ -36,9 +36,10 @@ internal static class OberonCompilerRscTests
         ExecutesCompilerProducedRecordCopy();
         ExecutesCompilerProducedArrayCopy();
         ExecutesCompilerProducedStringBody();
-        RejectsUnsupportedMinimalRscTypes();
-        RejectsPointerTypeDescriptors();
-        RejectsNestedRecordTypeDescriptors();
+        EmitsRecordTypeDescriptor();
+        EmitsPointerTypeDescriptorAndRootReferences();
+        EmitsRecordExtensionTypeFixup();
+        EmitsNestedRecordTypeDescriptor();
     }
 
     private static void EmitsMinimalRscModule()
@@ -1088,34 +1089,80 @@ internal static class OberonCompilerRscTests
             }]);
     }
 
-    private static void RejectsUnsupportedMinimalRscTypes()
+    private static void EmitsRecordTypeDescriptor()
     {
-        const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; VAR node: Node; BEGIN END Demo.";
+        const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; VAR node: Node; BEGIN node.value := 42 END Demo.";
         var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
 
-        var error = TestAssertions.Throws<NotSupportedException>(() =>
-            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
-        TestAssertions.True(error.Message.Contains("type descriptors", StringComparison.Ordinal));
+        TestAssertions.Equal(20, definition.TypeDescriptorBytes);
+        TestAssertions.Equal(4, definition.VariableBytes);
+        TestAssertions.Equal(0, definition.FixupTypes);
+
+        var image = LoadCompilerModule(definition, "Demo");
+        for (var step = 0; step < 8 && image.Memory.Read32(image.Image.DataAddress + 20) != 42; step++)
+        {
+            image.Cpu.Step();
+        }
+
+        TestAssertions.Equal(42u, image.Memory.Read32(image.Image.DataAddress + 20));
     }
 
-    private static void RejectsPointerTypeDescriptors()
+    private static void EmitsPointerTypeDescriptorAndRootReferences()
     {
-        const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; Ref = POINTER TO Node; VAR node: Ref; BEGIN END Demo.";
+        const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; Ref = POINTER TO Node; VAR ref: Ref; BEGIN END Demo.";
         var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
 
-        var error = TestAssertions.Throws<NotSupportedException>(() =>
-            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
-        TestAssertions.True(error.Message.Contains("type descriptors", StringComparison.Ordinal));
+        TestAssertions.Equal(20, definition.TypeDescriptorBytes);
+        TestAssertions.True(definition.PointerReferences.SequenceEqual([20]));
+
+        var loaded = LoadCompilerModule(definition, "Demo");
+        TestAssertions.Equal(
+            loaded.Image.DataAddress + 20,
+            loaded.Memory.Read32(loaded.Image.PointerAddress));
     }
 
-    private static void RejectsNestedRecordTypeDescriptors()
+    private static void EmitsRecordExtensionTypeFixup()
+    {
+        const string source = "MODULE Demo; TYPE Base = RECORD value: INTEGER; END; Derived = RECORD (Base) extra: INTEGER; END; VAR item: Derived; BEGIN item.extra := 42 END Demo.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(40, definition.TypeDescriptorBytes);
+        TestAssertions.Equal(6, definition.FixupTypes);
+
+        var loaded = LoadCompilerModule(definition, "Demo");
+        TestAssertions.Equal(loaded.Image.DataAddress, loaded.Memory.Read32(loaded.Image.DataAddress + 24));
+        for (var step = 0; step < 8 && loaded.Memory.Read32(loaded.Image.DataAddress + 44) != 42; step++)
+        {
+            loaded.Cpu.Step();
+        }
+
+        TestAssertions.Equal(42u, loaded.Memory.Read32(loaded.Image.DataAddress + 44));
+    }
+
+    private static void EmitsNestedRecordTypeDescriptor()
     {
         const string source = "MODULE Demo; TYPE Node = RECORD value: INTEGER; END; Nodes = ARRAY 2 OF Node; VAR nodes: Nodes; BEGIN END Demo.";
         var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
 
-        var error = TestAssertions.Throws<NotSupportedException>(() =>
-            new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result));
-        TestAssertions.True(error.Message.Contains("type descriptors", StringComparison.Ordinal));
+        TestAssertions.Equal(20, definition.TypeDescriptorBytes);
+        TestAssertions.Equal(8, definition.VariableBytes);
+    }
+
+    private static (Memory Memory, Risc5Cpu Cpu, OberonModuleImage Image) LoadCompilerModule(
+        RscModule definition,
+        string moduleName)
+    {
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == moduleName ? bytes : null);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+        var image = runtime.Start(moduleName);
+        return (memory, cpu, image);
     }
 
     private static void ExecutesCompilerProducedStringBody()

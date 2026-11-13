@@ -10,8 +10,9 @@
 - Architecture tests use set equality for the allowed project graph, so an
   extra, missing, reverse, or adapter-to-adapter reference fails the suite.
 - RSC tests assert module name, section sizes, code round-trip, imports,
-  exported command offsets, body offsets, runtime command resolution, and
-  rejection of invalid code offsets and unsupported descriptor types.
+  exported command offsets, body offsets, runtime command resolution, local
+  record descriptors, type-fixup chains, pointer root tables and shifted global
+  data addresses, as well as rejection of invalid code offsets.
 - Compiler CLI option tests cover successful SMB/RSC parsing and both missing
   value and unknown-option failures.
 - RSC reader tests now cover invalid command/body layout before module loading.
@@ -25,8 +26,9 @@
 - Compiler-generated scalar and string RSC bodies are executed through the
   runtime loader in tests.
 - No assertion-free or always-true assertions were added.
-- The tests intentionally do not claim type descriptor or pointer-fixup
-  coverage; those remain an explicit compiler gap.
+- Descriptor tests intentionally cover local records and local extensions only;
+  imported record bases and imported descriptor-backed variable offsets remain
+  an explicit compiler gap.
 
 ## Validation
 

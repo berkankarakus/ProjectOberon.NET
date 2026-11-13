@@ -8,13 +8,15 @@ public sealed class OberonCompilerExpressionEmitter
     private readonly OberonCompilerAddressEmitter _addresses;
     private readonly OberonCompilerRegisterAllocator _registers;
     private readonly Func<OberonCompilerCallExpression, int, int>? _emitFunctionCall;
+    private readonly int _moduleDataOffset;
 
     public OberonCompilerExpressionEmitter(IOberonCompilerInstructionWriter generator)
         : this(
             generator,
             new OberonCompilerAddressEmitter(generator),
             new OberonCompilerRegisterAllocator(),
-            emitFunctionCall: null)
+            emitFunctionCall: null,
+            moduleDataOffset: 0)
     {
     }
 
@@ -22,7 +24,8 @@ public sealed class OberonCompilerExpressionEmitter
         IOberonCompilerInstructionWriter generator,
         OberonCompilerAddressEmitter addresses,
         OberonCompilerRegisterAllocator registers,
-        Func<OberonCompilerCallExpression, int, int>? emitFunctionCall)
+        Func<OberonCompilerCallExpression, int, int>? emitFunctionCall,
+        int moduleDataOffset)
     {
         ArgumentNullException.ThrowIfNull(generator);
         ArgumentNullException.ThrowIfNull(addresses);
@@ -32,6 +35,7 @@ public sealed class OberonCompilerExpressionEmitter
         _addresses = addresses;
         _registers = registers;
         _emitFunctionCall = emitFunctionCall;
+        _moduleDataOffset = moduleDataOffset;
     }
 
     public int EmitExpression(OberonCompilerExpression expression, int destination = 0)
@@ -139,7 +143,10 @@ public sealed class OberonCompilerExpressionEmitter
                     OberonCompilerTypeRules.IsByteSized(symbol.Type));
                 return destination;
             case OberonCompilerObjectClass.Variable when symbol.Level == 1:
-                _generator.EmitLoad(destination, ModuleDataBase, checked((int)symbol.Value),
+                _generator.EmitLoad(
+                    destination,
+                    ModuleDataBase,
+                    checked((int)symbol.Value + _moduleDataOffset),
                     OberonCompilerTypeRules.IsByteSized(symbol.Type));
                 return destination;
             case OberonCompilerObjectClass.Variable:

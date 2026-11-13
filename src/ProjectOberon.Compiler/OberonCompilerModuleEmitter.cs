@@ -6,7 +6,7 @@ public sealed class OberonCompilerModuleEmitter
 {
     private readonly OberonCompilerCodeGenerator _generator;
     private readonly OberonCompilerFrameEmitter _frames;
-    private readonly OberonCompilerStatementEmitter _statements;
+    private OberonCompilerStatementEmitter _statements;
     private readonly Dictionary<OberonCompilerObject, OberonCompilerLabel> _procedureLabels = [];
     private readonly Dictionary<string, int> _stringAddresses = new(StringComparer.Ordinal);
     private readonly List<byte> _moduleData = [];
@@ -20,6 +20,8 @@ public sealed class OberonCompilerModuleEmitter
     private int _programFixupHead;
     private int? _firstDataFixup;
     private int _dataFixupHead;
+    private IReadOnlyList<byte> _typeDescriptorPayload = [];
+    private int _moduleDataOffset;
 
     public OberonCompilerModuleEmitter(OberonCompilerCodeGenerator generator)
     {
@@ -36,13 +38,17 @@ public sealed class OberonCompilerModuleEmitter
 
     public IReadOnlyList<uint> Emit(OberonCompilerModuleParseResult module)
     {
+        _typeDescriptorPayload = [];
+        _moduleDataOffset = 0;
         return EmitCore(module, emitExternalCalls: false);
     }
 
     public RscModule EmitRsc(OberonCompilerModuleParseResult module)
     {
         ArgumentNullException.ThrowIfNull(module);
-        EnsureMinimalRscSupported(module);
+        var descriptors = OberonCompilerTypeDescriptorEmitter.Emit(module);
+        _typeDescriptorPayload = descriptors.Payload;
+        _moduleDataOffset = _typeDescriptorPayload.Count;
         var imports = (module.ModuleScope?.Objects ?? [])
             .Where(symbol => symbol.Class == OberonCompilerObjectClass.Module)
             .Select(symbol => new RscImport(symbol.OriginalName ?? symbol.Name, symbol.Key))
@@ -79,20 +85,21 @@ public sealed class OberonCompilerModuleEmitter
             1,
             0,
             imports,
-            0,
+            _typeDescriptorPayload.Count,
             _variableBytes,
             stringBytes,
             code.Count,
             code,
             _commands,
             [],
-            [],
+            descriptors.PointerReferences,
             fixupProgram,
             fixupData,
-            0,
+            descriptors.FixupTypes,
             _bodyOffset,
             (byte)'O')
         {
+            TypeDescriptorPayload = _typeDescriptorPayload.ToArray(),
             StringPayload = stringPayload
         };
     }
@@ -116,6 +123,7 @@ public sealed class OberonCompilerModuleEmitter
         _procedureLabels.Clear();
         _stringAddresses.Clear();
         _moduleData.Clear();
+        _statements = CreateStatementEmitter(frameSize: 0, currentLevel: 1);
         _variableBytes = Align(ModuleVariableDataSize(module), 4);
         _nextStringOffset = _variableBytes;
         EnsureModuleData(_nextStringOffset);
@@ -167,7 +175,8 @@ public sealed class OberonCompilerModuleEmitter
             currentLevel,
             ResolveStringAddress,
             EmitExternalProcedureCall,
-            EmitExternalVariableAddress);
+            EmitExternalVariableAddress,
+            _moduleDataOffset);
     }
 
     private void ConfigureExternalImports(IReadOnlyList<RscImport> imports)
@@ -318,36 +327,7 @@ public sealed class OberonCompilerModuleEmitter
         _moduleData[address + bytes.Length] = 0;
         _stringAddresses.Add(value, address);
         _nextStringOffset = address + bytes.Length + 1;
-        return address;
-    }
-
-    private static void EnsureMinimalRscSupported(OberonCompilerModuleParseResult module)
-    {
-        foreach (var symbol in module.ModuleScope?.Objects ?? [])
-        {
-            if (symbol.Type is not null && RequiresTypeDescriptor(symbol.Type, []))
-            {
-                throw new NotSupportedException(
-                    $"minimal RSC output does not support type descriptors: {symbol.Name}");
-            }
-        }
-    }
-
-    private static bool RequiresTypeDescriptor(
-        OberonCompilerType type,
-        HashSet<OberonCompilerType> visited)
-    {
-        if (!visited.Add(type))
-        {
-            return false;
-        }
-        return type.Form switch
-        {
-            OberonCompilerTypeForm.Pointer or OberonCompilerTypeForm.Record => true,
-            OberonCompilerTypeForm.Array when type.Base is not null =>
-                RequiresTypeDescriptor(type.Base, visited),
-            _ => false
-        };
+        return checked(_moduleDataOffset + address);
     }
 
     private static int ModuleVariableDataSize(OberonCompilerModuleParseResult module)

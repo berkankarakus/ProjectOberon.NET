@@ -8,6 +8,7 @@ public sealed class OberonCompilerAddressEmitter
     private readonly Func<string, int>? _stringAddressResolver;
     private readonly Action<OberonCompilerObject, int>? _externalVariableAddressEmitter;
     private readonly int _currentLevel;
+    private readonly int _moduleDataOffset;
 
     public OberonCompilerAddressEmitter(
         IOberonCompilerInstructionWriter generator,
@@ -21,7 +22,8 @@ public sealed class OberonCompilerAddressEmitter
             registers,
             currentLevel,
             stringAddressResolver,
-            externalVariableAddressEmitter: null)
+            externalVariableAddressEmitter: null,
+            moduleDataOffset: 0)
     {
     }
 
@@ -31,7 +33,8 @@ public sealed class OberonCompilerAddressEmitter
         OberonCompilerRegisterAllocator? registers,
         int currentLevel,
         Func<string, int>? stringAddressResolver,
-        Action<OberonCompilerObject, int>? externalVariableAddressEmitter)
+        Action<OberonCompilerObject, int>? externalVariableAddressEmitter,
+        int moduleDataOffset)
     {
         ArgumentNullException.ThrowIfNull(generator);
         _generator = generator;
@@ -40,6 +43,7 @@ public sealed class OberonCompilerAddressEmitter
         _currentLevel = currentLevel;
         _stringAddressResolver = stringAddressResolver;
         _externalVariableAddressEmitter = externalVariableAddressEmitter;
+        _moduleDataOffset = moduleDataOffset;
     }
 
     public void EmitAddress(OberonCompilerExpression expression, int destination)
@@ -93,6 +97,11 @@ public sealed class OberonCompilerAddressEmitter
 
         var symbol = name.Symbol;
         var offset = checked((int)symbol.Value);
+        if (symbol.Level == 1)
+        {
+            offset = checked(offset + _moduleDataOffset);
+        }
+
         switch (symbol.Class)
         {
             case OberonCompilerObjectClass.Variable:

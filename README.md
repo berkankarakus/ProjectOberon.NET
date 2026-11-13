@@ -287,9 +287,11 @@ Imported external variables preserve their scalar, array, pointer and record
 types as well. External scalar, array, pointer and aggregate record
 calls—including `VAR` forms—are lowered into RSC program/data fixups.
 
-The compiler CLI now emits a minimal RSC container. Full type descriptor and
-pointer-fixup generation remains a separate compiler milestone; modules that
-require those descriptors are rejected with a clear compiler error.
+The compiler CLI emits RSC type descriptors for local record types, type-fixup
+chains for local record extensions, and pointer root tables for module data.
+Global variables and strings are addressed after the descriptor section. RSC
+descriptor support for imported record bases and imported descriptor-backed
+variable offsets remains a separate compiler milestone.
 
 The generated RSC currently supports scalar data and character-array string
 payloads. The reader and writer reject duplicate import or command names and
@@ -303,9 +305,9 @@ pages are rejected before their addresses are read. Text/rider codecs reject
 NUL or unrepresentable characters instead of silently replacing data.
 
 Compiler limitations are currently explicit for aggregate field/array loads and
-stores, pointer-fixup descriptors, record-valued function result copying, and
-`IS` type-test lowering. These are planned compiler milestones rather than
-silently accepted syntax.
+stores, imported descriptor-backed variable offsets, record-valued function
+result copying, and `IS` type-test lowering. These are planned compiler
+milestones rather than silently accepted syntax.
 
 Run the fast validation suite after changing compiler or RSC code:
 

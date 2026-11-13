@@ -22,7 +22,8 @@ public sealed class OberonCompilerStatementEmitter
             currentLevel,
             stringAddressResolver,
             externalProcedureEmitter: null,
-            externalVariableAddressEmitter: null)
+            externalVariableAddressEmitter: null,
+            moduleDataOffset: 0)
     {
     }
 
@@ -33,7 +34,8 @@ public sealed class OberonCompilerStatementEmitter
         int currentLevel,
         Func<string, int>? stringAddressResolver,
         Action<OberonCompilerObject>? externalProcedureEmitter,
-        Action<OberonCompilerObject, int>? externalVariableAddressEmitter)
+        Action<OberonCompilerObject, int>? externalVariableAddressEmitter,
+        int moduleDataOffset)
     {
         ArgumentNullException.ThrowIfNull(generator);
         _frameSize = frameSize;
@@ -47,13 +49,15 @@ public sealed class OberonCompilerStatementEmitter
             registers,
             currentLevel,
             stringAddressResolver,
-            externalVariableAddressEmitter);
+            externalVariableAddressEmitter,
+            moduleDataOffset);
         OberonCompilerCallEmitter? calls = null;
         expressions = new OberonCompilerExpressionEmitter(
             generator,
             addresses,
             registers,
-            (call, destination) => calls!.EmitFunctionCall(call, destination));
+            (call, destination) => calls!.EmitFunctionCall(call, destination),
+            moduleDataOffset);
         _expressions = expressions;
         calls = new OberonCompilerCallEmitter(
             generator,
