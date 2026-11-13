@@ -265,11 +265,12 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.Equal("MOV r0, 0x0000", instructions[0]);
         TestAssertions.Equal("STR r0, [r13, 0]", instructions[1]);
-        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BLT ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNLE ")));
         TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0003"));
         TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0003"));
-        TestAssertions.True(instructions.Contains("ADD r0, r0, r1"));
+        TestAssertions.True(instructions.Contains("ADD r0, r0, 0x0001"));
+        TestAssertions.False(instructions.Contains("MOV r2, 0x0001"));
+        TestAssertions.False(instructions.Contains("MOV r3, 0x0000"));
     }
 
     private static void EmitsDescendingForLoop()
@@ -283,6 +284,9 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNLT ")));
         TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0000"));
+        TestAssertions.True(instructions.Contains("ADD r0, r0, -1"));
+        TestAssertions.False(instructions.Contains("MOV r2, 0x0001"));
+        TestAssertions.False(instructions.Contains("MOV r3, 0x0000"));
     }
 
     private static void EmitsCaseStatement()

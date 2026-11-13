@@ -90,26 +90,40 @@ public sealed class OberonCompilerControlFlowEmitter
         var negative = new OberonCompilerLabel();
         var body = new OberonCompilerLabel();
         var end = new OberonCompilerLabel();
+        var hasConstantStep = TryGetIntegerStep(loop.Step, out var constantStep, out var stepType)
+            && constantStep != 0;
 
         _emitAssignment(new OberonCompilerAssignmentStatement(loop.Control, loop.Start));
         _generator.Bind(start);
-        _emitExpression(loop.Step, 2);
-        _generator.EmitMoveImmediate(3, 0);
-        _generator.EmitRegister(AluOperation.Sub, 2, 2, 3);
-        _generator.EmitBranch(negative, ConditionCode.Lt);
 
-        EmitForBoundCheck(loop, end, ConditionCode.Le, invert: true);
-        _generator.EmitBranch(body);
+        if (hasConstantStep)
+        {
+            var condition = constantStep > 0 ? ConditionCode.Le : ConditionCode.Lt;
+            EmitForBoundCheck(loop, end, condition, invert: true);
+        }
+        else
+        {
+            _emitExpression(loop.Step, 2);
+            _generator.EmitMoveImmediate(3, 0);
+            _generator.EmitRegister(AluOperation.Sub, 2, 2, 3);
+            _generator.EmitBranch(negative, ConditionCode.Lt);
 
-        _generator.Bind(negative);
-        EmitForBoundCheck(loop, end, ConditionCode.Lt, invert: true);
-        _generator.Bind(body);
+            EmitForBoundCheck(loop, end, ConditionCode.Le, invert: true);
+            _generator.EmitBranch(body);
+
+            _generator.Bind(negative);
+            EmitForBoundCheck(loop, end, ConditionCode.Lt, invert: true);
+            _generator.Bind(body);
+        }
 
         _emitStatements(loop.Body);
+        var incrementStep = hasConstantStep
+            ? new OberonCompilerIntegerLiteralExpression(stepType!, constantStep)
+            : loop.Step;
         var increment = new OberonCompilerBinaryExpression(
             OberonCompilerTokenKind.Plus,
             loop.Control,
-            loop.Step);
+            incrementStep);
         _emitAssignment(new OberonCompilerAssignmentStatement(loop.Control, increment));
         _generator.EmitBranch(start);
         _generator.Bind(end);
@@ -339,4 +353,43 @@ public sealed class OberonCompilerControlFlowEmitter
 
     private static bool IsSet(OberonCompilerExpression expression) =>
         OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form == OberonCompilerTypeForm.Set;
+
+    private static bool TryGetIntegerStep(
+        OberonCompilerExpression expression,
+        out int value,
+        out OberonCompilerType? type)
+    {
+        if (expression is OberonCompilerIntegerLiteralExpression literal
+            && literal.Type.Form is OberonCompilerTypeForm.Byte
+                or OberonCompilerTypeForm.Character
+                or OberonCompilerTypeForm.Integer
+            && literal.Value is >= int.MinValue and <= int.MaxValue)
+        {
+            value = (int)literal.Value;
+            type = literal.Type;
+            return true;
+        }
+
+        if (expression is OberonCompilerUnaryExpression unary
+            && unary.Operator is OberonCompilerTokenKind.Plus or OberonCompilerTokenKind.Minus
+            && TryGetIntegerStep(unary.Operand, out var operand, out type))
+        {
+            if (unary.Operator == OberonCompilerTokenKind.Plus)
+            {
+                value = operand;
+                return true;
+            }
+
+            var negated = -(long)operand;
+            if (negated is >= int.MinValue and <= int.MaxValue)
+            {
+                value = (int)negated;
+                return true;
+            }
+        }
+
+        value = 0;
+        type = null;
+        return false;
+    }
 }

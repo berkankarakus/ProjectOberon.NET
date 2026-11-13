@@ -7,6 +7,7 @@ internal static class OberonCompilerOptimizationBaselineTests
         MeasuresArithmeticFixture();
         MeasuresConstantArithmeticFixture();
         MeasuresLoopFixture();
+        MeasuresForLoopFixture();
         MeasuresAggregateCopyFixture();
     }
 
@@ -50,6 +51,20 @@ internal static class OberonCompilerOptimizationBaselineTests
             maxSteps: 256);
 
         AssertBaseline(module, steps, codeWords: 15, rscBytes: 117, runtimeSteps: 88);
+    }
+
+    private static void MeasuresForLoopFixture()
+    {
+        const string source =
+            "MODULE ForLoop; VAR index, total: INTEGER; BEGIN total := 0; FOR index := 0 TO 7 BY 1 DO total := total + index END END ForLoop.";
+        var module = Compile("ForLoop", source);
+        var total = module.ParseResult.ModuleScope!.Objects.Single(symbol => symbol.Name == "total");
+        var steps = RunUntil(
+            module,
+            () => module.Memory.Read32(module.Image.DataAddress + checked((uint)total.Value)) == 28,
+            maxSteps: 256);
+
+        AssertBaseline(module, steps, codeWords: 15, rscBytes: 120, runtimeSteps: 88);
     }
 
     private static void MeasuresAggregateCopyFixture()
