@@ -208,19 +208,13 @@ public static class OberonFilesHostBinding
                 state.SyncRider(context, context.Argument(RiderArgument), rider);
                 context.Return();
             },
-            _ => Unsupported(moduleName, procedureName)
+            _ => OberonHostBindingFactory.Unsupported(moduleName, procedureName)
         };
     }
 
     private static void WriteResult(OberonHostCallContext context, uint address, bool succeeded)
     {
         context.Memory.Write32(address, succeeded ? 0u : 2u);
-    }
-
-    private static Action<OberonHostCallContext> Unsupported(string moduleName, string procedureName)
-    {
-        return _ => throw new OberonHostCallException(
-            $"host binding does not implement {moduleName}.{procedureName}");
     }
 
     private sealed class BindingState

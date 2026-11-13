@@ -125,14 +125,8 @@ public static class OberonKernelHostBinding
                 context.Cpu.SetRegister(0, unchecked((uint)kernel.Clock));
                 context.Return();
             },
-            _ => Unsupported(moduleName, procedureName)
+            _ => OberonHostBindingFactory.Unsupported(moduleName, procedureName)
         };
-    }
-
-    private static Action<OberonHostCallContext> Unsupported(string moduleName, string procedureName)
-    {
-        return _ => throw new OberonHostCallException(
-            $"host binding does not implement {moduleName}.{procedureName}");
     }
 }
 

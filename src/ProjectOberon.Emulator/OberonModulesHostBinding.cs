@@ -82,14 +82,8 @@ public static class OberonModulesHostBinding
                 state.SyncModuleData();
                 context.Return();
             },
-            _ => Unsupported(moduleName, procedureName)
+            _ => OberonHostBindingFactory.Unsupported(moduleName, procedureName)
         };
-    }
-
-    private static Action<OberonHostCallContext> Unsupported(string moduleName, string procedureName)
-    {
-        return _ => throw new OberonHostCallException(
-            $"host binding does not implement {moduleName}.{procedureName}");
     }
 
     private sealed class BindingState

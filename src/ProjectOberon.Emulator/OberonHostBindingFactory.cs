@@ -25,4 +25,13 @@ internal static class OberonHostBindingFactory
                 .ToArray()
         };
     }
+
+    internal static Action<OberonHostCallContext> Unsupported(
+        string moduleName,
+        string procedureName
+    )
+    {
+        return _ => throw new OberonHostCallException(
+            $"host binding does not implement {moduleName}.{procedureName}");
+    }
 }
