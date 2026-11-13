@@ -57,6 +57,7 @@ internal static class OberonCompilerRscTests
         EmitsRecordDescriptorAllocationBoundaries();
         EmitsRecursiveRecordDescriptorsDeterministically();
         EmitsImportedRecordBaseDescriptor();
+        ExecutesImportedRecordBaseDescriptor();
     }
 
     private static void EmitsMinimalRscModule()
@@ -1484,6 +1485,33 @@ internal static class OberonCompilerRscTests
 
         TestAssertions.Equal(40, definition.TypeDescriptorBytes);
         TestAssertions.True(definition.FixupTypes > 0);
+    }
+
+    private static void ExecutesImportedRecordBaseDescriptor()
+    {
+        var types = CreateRecordTypeModule();
+        const string source = "MODULE Demo; IMPORT Types; TYPE Derived = RECORD (Types.Node) extra: INTEGER; END; VAR item: Derived; BEGIN item.extra := 42; END Demo.";
+        var result = new OberonCompilerParser(
+            source,
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = types })
+            .ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == "Demo" ? bytes : null);
+        loader.RegisterExternal(types);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+        runtime.BindExternal(new OberonExternalModuleBinding("Types", 0x5000, 0x6000, [0]));
+
+        var image = runtime.Start("Demo");
+        var variableDataAddress = image.DataAddress + (uint)definition.TypeDescriptorBytes;
+        for (var step = 0; step < 24 && memory.Read32(variableDataAddress + 4) != 42; step++)
+        {
+            cpu.Step();
+        }
+
+        TestAssertions.Equal(42u, memory.Read32(variableDataAddress + 4));
     }
 
     private static (Memory Memory, Risc5Cpu Cpu, OberonModuleImage Image) LoadCompilerModule(
