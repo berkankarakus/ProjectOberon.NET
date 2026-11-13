@@ -266,8 +266,7 @@ internal static class OberonCompilerExpressionEmitterTests
 
         TestAssertions.Equal("MOV r0, 0x0001", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("LDR r1, [r13, 0]", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("ADD r1, r1, 0x0000", Risc5Disassembler.Format(generator.Code[2]));
-        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[3]));
+        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[2]));
     }
 
     private static void EmitsForLoop()
@@ -367,8 +366,7 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("LDR r0, [r0, 0]", Risc5Disassembler.Format(generator.Code[2]));
         TestAssertions.Equal("ADD r0, r0, 0x0001", Risc5Disassembler.Format(generator.Code[3]));
         TestAssertions.Equal("ADD r1, r13, 0x0000", Risc5Disassembler.Format(generator.Code[4]));
-        TestAssertions.Equal("ADD r1, r1, 0x0000", Risc5Disassembler.Format(generator.Code[5]));
-        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[6]));
+        TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[5]));
     }
 
     private static void EmitsConstantAtLastExpressionRegister()
@@ -416,7 +414,6 @@ internal static class OberonCompilerExpressionEmitterTests
         new OberonCompilerAddressEmitter(generator).EmitAddress(assignment.Target, 0);
 
         TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
-        TestAssertions.Equal("ADD r0, r0, 0x0000", Risc5Disassembler.Format(generator.Code[1]));
     }
 
     private static void EmitsArrayIndexLoadAndStore()
@@ -468,7 +465,6 @@ internal static class OberonCompilerExpressionEmitterTests
         new OberonCompilerExpressionEmitter(generator).EmitExpression(field);
 
         TestAssertions.Equal("ADD r0, r13, 0x0000", Risc5Disassembler.Format(generator.Code[0]));
-        TestAssertions.Equal("ADD r0, r0, 0x0000", Risc5Disassembler.Format(generator.Code[1]));
     }
 
     private static void EmitsAggregateArrayElementAddress()

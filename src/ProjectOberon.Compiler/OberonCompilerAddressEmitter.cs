@@ -93,8 +93,12 @@ public sealed class OberonCompilerAddressEmitter
         if (expression is OberonCompilerFieldExpression field)
         {
             EmitAddress(field.Receiver, destination);
-            _generator.EmitImmediate(AluOperation.Add, destination, destination,
-                checked((int)field.Field.Value));
+            var fieldOffset = checked((int)field.Field.Value);
+            if (fieldOffset != 0)
+            {
+                _generator.EmitImmediate(AluOperation.Add, destination, destination, fieldOffset);
+            }
+
             return;
         }
 
