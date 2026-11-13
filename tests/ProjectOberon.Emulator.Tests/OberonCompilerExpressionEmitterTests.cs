@@ -25,14 +25,15 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsControlFlow();
         EmitsRecordFieldLoadAndStore();
         EmitsAggregateRecordCopy();
-        AllocatesScratchRegistersWithoutUsingDestinationPlusOne();
+        EmitsConstantAtLastExpressionRegister();
         EmitsFieldAddressThroughDedicatedEmitter();
         EmitsArrayIndexLoadAndStore();
         EmitsAggregateFieldAddress();
         EmitsAggregateArrayElementAddress();
         EmitsAggregatePointerDereferenceAddress();
         EmitsThroughInstructionWriterAbstraction();
-        UsesRegisterFormForLargeIntegerLiterals();
+        EmitsLargeIntegerLiteralsThroughInstructionWriter();
+        FoldsIntegerConstantExpressions();
         EliminatesIntegerIdentityOperations();
     }
 
@@ -45,11 +46,8 @@ internal static class OberonCompilerExpressionEmitterTests
 
         new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
 
-        TestAssertions.Equal("MOV r0, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
-        TestAssertions.Equal("MOV r1, 0x0003", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("MUL r1, r1, 0x0004", Risc5Disassembler.Format(generator.Code[2]));
-        TestAssertions.Equal("ADD r0, r0, r1", Risc5Disassembler.Format(generator.Code[3]));
-        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("MOV r0, 0x000e", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[1]));
     }
 
     private static void EmitsModuleVariableLoads()
@@ -135,11 +133,8 @@ internal static class OberonCompilerExpressionEmitterTests
 
         new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
 
-        TestAssertions.Equal("MOV r0, 0x0011", Risc5Disassembler.Format(generator.Code[0]));
-        TestAssertions.Equal("MOV r1, 0x0005", Risc5Disassembler.Format(generator.Code[1]));
-        TestAssertions.Equal("DIV r0, r0, r1", Risc5Disassembler.Format(generator.Code[2]));
-        TestAssertions.Equal("MOV r0, H", Risc5Disassembler.Format(generator.Code[3]));
-        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[4]));
+        TestAssertions.Equal("MOV r0, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("STR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[1]));
     }
 
     private static void EmitsSetLiteralAndOperations()
@@ -351,7 +346,7 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("STR r0, [r1, 0]", Risc5Disassembler.Format(generator.Code[6]));
     }
 
-    private static void AllocatesScratchRegistersWithoutUsingDestinationPlusOne()
+    private static void EmitsConstantAtLastExpressionRegister()
     {
         var symbols = new OberonCompilerSymbols();
         var expression = new OberonCompilerBinaryExpression(
@@ -366,8 +361,7 @@ internal static class OberonCompilerExpressionEmitterTests
 
         new OberonCompilerExpressionEmitter(generator).EmitExpression(expression, destination: 11);
 
-        TestAssertions.Equal("MOV r11, 0x0002", Risc5Disassembler.Format(generator.Code[0]));
-        TestAssertions.Equal("ADD r11, r11, 0x0003", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.Equal("MOV r11, 0x0005", Risc5Disassembler.Format(generator.Code[0]));
     }
 
     private static void EmitsAggregateRecordCopy()
@@ -489,24 +483,38 @@ internal static class OberonCompilerExpressionEmitterTests
 
         new OberonCompilerExpressionEmitter(writer).EmitExpression(expression, destination: 4);
 
-        TestAssertions.Equal("MOV r4, 0x0002", writer.Calls[0]);
-        TestAssertions.Equal("Add r4, r4, 0x0003", writer.Calls[1]);
+        TestAssertions.Equal(1, writer.Calls.Count);
+        TestAssertions.Equal("MOV r4, 0x0005", writer.Calls[0]);
     }
 
-    private static void UsesRegisterFormForLargeIntegerLiterals()
+    private static void EmitsLargeIntegerLiteralsThroughInstructionWriter()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var expression = new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, 0x1_0000);
+        var writer = new RecordingInstructionWriter();
+
+        new OberonCompilerExpressionEmitter(writer).EmitExpression(expression, destination: 4);
+
+        TestAssertions.Equal(1, writer.Calls.Count);
+        TestAssertions.Equal("MOV r4, 0x10000", writer.Calls[0]);
+    }
+
+    private static void FoldsIntegerConstantExpressions()
     {
         var symbols = new OberonCompilerSymbols();
         var expression = new OberonCompilerBinaryExpression(
             OberonCompilerTokenKind.Plus,
             new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, 2),
-            new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, 0x1_0000));
+            new OberonCompilerBinaryExpression(
+                OberonCompilerTokenKind.Multiply,
+                new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, 3),
+                new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, 4)));
         var writer = new RecordingInstructionWriter();
 
         new OberonCompilerExpressionEmitter(writer).EmitExpression(expression, destination: 4);
 
-        TestAssertions.Equal("MOV r4, 0x0002", writer.Calls[0]);
-        TestAssertions.Equal("MOV r0, 0x10000", writer.Calls[1]);
-        TestAssertions.Equal("Add r4, r4, r0", writer.Calls[2]);
+        TestAssertions.Equal(1, writer.Calls.Count);
+        TestAssertions.Equal("MOV r4, 0x000e", writer.Calls[0]);
     }
 
     private static void EliminatesIntegerIdentityOperations()

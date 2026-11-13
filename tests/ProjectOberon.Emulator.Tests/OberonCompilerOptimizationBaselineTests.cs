@@ -5,6 +5,7 @@ internal static class OberonCompilerOptimizationBaselineTests
     public static void Run()
     {
         MeasuresArithmeticFixture();
+        MeasuresConstantArithmeticFixture();
         MeasuresLoopFixture();
         MeasuresAggregateCopyFixture();
     }
@@ -21,6 +22,20 @@ internal static class OberonCompilerOptimizationBaselineTests
             maxSteps: 64);
 
         AssertBaseline(module, steps, codeWords: 9, rscBytes: 99, runtimeSteps: 9);
+    }
+
+    private static void MeasuresConstantArithmeticFixture()
+    {
+        const string source =
+            "MODULE ConstantArithmetic; VAR result: INTEGER; BEGIN result := 2 + 3 * 4 END ConstantArithmetic.";
+        var module = Compile("ConstantArithmetic", source);
+        var result = module.ParseResult.ModuleScope!.Objects.Single(symbol => symbol.Name == "result");
+        var steps = RunUntil(
+            module,
+            () => module.Memory.Read32(module.Image.DataAddress + checked((uint)result.Value)) == 14,
+            maxSteps: 64);
+
+        AssertBaseline(module, steps, codeWords: 2, rscBytes: 79, runtimeSteps: 2);
     }
 
     private static void MeasuresLoopFixture()

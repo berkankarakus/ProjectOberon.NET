@@ -35,6 +35,7 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Lower literal `FOR` upper bounds without per-iteration constant loads.
 - [x] Fuse integer comparison conditions directly into control-flow branches.
 - [x] Fuse `SET` membership conditions directly into zero branches.
+- [x] Fold pure integer constant expression trees before code generation.
 - [ ] Measure whether further comparison/branch fusion provides a meaningful gain before introducing a larger control-flow rewrite.
 
 ## Integration
