@@ -36,6 +36,7 @@ internal static class OberonCompilerRscTests
         LoadsCompilerProducedRsc();
         ExecutesCompilerProducedBody();
         ExecutesCompilerProducedRecordCopy();
+        ExecutesCompilerProducedAggregateFieldCopy();
         ExecutesCompilerProducedArrayCopy();
         ExecutesCompilerProducedByteArrayCopy();
         ExecutesCompilerProducedStringBody();
@@ -1093,6 +1094,32 @@ internal static class OberonCompilerRscTests
         }
 
         TestAssertions.Equal(305419896u, memory.Read32(image.DataAddress));
+    }
+
+    private static void ExecutesCompilerProducedAggregateFieldCopy()
+    {
+        const string source = "MODULE Records; TYPE Holder = RECORD values: ARRAY 2 OF INTEGER; END; VAR holder: Holder; target: ARRAY 2 OF INTEGER; BEGIN target := holder.values; END Records.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == "Records" ? bytes : null);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+
+        var image = runtime.Start("Records");
+        var variableDataAddress = image.DataAddress + (uint)definition.TypeDescriptorBytes;
+        memory.Write32(variableDataAddress, 11);
+        memory.Write32(variableDataAddress + 4, 22);
+        for (var step = 0; step < 32
+            && (memory.Read32(variableDataAddress + 8) != 11
+                || memory.Read32(variableDataAddress + 12) != 22); step++)
+        {
+            cpu.Step();
+        }
+
+        TestAssertions.Equal(11u, memory.Read32(variableDataAddress + 8));
+        TestAssertions.Equal(22u, memory.Read32(variableDataAddress + 12));
     }
 
     private static void ExecutesCompilerProducedArrayCopy()
