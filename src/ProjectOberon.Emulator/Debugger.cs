@@ -29,6 +29,13 @@ public sealed class MachineDebugger
 
     public ulong Run(ulong maxSteps)
     {
+        if (_breakpoints.Count == 0)
+        {
+            Machine.Run(maxSteps);
+
+            return maxSteps;
+        }
+
         ulong executed = 0;
         while (executed < maxSteps && Step())
         {
