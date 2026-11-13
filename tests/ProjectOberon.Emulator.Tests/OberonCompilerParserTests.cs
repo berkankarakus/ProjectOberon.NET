@@ -19,6 +19,7 @@ internal static class OberonCompilerParserTests
         ParsesRecursivePointerFieldType();
         RejectsImportedTypeTestWithoutLocalDescriptor();
         RejectsAggregateToScalarAssignment();
+        ParsesImportedRecordExtensionMetadata();
         ReportsInvalidTypeTestWithoutDuplicateDiagnostic();
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
@@ -461,6 +462,32 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Any(diagnostic =>
             diagnostic.Message.Contains("cannot assign ARRAY", StringComparison.Ordinal)));
+    }
+
+    private static void ParsesImportedRecordExtensionMetadata()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var baseType = symbols.CreateRecord();
+        symbols.DeclareField(baseType, "baseValue", symbols.IntegerType, 0, exported: true);
+        var derivedType = symbols.CreateRecord(baseType, 1);
+        symbols.DeclareField(derivedType, "derivedValue", symbols.ByteType, 4, exported: true);
+        var exported = symbols.Declare(
+            "Derived",
+            OberonCompilerObjectClass.Type,
+            derivedType,
+            exported: true);
+        var module = OberonSymbolModuleReader.Parse(
+            OberonCompilerSymbolFileWriter.Write("Types", [exported]));
+
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT Types; TYPE Item = Types.Derived; VAR item: Item; BEGIN item.derivedValue := 1; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["Types"] = module })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var itemType = result.ModuleScope!.Objects.Single(obj => obj.Name == "Item").Type!;
+        TestAssertions.Equal(1, itemType.ParameterCount);
+        TestAssertions.Equal("baseValue", itemType.Base!.Fields[0].Name);
     }
 
     private static void ImportsExternalProcedures()

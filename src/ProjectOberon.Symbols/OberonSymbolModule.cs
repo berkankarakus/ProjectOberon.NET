@@ -179,7 +179,10 @@ public static class OberonSymbolModuleReader
                 typeSize = reader.ReadNum();
                 break;
             case 13:
-                SkipType(ref reader);
+                var recordBaseType = SkipType(ref reader);
+                baseTypeForm = recordBaseType.TypeForm;
+                baseTypeSize = recordBaseType.Size;
+                baseFields = recordBaseType.Fields;
                 reader.ReadNum();
                 reader.ReadNum();
                 typeSize = reader.ReadNum();
