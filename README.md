@@ -59,6 +59,12 @@ The runner accepts standard Project Oberon RISC5 ROM and disk images. Its
 final CPU state, MMIO, timer and SPI behavior are covered by the included
 deterministic tests.
 
+The deterministic compiler scope is complete: aggregate lowering, imported
+record metadata, recursive SMB references, record descriptors and imported
+`IS` runtime tags are covered by the RSC emulator suite. Boot/input validation
+against the real Oberon environment still requires the separately supplied
+`RISC-work.img` artifact described above.
+
 The first source-level Oberon port slice is available in the emulator library:
 `OberonDisplay` implements the `Display.Mod` raster operations against the
 emulated framebuffer, and `OberonKeyboard` implements the `Input.Mod` Set 2
