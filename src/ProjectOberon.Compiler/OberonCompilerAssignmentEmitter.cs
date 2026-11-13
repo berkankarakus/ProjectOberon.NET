@@ -100,7 +100,7 @@ public sealed class OberonCompilerAssignmentEmitter
         OberonCompilerExpression target,
         OberonCompilerType? targetType)
     {
-        using var preservedValue = _registers.ReserveRange(0, 1);
+        using var preservedValue = _registers.ReserveRangeScope(0, 1);
         _addresses.EmitAddress(target, 1);
         _generator.EmitStore(
             0,
@@ -115,7 +115,7 @@ public sealed class OberonCompilerAssignmentEmitter
         int size)
     {
         _addresses.EmitAddress(source, 1);
-        using var protectedSource = _registers.ReserveRange(1, 1);
+        using var protectedSource = _registers.ReserveRangeScope(1, 1);
         _addresses.EmitAddress(target, 2);
 
         var offset = 0;
@@ -140,7 +140,7 @@ public sealed class OberonCompilerAssignmentEmitter
         int targetLength)
     {
         _addresses.EmitAddress(source, 1);
-        using var protectedSource = _registers.ReserveRange(1, 1);
+        using var protectedSource = _registers.ReserveRangeScope(1, 1);
         _addresses.EmitAddress(target, 2);
 
         var copied = Math.Min(source.Value.Length, targetLength);

@@ -187,7 +187,7 @@ public sealed class OberonCompilerAddressEmitter
         if (_emitExpression is null || _registers is null)
             throw new InvalidOperationException("array index lowering requires an expression emitter");
 
-        using var protectedDestination = _registers.ReserveRange(destination, 1);
+        using var protectedDestination = _registers.ReserveRangeScope(destination, 1);
         var indexRegister = _registers.AcquireTemporary(destination);
         try
         {

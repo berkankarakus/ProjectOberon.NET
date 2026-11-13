@@ -35,6 +35,30 @@ public sealed class OberonCompilerRegisterAllocator
 
     public IDisposable ReserveRange(int firstRegister, int count)
     {
+        ReserveRangeCore(firstRegister, count);
+
+        if (count == 0)
+        {
+            return NoopDisposable.Instance;
+        }
+
+        return new Reservation(this, firstRegister, count);
+    }
+
+    internal ReservationScope ReserveRangeScope(int firstRegister, int count)
+    {
+        ReserveRangeCore(firstRegister, count);
+
+        if (count == 0)
+        {
+            return default;
+        }
+
+        return new ReservationScope(this, firstRegister, count);
+    }
+
+    private void ReserveRangeCore(int firstRegister, int count)
+    {
         if (count < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(count));
@@ -42,7 +66,7 @@ public sealed class OberonCompilerRegisterAllocator
 
         if (count == 0)
         {
-            return NoopDisposable.Instance;
+            return;
         }
 
         ValidateExpressionRegister(firstRegister);
@@ -51,8 +75,6 @@ public sealed class OberonCompilerRegisterAllocator
         {
             _reservations[register]++;
         }
-
-        return new Reservation(this, firstRegister, count);
     }
 
     public static void ValidateExpressionRegister(int register, bool allowExcluded = false)
@@ -89,6 +111,36 @@ public sealed class OberonCompilerRegisterAllocator
 
             _disposed = true;
             allocator.ReleaseRange(firstRegister, count);
+        }
+    }
+
+    internal struct ReservationScope : IDisposable
+    {
+        private OberonCompilerRegisterAllocator? _allocator;
+        private readonly int _firstRegister;
+        private readonly int _count;
+
+        internal ReservationScope(
+            OberonCompilerRegisterAllocator allocator,
+            int firstRegister,
+            int count
+        )
+        {
+            _allocator = allocator;
+            _firstRegister = firstRegister;
+            _count = count;
+        }
+
+        public void Dispose()
+        {
+            var allocator = _allocator;
+            if (allocator is null)
+            {
+                return;
+            }
+
+            _allocator = null;
+            allocator.ReleaseRange(_firstRegister, _count);
         }
     }
 

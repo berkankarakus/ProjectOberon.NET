@@ -232,7 +232,7 @@ public sealed class OberonCompilerExpressionEmitter
         }
 
         var temporary = _registers.AcquireTemporary(destination);
-        using var protectedDestination = _registers.ReserveRange(destination, 1);
+        using var protectedDestination = _registers.ReserveRangeScope(destination, 1);
         try
         {
             EmitExpression(binary.Left, destination);
@@ -346,7 +346,7 @@ public sealed class OberonCompilerExpressionEmitter
         }
 
         var temporary = _registers.AcquireTemporary(destination);
-        using var protectedDestination = _registers.ReserveRange(destination, 1);
+        using var protectedDestination = _registers.ReserveRangeScope(destination, 1);
         try
         {
             EmitExpression(typeTest.Left, destination);

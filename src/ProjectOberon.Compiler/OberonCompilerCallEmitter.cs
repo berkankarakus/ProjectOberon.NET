@@ -150,7 +150,7 @@ public sealed class OberonCompilerCallEmitter
         for (var index = 0; index < parameters.Count; index++)
         {
             var parameter = parameters[index];
-            using var preservedArguments = _registers.ReserveRange(0, register);
+            using var preservedArguments = _registers.ReserveRangeScope(0, register);
             if (OberonCompilerTypeRules.IsScalar(parameter.Type))
             {
                 if (parameter.ReadOnly)
