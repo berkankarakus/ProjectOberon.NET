@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Globalization;
 
 namespace ProjectOberon.Emulator;
@@ -59,6 +60,13 @@ public sealed class Memory : IMemoryBus
         if (IsRom(address))
         {
             return _rom[(int)((address >> 2) & (MemoryMap.RomWords - 1))];
+        }
+
+        var ramIndex = RamIndex(address);
+        if (ramIndex <= _ram.Length - sizeof(uint))
+        {
+            return BinaryPrimitives.ReadUInt32LittleEndian(
+                _ram.AsSpan(ramIndex, sizeof(uint)));
         }
 
         return (uint)(Read8(address)
