@@ -18,6 +18,7 @@ internal static class OberonCompilerParserTests
         ParsesRecordExtensionTypeTest();
         ParsesRecursivePointerFieldType();
         RejectsImportedTypeTestWithoutLocalDescriptor();
+        RejectsAggregateToScalarAssignment();
         ReportsInvalidTypeTestWithoutDuplicateDiagnostic();
         ImportsExternalProcedures();
         RejectsWrongExternalProcedureArity();
@@ -450,6 +451,16 @@ internal static class OberonCompilerParserTests
         TestAssertions.False(result.Succeeded);
         TestAssertions.True(result.Diagnostics.Any(diagnostic =>
             diagnostic.Message.Contains("local record type descriptor", StringComparison.Ordinal)));
+    }
+
+    private static void RejectsAggregateToScalarAssignment()
+    {
+        const string source = "MODULE Types; TYPE Holder = RECORD values: ARRAY 2 OF INTEGER; END; VAR holder: Holder; result: INTEGER; BEGIN result := holder.values; END Types.";
+        var result = new OberonCompilerParser(source).ParseModule();
+
+        TestAssertions.False(result.Succeeded);
+        TestAssertions.True(result.Diagnostics.Any(diagnostic =>
+            diagnostic.Message.Contains("cannot assign ARRAY", StringComparison.Ordinal)));
     }
 
     private static void ImportsExternalProcedures()
