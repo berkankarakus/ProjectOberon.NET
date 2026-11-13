@@ -13,6 +13,7 @@ internal static class CompilerCliOptionTests
         RejectsInvalidImportName();
         RejectsImportAliasMismatch();
         LoadsMatchingImport();
+        LoadsRecursiveTypeFromDisk();
         RejectsBlankImportPath();
     }
 
@@ -108,6 +109,34 @@ internal static class CompilerCliOptionTests
 
             TestAssertions.Equal(1, modules.Count);
             TestAssertions.Equal("Files", modules["Files"].Name);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    private static void LoadsRecursiveTypeFromDisk()
+    {
+        var parsed = new OberonCompilerParser(
+            "MODULE Types; TYPE Node* = RECORD next*: POINTER TO Node; value*: INTEGER; END; END Types.")
+            .ParseModule();
+        var node = parsed.ModuleScope!.Objects.Single(obj => obj.Name == "Node");
+        var path = Path.Combine(Path.GetTempPath(), $"project-oberon-{Guid.NewGuid():N}.smb");
+        File.WriteAllBytes(path, OberonCompilerSymbolFileWriter.Write("Types", [node]));
+        try
+        {
+            var imported = CompilerImportLoader.Load([new CompilerImport("Types", path)]);
+            var fields = imported["Types"].Exports[0].RecordFields!;
+            TestAssertions.Equal("next", fields[0].Name);
+            TestAssertions.Equal("value", fields[0].BaseRecordFields![1].Name);
+
+            var result = new OberonCompilerParser(
+                "MODULE Demo; IMPORT Types; VAR node: Types.Node; BEGIN node.next^.value := 1; END Demo.",
+                importedModules: imported)
+                .ParseModule();
+
+            TestAssertions.True(result.Succeeded);
         }
         finally
         {
