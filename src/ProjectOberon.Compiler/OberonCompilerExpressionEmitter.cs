@@ -231,6 +231,11 @@ public sealed class OberonCompilerExpressionEmitter
             return EmitTypeTest(binary, destination);
         }
 
+        if (TryEmitIntegerIdentity(binary, destination))
+        {
+            return destination;
+        }
+
         if (TryEmitIntegerImmediate(binary, destination))
         {
             return destination;
@@ -332,6 +337,31 @@ public sealed class OberonCompilerExpressionEmitter
             destination,
             destination,
             checked((int)literal.Value));
+        return true;
+    }
+
+    private bool TryEmitIntegerIdentity(
+        OberonCompilerBinaryExpression binary,
+        int destination)
+    {
+        if (binary.Right is not OberonCompilerIntegerLiteralExpression literal
+            || !IsInteger(binary.Left))
+        {
+            return false;
+        }
+
+        var isIdentity = binary.Operator switch
+        {
+            OberonCompilerTokenKind.Plus or OberonCompilerTokenKind.Minus => literal.Value == 0,
+            OberonCompilerTokenKind.Multiply or OberonCompilerTokenKind.Divide => literal.Value == 1,
+            _ => false
+        };
+        if (!isIdentity)
+        {
+            return false;
+        }
+
+        EmitExpression(binary.Left, destination);
         return true;
     }
 
@@ -516,6 +546,12 @@ public sealed class OberonCompilerExpressionEmitter
 
     private static bool IsReal(OberonCompilerBinaryExpression expression) =>
         IsReal(expression.Left) || IsReal(expression.Right);
+
+    private static bool IsInteger(OberonCompilerExpression expression) =>
+        OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form is
+            OberonCompilerTypeForm.Byte or
+            OberonCompilerTypeForm.Character or
+            OberonCompilerTypeForm.Integer;
 
     private static bool IsSet(OberonCompilerBinaryExpression expression) =>
         OberonCompilerExpressionTypeResolver.Resolve(expression.Left)?.Form == OberonCompilerTypeForm.Set;

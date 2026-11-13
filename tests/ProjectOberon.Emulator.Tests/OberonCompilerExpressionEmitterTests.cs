@@ -29,6 +29,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsAggregatePointerDereferenceAddress();
         EmitsThroughInstructionWriterAbstraction();
         UsesRegisterFormForLargeIntegerLiterals();
+        EliminatesIntegerIdentityOperations();
     }
 
     private static void EmitsArithmeticAssignment()
@@ -442,6 +443,32 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("MOV r4, 0x0002", writer.Calls[0]);
         TestAssertions.Equal("MOV r0, 0x10000", writer.Calls[1]);
         TestAssertions.Equal("Add r4, r4, r0", writer.Calls[2]);
+    }
+
+    private static void EliminatesIntegerIdentityOperations()
+    {
+        var symbols = new OberonCompilerSymbols();
+        var operations = new[]
+        {
+            (OberonCompilerTokenKind.Plus, 0L),
+            (OberonCompilerTokenKind.Minus, 0L),
+            (OberonCompilerTokenKind.Multiply, 1L),
+            (OberonCompilerTokenKind.Divide, 1L)
+        };
+
+        foreach (var (operation, value) in operations)
+        {
+            var expression = new OberonCompilerBinaryExpression(
+                operation,
+                new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, 9),
+                new OberonCompilerIntegerLiteralExpression(symbols.IntegerType, value));
+            var writer = new RecordingInstructionWriter();
+
+            new OberonCompilerExpressionEmitter(writer).EmitExpression(expression, destination: 4);
+
+            TestAssertions.Equal(1, writer.Calls.Count);
+            TestAssertions.Equal("MOV r4, 0x0009", writer.Calls[0]);
+        }
     }
 
     private sealed class RecordingInstructionWriter : IOberonCompilerInstructionWriter
