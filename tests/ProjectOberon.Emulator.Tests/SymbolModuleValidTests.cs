@@ -2,6 +2,23 @@ using ProjectOberon.Emulator;
 
 internal static partial class SymbolModuleTests
 {
+    private static void ParsesBuiltinTypeReference()
+    {
+        var data = BuildSmb(writer =>
+        {
+            writer.AddByte(2);
+            writer.AddString("value");
+            writer.AddByte(0xfc);
+            writer.AddByte(3);
+            writer.AddByte(0);
+        });
+
+        var module = OberonSymbolModuleReader.Parse(data);
+
+        TestAssertions.Equal(4, module.Exports[0].TypeForm);
+        TestAssertions.Equal(3, module.Exports[0].Value);
+    }
+
     private static void ParsesExportedSymbol()
     {
         var data = BuildSmb(writer =>

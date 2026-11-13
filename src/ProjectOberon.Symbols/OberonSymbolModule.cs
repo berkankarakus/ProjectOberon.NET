@@ -54,6 +54,7 @@ public sealed record OberonSymbolModule(
 public static class OberonSymbolModuleReader
 {
     private const byte VersionKey = 1;
+    private const int MaximumBuiltinTypeReference = 13;
     private const int NoneTypeForm = 9;
 
     public static OberonSymbolModule Parse(ReadOnlySpan<byte> data)
@@ -162,31 +163,14 @@ public static class OberonSymbolModuleReader
         {
             if (!typeReferences.TryGetValue(-reference, out var referencedType))
             {
-                if (reference < -4)
+                var builtinTypeReference = -reference;
+                if (builtinTypeReference <= MaximumBuiltinTypeReference)
                 {
-                    throw new InvalidDataException(
-                        $"SMB type reference is not defined: {-reference}");
+                    return CreateBuiltinType(builtinTypeReference);
                 }
 
-                return new SymbolTypeInfo(
-                    false,
-                    0,
-                    false,
-                    -1,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null);
+                throw new InvalidDataException(
+                    $"SMB type reference is not defined: {builtinTypeReference}");
             }
 
             return referencedType;
@@ -324,6 +308,29 @@ public static class OberonSymbolModuleReader
         }
 
         return typeInfo;
+    }
+
+    private static SymbolTypeInfo CreateBuiltinType(int typeForm)
+    {
+        return new SymbolTypeInfo(
+            false,
+            0,
+            false,
+            typeForm,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
     }
 
     private static IReadOnlyList<SymbolFieldInfo> ReadRecordFields(

@@ -43,7 +43,7 @@ internal static partial class SymbolModuleTests
         {
             writer.AddByte(5);
             writer.AddString("InvalidReference");
-            writer.AddByte(0xfb);
+            writer.AddByte(0xf2);
             writer.AddString(string.Empty);
             writer.AddByte(0);
         });

@@ -2,6 +2,7 @@ internal static partial class SymbolModuleTests
 {
     public static void Run()
     {
+        ParsesBuiltinTypeReference();
         ParsesExportedSymbol();
         ParsesTypeFixupsAndReexport();
         ParsesRecordAndProcedureTypes();
