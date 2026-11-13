@@ -55,6 +55,7 @@ internal static class OberonCompilerRscTests
         ExecutesImportedTypeTestAgainstRuntimeTags();
         EmitsRecordExtensionTypeTestLookup();
         EmitsRecursivePointerFieldRootReference();
+        EmitsRecursivePointerArrayRootReferences();
         EmitsRecordTypeDescriptor();
         EmitsPointerTypeDescriptorAndRootReferences();
         EmitsRecordExtensionTypeFixup();
@@ -1580,6 +1581,16 @@ internal static class OberonCompilerRscTests
 
         TestAssertions.Equal(24, definition.TypeDescriptorBytes);
         TestAssertions.True(definition.PointerReferences.SequenceEqual([24]));
+    }
+
+    private static void EmitsRecursivePointerArrayRootReferences()
+    {
+        const string source = "MODULE Types; TYPE Node = RECORD next: POINTER TO Node; END; Nodes = ARRAY 2 OF Node; VAR nodes: Nodes; BEGIN END Types.";
+        var parsed = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(parsed);
+
+        TestAssertions.True(definition.PointerReferences.SequenceEqual([24, 28]));
+        TestAssertions.Equal(2, definition.PointerReferences.Distinct().Count());
     }
 
     private static void ExecutesExactTypeTestAsTrue()
