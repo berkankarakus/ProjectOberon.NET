@@ -7,6 +7,7 @@ internal static class MemoryTests
         LoadsRomTextWithComments();
         RejectsInvalidRomFiles();
         ReadsUnalignedRamWordsAcrossBoundaries();
+        WritesUnalignedRamWordsAcrossBoundaries();
         ClearsRamRomAndDevices();
     }
 
@@ -80,5 +81,24 @@ internal static class MemoryTests
 
         TestAssertions.Equal(0x8877_6655u, memory.Read32(6));
         TestAssertions.Equal(0x8877_6655u, memory.ReadInstruction(6));
+    }
+
+    private static void WritesUnalignedRamWordsAcrossBoundaries()
+    {
+        var memory = new Memory(8);
+
+        memory.Write32(1, 0x4433_2211u);
+
+        TestAssertions.Equal(0x11u, memory.Read8(1));
+        TestAssertions.Equal(0x22u, memory.Read8(2));
+        TestAssertions.Equal(0x33u, memory.Read8(3));
+        TestAssertions.Equal(0x44u, memory.Read8(4));
+
+        memory.Write32(6, 0x8877_6655u);
+
+        TestAssertions.Equal(0x55u, memory.Read8(6));
+        TestAssertions.Equal(0x66u, memory.Read8(7));
+        TestAssertions.Equal(0x77u, memory.Read8(0));
+        TestAssertions.Equal(0x88u, memory.Read8(1));
     }
 }

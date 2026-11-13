@@ -111,6 +111,17 @@ public sealed class Memory : IMemoryBus
         {
             return;
         }
+
+        var ramIndex = RamIndex(address);
+        if (ramIndex <= _ram.Length - sizeof(uint))
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(
+                _ram.AsSpan(ramIndex, sizeof(uint)),
+                value
+            );
+            return;
+        }
+
         Write8(address, (byte)value);
         Write8(address + 1, (byte)(value >> 8));
         Write8(address + 2, (byte)(value >> 16));
