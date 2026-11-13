@@ -44,6 +44,7 @@ internal static class OberonCompilerRscTests
         EmitsNestedPointerArraySelectors();
         ExecutesCompilerProducedArrayCopy();
         ExecutesCompilerProducedByteArrayCopy();
+        ExecutesCompilerProducedFiveByteArrayCopy();
         ExecutesCompilerProducedStringBody();
         ExecutesCompilerProducedGlobalAssignmentAfterDescriptor();
         ExecutesExactTypeTestAsTrue();
@@ -1481,6 +1482,36 @@ internal static class OberonCompilerRscTests
         var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
         var image = runtime.Start(moduleName);
         return (memory, cpu, image);
+    }
+
+    private static void ExecutesCompilerProducedFiveByteArrayCopy()
+    {
+        const string source = "MODULE Bytes; TYPE Values = ARRAY 5 OF CHAR; VAR source, target: Values; BEGIN target := source; END Bytes.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+        var bytes = RscModuleWriter.Write(definition);
+        var loader = new OberonModuleLoader(name => name == "Bytes" ? bytes : null);
+        var memory = new Memory(64 * 1024);
+        var cpu = new Risc5Cpu(memory);
+        var runtime = new OberonModuleRuntime(memory, cpu, loader, 0x1000, 0x100);
+
+        var image = runtime.Start("Bytes");
+        for (var index = 0; index < 5; index++)
+        {
+            memory.Write8(image.DataAddress + (uint)index, (byte)('A' + index));
+        }
+
+        for (var step = 0; step < 48 && memory.Read8(image.DataAddress + 12) != (byte)'E'; step++)
+        {
+            cpu.Step();
+        }
+
+        for (var index = 0; index < 5; index++)
+        {
+            TestAssertions.Equal(
+                (uint)('A' + index),
+                memory.Read8(image.DataAddress + 8u + (uint)index));
+        }
     }
 
     private static void ExecutesCompilerProducedStringBody()
