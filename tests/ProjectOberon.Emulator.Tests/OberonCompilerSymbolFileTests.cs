@@ -14,6 +14,7 @@ internal static class OberonCompilerSymbolFileTests
         ReadsTypeFormMetadata();
         ReadsArrayTypeMetadata();
         ReadsArrayRecordElementMetadata();
+        ReadsParserGeneratedArrayRecordMetadata();
         ReadsRecordFieldArrayRecordMetadata();
         ReadsRecordTypeSizeMetadata();
         ReadsOpenArrayParameterMetadata();
@@ -189,6 +190,22 @@ internal static class OberonCompilerSymbolFileTests
         var module = OberonSymbolModuleReader.Parse(data);
 
         TestAssertions.Equal((int)OberonCompilerTypeForm.Integer, module.Exports[0].TypeForm);
+    }
+
+    private static void ReadsParserGeneratedArrayRecordMetadata()
+    {
+        var parsed = new OberonCompilerParser(
+            "MODULE Types; TYPE Node* = RECORD value*: INTEGER; END; Nodes* = ARRAY 2 OF Node; END Types.")
+            .ParseModule();
+        var nodes = parsed.ModuleScope!.Objects.Single(obj => obj.Name == "Nodes");
+        var module = OberonSymbolModuleReader.Parse(
+            OberonCompilerSymbolFileWriter.Write("Types", [nodes]));
+
+        var export = module.Exports[0];
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Array, export.TypeForm);
+        TestAssertions.Equal(2, export.ArrayLength);
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Record, export.BaseTypeForm);
+        TestAssertions.Equal("value", export.BaseRecordFields![0].Name);
     }
 
     private static void ReadsArrayRecordElementMetadata()
