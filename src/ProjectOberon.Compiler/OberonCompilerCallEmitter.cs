@@ -190,26 +190,37 @@ public sealed class OberonCompilerCallEmitter
             return;
         }
 
-        _addresses.EmitAddress(argument, destination);
         var type = OberonCompilerExpressionTypeResolver.Resolve(argument);
         if (type?.Form != OberonCompilerTypeForm.Array)
             throw new InvalidOperationException("open array argument must be an ARRAY");
         if (!OberonCompilerTypeRules.IsOpenArray(type))
         {
+            _addresses.EmitAddress(argument, destination);
             OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination + 1);
             _generator.EmitMoveImmediate(destination + 1, type.Length);
             return;
         }
 
-        if (argument is not OberonCompilerNameExpression { Symbol: { } symbol }
-            || symbol.Class != OberonCompilerObjectClass.Parameter)
+        if (argument is OberonCompilerNameExpression { Symbol: { } symbol }
+            && symbol.Class == OberonCompilerObjectClass.Parameter)
         {
-            throw new NotSupportedException("open array length source is not available");
+            _addresses.EmitAddress(argument, destination);
+            var lengthBase = _addresses.EmitStorageBase(symbol, destination + 1);
+            _generator.EmitLoad(destination + 1, lengthBase,
+                checked((int)symbol.Value + OberonCompilerOpenArrayLayout.LengthOffset));
+            return;
         }
 
-        var lengthBase = _addresses.EmitStorageBase(symbol, destination + 1);
-        _generator.EmitLoad(destination + 1, lengthBase,
-            checked((int)symbol.Value + OberonCompilerOpenArrayLayout.LengthOffset));
+        OberonCompilerRegisterAllocator.ValidateExpressionRegister(destination + 1);
+        _addresses.EmitAddress(argument, destination + 1);
+        _generator.EmitLoad(
+            destination,
+            destination + 1,
+            OberonCompilerOpenArrayLayout.DataPointerOffset);
+        _generator.EmitLoad(
+            destination + 1,
+            destination + 1,
+            OberonCompilerOpenArrayLayout.LengthOffset);
     }
 
     private static int ParameterRegisterCount(OberonCompilerObject parameter) =>

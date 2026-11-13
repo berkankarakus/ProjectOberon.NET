@@ -6,7 +6,7 @@ internal static class CompilerDiagnosticTests
     {
         FormatsFileLocationAndMessage();
         FormatsMultipleDiagnosticsOnSeparateLines();
-        ReportsDynamicOpenArraySelectorLengthRequirement();
+        AcceptsDynamicOpenArraySelectorLengthSource();
         ReportsNonAddressableAggregateArgument();
     }
 
@@ -35,15 +35,12 @@ internal static class CompilerDiagnosticTests
             OberonCompilerDiagnostics.Format("Demo.Mod", diagnostics));
     }
 
-    private static void ReportsDynamicOpenArraySelectorLengthRequirement()
+    private static void AcceptsDynamicOpenArraySelectorLengthSource()
     {
-        const string source = "MODULE Arrays; PROCEDURE Consume(items: ARRAY OF ARRAY OF INTEGER); BEGIN END Consume; PROCEDURE Forward(items: ARRAY OF ARRAY OF INTEGER); BEGIN Consume(items[0]); END Forward; BEGIN END Arrays.";
+        const string source = "MODULE Arrays; PROCEDURE Consume(items: ARRAY OF INTEGER); BEGIN END Consume; PROCEDURE Forward(items: ARRAY OF ARRAY OF INTEGER); BEGIN Consume(items[0]); END Forward; BEGIN END Arrays.";
         var module = new OberonCompilerParser(source).ParseModule();
 
-        TestAssertions.True(!module.Succeeded);
-        TestAssertions.True(module.Diagnostics.Any(diagnostic => diagnostic.Message.Contains(
-            "open array argument 'items' must be a named parameter",
-            StringComparison.Ordinal)));
+        TestAssertions.True(module.Succeeded);
     }
 
     private static void ReportsNonAddressableAggregateArgument()

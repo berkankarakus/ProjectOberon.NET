@@ -370,10 +370,10 @@ public sealed class OberonCompilerSemanticChecker
 
             if (actualType.Form == OberonCompilerTypeForm.Array
                 && actualType.Length < 0
-                && argument is not OberonCompilerNameExpression)
+                && !HasDynamicOpenArrayLengthSource(argument))
             {
                 AddDiagnostic(
-                    $"open array argument '{parameter.Name}' must be a named parameter when its length is dynamic");
+                    $"open array argument '{parameter.Name}' must have a descriptor-backed length source");
             }
         }
         else if (!AreAssignable(expectedType, actualType))
@@ -386,6 +386,20 @@ public sealed class OberonCompilerSemanticChecker
 
         if (!parameter.ReadOnly && !IsAddressable(argument))
             AddDiagnostic($"VAR argument '{parameter.Name}' of '{procedureName}' must be addressable");
+    }
+
+    private static bool HasDynamicOpenArrayLengthSource(OberonCompilerExpression argument)
+    {
+        return argument switch
+        {
+            OberonCompilerNameExpression
+            {
+                Symbol.Class: OberonCompilerObjectClass.Parameter,
+                Symbol.Type: { } type
+            } when OberonCompilerTypeRules.IsOpenArray(type) => true,
+            OberonCompilerIndexExpression => true,
+            _ => false
+        };
     }
 
     private void CheckBoolean(OberonCompilerExpression expression, string message)
