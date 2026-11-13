@@ -25,6 +25,7 @@ internal static class OberonCompilerSymbolFileTests
         ReadsArrayRecordParameterMetadata();
         ReadsRecordFieldMetadata();
         ReadsRepeatedFieldTypeReferences();
+        WritesDeterministicSymbolFiles();
         ReadsNestedRecordFieldMetadata();
         RejectsUnexportedSymbols();
         RejectsInvalidModuleNames();
@@ -81,6 +82,19 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal((int)OberonCompilerTypeForm.Record, export.ResultTypeForm);
         TestAssertions.Equal(4, export.ResultTypeSize);
         TestAssertions.Equal("value", export.ResultRecordFields![0].Name);
+    }
+
+    private static void WritesDeterministicSymbolFiles()
+    {
+        var parsed = new OberonCompilerParser(
+            "MODULE Factory; TYPE Node* = RECORD value*: INTEGER; END; PROCEDURE Make*(): Node; BEGIN END Make; END Factory.")
+            .ParseModule();
+        var exports = parsed.ModuleScope!.Objects.Where(symbol => symbol.Exported).ToArray();
+
+        var first = OberonCompilerSymbolFileWriter.Write("Factory", exports);
+        var second = OberonCompilerSymbolFileWriter.Write("Factory", exports);
+
+        TestAssertions.True(first.SequenceEqual(second));
     }
 
     private static void ReadsFunctionResultMetadata()
