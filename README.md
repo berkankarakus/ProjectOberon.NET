@@ -40,6 +40,11 @@ PROJECT_OBERON_DISK=/path/to/RISC-work.img \
   --skip-disk-tests
 ```
 
+The full verification script intentionally uses `--skip-disk-tests`. CI jobs
+that own a compatible disk artifact should run the test project without that
+flag and set `PROJECT_OBERON_DISK`; the test reports the missing artifact and
+the remediation command explicitly.
+
 Run the CLI:
 
 ```sh

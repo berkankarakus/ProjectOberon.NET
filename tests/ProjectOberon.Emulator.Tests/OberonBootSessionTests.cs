@@ -8,8 +8,15 @@ internal static class OberonBootSessionTests
     {
         using var machine = new Machine();
         var diskPath = Environment.GetEnvironmentVariable("PROJECT_OBERON_DISK");
+        var resolvedDiskPath = string.IsNullOrWhiteSpace(diskPath) ? "RISC-work.img" : diskPath;
+        if (!File.Exists(resolvedDiskPath))
+        {
+            throw new InvalidOperationException(
+                $"disk integration fixture is missing: {resolvedDiskPath}; set PROJECT_OBERON_DISK or use --skip-disk-tests");
+        }
+
         machine.OpenDisk(
-            string.IsNullOrWhiteSpace(diskPath) ? "RISC-work.img" : diskPath,
+            resolvedDiskPath,
             writable: false);
         var boot = OberonBootSession.Create(machine);
         boot.Boot("Oberon");
