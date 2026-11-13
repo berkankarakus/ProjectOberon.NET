@@ -23,6 +23,7 @@ internal static class OberonCompilerRscTests
         EmitsExternalByteVariableStoreFixup();
         EmitsMultipleExternalDataFixups();
         EmitsExternalRecordVariableDataFixup();
+        EmitsExternalRecordVariableReadFixup();
         EmitsExternalPointerVariableDataFixup();
         EmitsExternalArrayVariableDataFixup();
         EmitsExternalVarParameterCall();
@@ -652,6 +653,42 @@ internal static class OberonCompilerRscTests
         var module = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
 
         TestAssertions.True(module.FixupData > 0);
+    }
+
+    private static void EmitsExternalRecordVariableReadFixup()
+    {
+        var symbols = new OberonSymbolModule(
+            "State",
+            0x1234,
+            1,
+            [new OberonSymbolExport("Current", 2, 0)
+            {
+                IsProcedure = false,
+                TypeForm = (int)OberonCompilerTypeForm.Record,
+                TypeSize = 4,
+                RecordFields =
+                [
+                    new OberonSymbolField(
+                        "value",
+                        0,
+                        (int)OberonCompilerTypeForm.Integer,
+                        4,
+                        null,
+                        null,
+                        null)
+                ]
+            }]);
+        var result = new OberonCompilerParser(
+            "MODULE Demo; IMPORT State; VAR result: INTEGER; BEGIN result := State.Current.value; END Demo.",
+            importedModules: new Dictionary<string, OberonSymbolModule> { ["State"] = symbols })
+            .ParseModule();
+
+        TestAssertions.True(result.Succeeded);
+        var definition = new OberonCompilerModuleEmitter(new OberonCompilerCodeGenerator()).EmitRsc(result);
+
+        TestAssertions.Equal(1, definition.FixupData);
+        TestAssertions.True(definition.Code.Select(Risc5Disassembler.Format)
+            .Count(instruction => instruction.StartsWith("LDR r0")) >= 2);
     }
 
     private static void EmitsExternalPointerVariableDataFixup()
