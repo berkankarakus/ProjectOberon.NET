@@ -1,7 +1,9 @@
 # TODO
 
 The deterministic validation gate is `bash scripts/verify-dotnet.sh`. The
-external `RISC-work.img` flow remains a separate integration requirement.
+external `RISC-work.img` flow remains a separate integration requirement. The
+current ABI also cannot carry the length of a nested dynamic open-array
+selector; the semantic checker rejects that form with a deterministic error.
 
 ## Compiler
 
