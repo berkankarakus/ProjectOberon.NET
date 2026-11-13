@@ -11,6 +11,7 @@ internal static class OberonCompilerSymbolFileTests
         RoundTripsRecordFunctionResultSize();
         ReadsArrayRecordFunctionResultMetadata();
         ReadsPointerRecordTypeMetadata();
+        ReadsParserGeneratedPointerRecordMetadata();
         ReadsTypeFormMetadata();
         ReadsArrayTypeMetadata();
         ReadsArrayRecordElementMetadata();
@@ -175,6 +176,21 @@ internal static class OberonCompilerSymbolFileTests
         TestAssertions.Equal((int)OberonCompilerTypeForm.Pointer, export.TypeForm);
         TestAssertions.Equal((int)OberonCompilerTypeForm.Record, export.BaseTypeForm);
         TestAssertions.Equal(1, export.BaseRecordFields!.Count);
+        TestAssertions.Equal("value", export.BaseRecordFields![0].Name);
+    }
+
+    private static void ReadsParserGeneratedPointerRecordMetadata()
+    {
+        var parsed = new OberonCompilerParser(
+            "MODULE Types; TYPE Node* = RECORD value*: INTEGER; END; Ref* = POINTER TO Node; END Types.")
+            .ParseModule();
+        var reference = parsed.ModuleScope!.Objects.Single(obj => obj.Name == "Ref");
+        var module = OberonSymbolModuleReader.Parse(
+            OberonCompilerSymbolFileWriter.Write("Types", [reference]));
+
+        var export = module.Exports[0];
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Pointer, export.TypeForm);
+        TestAssertions.Equal((int)OberonCompilerTypeForm.Record, export.BaseTypeForm);
         TestAssertions.Equal("value", export.BaseRecordFields![0].Name);
     }
 
