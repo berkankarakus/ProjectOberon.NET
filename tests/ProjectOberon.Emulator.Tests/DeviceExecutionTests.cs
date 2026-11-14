@@ -9,6 +9,25 @@ internal static partial class DeviceTests
         TestAssertions.Equal(1000u, machine.Memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.Timer));
     }
 
+    public static void CapturesDebuggerRingTrace()
+    {
+        using var machine = new Machine();
+        var instruction = TestFixtures.MovImmediate(1, 42);
+        machine.Memory.LoadRomWords(TestFixtures.RomWith(instruction, instruction, instruction));
+        var debugger = new MachineDebugger(machine);
+
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() => debugger.EnableTrace(-1));
+        debugger.EnableTrace(2);
+        debugger.Run(3);
+
+        TestAssertions.Equal(2, debugger.Trace.Count);
+        TestAssertions.Equal(1ul, debugger.Trace.First().Step);
+        TestAssertions.Equal(machine.Cpu.LastPcByte, debugger.Trace.Last().ProgramCounter);
+        TestAssertions.Equal(instruction, debugger.Trace.Last().Instruction);
+        debugger.ClearTrace();
+        TestAssertions.Equal(0, debugger.Trace.Count);
+    }
+
     public static void MachineRunReportsProgress()
     {
         using var machine = new Machine();

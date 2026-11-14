@@ -18,6 +18,7 @@ var tests = new (string Name, Action Test)[]
     ("disk image lifecycle", DeviceTests.DiskImageValidatesLifecycle),
     ("SPI disk read/write", DeviceTests.SpiDiskReadWrite),
     ("machine timer", DeviceTests.MachineTimer),
+    ("debugger ring trace", DeviceTests.CapturesDebuggerRingTrace),
     ("machine run progress", DeviceTests.MachineRunReportsProgress),
     ("host call dispatcher", HostCallTests.DispatchesRegisteredHostCalls),
     ("host call failure diagnostics", HostCallTests.RecordsInstructionBeforeHostCallFailure),
