@@ -51,6 +51,8 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsAggregatePointerDereferenceAddress();
         EmitsThroughInstructionWriterAbstraction();
         EmitsLargeIntegerLiteralsThroughInstructionWriter();
+        EmitsImmediateOperandsForConstantExpressions();
+        EmitsComparisonImmediateForConstantExpressions();
         FoldsIntegerConstantExpressions();
         FoldsUnaryIntegerConstantExpressions();
         EliminatesIntegerIdentityOperations();
@@ -782,6 +784,33 @@ internal static class OberonCompilerExpressionEmitterTests
 
         TestAssertions.Equal(1, writer.Calls.Count);
         TestAssertions.Equal("MOV r4, 0x10000", writer.Calls[0]);
+    }
+
+    private static void EmitsImmediateOperandsForConstantExpressions()
+    {
+        const string source = "MODULE ImmediateConstant; VAR value, result: INTEGER; BEGIN result := value + (1 + 2); END ImmediateConstant.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal("LDR r0, [r13, 0]", instructions[0]);
+        TestAssertions.Equal("ADD r0, r0, 0x0003", instructions[1]);
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0003"));
+    }
+
+    private static void EmitsComparisonImmediateForConstantExpressions()
+    {
+        const string source = "MODULE ComparisonImmediateConstant; VAR value: INTEGER; result: BOOLEAN; BEGIN result := value < (1 + 2); END ComparisonImmediateConstant.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0003"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0003"));
     }
 
     private static void FoldsIntegerConstantExpressions()

@@ -358,11 +358,12 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerBinaryExpression binary,
         int destination)
     {
-        if (binary.Right is not OberonCompilerIntegerLiteralExpression literal
+        if (!IsInteger(binary.Right)
+            || !TryEvaluateInteger(binary.Right, out var constant)
             || IsReal(binary)
             || IsSet(binary)
             || IsRelation(binary.Operator)
-            || literal.Value is < -0x8000 or > 0xffff)
+            || constant is < -0x8000 or > 0xffff)
         {
             return false;
         }
@@ -388,7 +389,7 @@ public sealed class OberonCompilerExpressionEmitter
             immediateOperation,
             destination,
             destination,
-            checked((int)literal.Value));
+            constant);
         return true;
     }
 
@@ -608,19 +609,21 @@ public sealed class OberonCompilerExpressionEmitter
         }
 
         var comparison = binary.Operator;
-        OberonCompilerIntegerLiteralExpression literal;
-        if (binary.Right is OberonCompilerIntegerLiteralExpression rightLiteral
-            && IsInteger(binary.Left)
-            && IsInteger(rightLiteral))
+        var rightConstant = 0;
+        var constantOnRight = IsInteger(binary.Left)
+            && IsInteger(binary.Right)
+            && TryEvaluateInteger(binary.Right, out rightConstant);
+        var leftConstant = 0;
+        var constantOnLeft = IsInteger(binary.Left)
+            && IsInteger(binary.Right)
+            && TryEvaluateInteger(binary.Left, out leftConstant);
+        var constant = constantOnRight ? rightConstant : leftConstant;
+        if (constantOnRight)
         {
-            literal = rightLiteral;
             comparison = binary.Operator;
         }
-        else if (binary.Left is OberonCompilerIntegerLiteralExpression leftLiteral
-            && IsInteger(binary.Right)
-            && IsInteger(leftLiteral))
+        else if (constantOnLeft)
         {
-            literal = leftLiteral;
             comparison = ReverseComparison(binary.Operator);
         }
         else
@@ -628,12 +631,12 @@ public sealed class OberonCompilerExpressionEmitter
             return false;
         }
 
-        if (literal.Value is < -0x8000 or > 0xffff)
+        if (constant is < -0x8000 or > 0xffff)
         {
             return false;
         }
 
-        if (binary.Right is OberonCompilerIntegerLiteralExpression)
+        if (constantOnRight)
         {
             EmitExpression(binary.Left, destination);
         }
@@ -647,7 +650,7 @@ public sealed class OberonCompilerExpressionEmitter
             AluOperation.Sub,
             destination,
             destination,
-            checked((int)literal.Value));
+            constant);
         EmitBooleanFromCondition(destination, condition, invert);
         return true;
     }
