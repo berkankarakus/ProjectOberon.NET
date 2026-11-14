@@ -100,6 +100,9 @@ internal static class SubcommandOptionTests
         TestAssertions.Throws<ArgumentNullException>(() => RscOptions.Parse(null!));
         TestAssertions.Throws<ArgumentException>(() => RscOptions.Parse([]));
         TestAssertions.Throws<ArgumentException>(() => RscOptions.Parse(["--disk", "work.img", "--count", "0"]));
+        TestAssertions.Throws<ArgumentException>(() => RscOptions.Parse(["--disk", "one.img", "--disk", "two.img"]));
+        TestAssertions.Throws<ArgumentException>(() => RscOptions.Parse(["--disk", "work.img", "--module", "A", "--module", "B"]));
+        TestAssertions.Throws<ArgumentException>(() => RscOptions.Parse(["--disk", "work.img", "--count", "1", "--count", "2"]));
         TestAssertions.Throws<ArgumentException>(() => RscOptions.Parse(["--disk"]));
         TestAssertions.Throws<ArgumentException>(() => RscOptions.Parse(["--unknown"]));
     }
