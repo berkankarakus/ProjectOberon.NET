@@ -13,6 +13,9 @@ internal static class PerformanceBenchmarkTests
             Benchmark("memory read/write", iterations, BenchmarkMemory),
             Benchmark("memory read/write with statistics", iterations, BenchmarkMemoryWithStatistics),
             Benchmark("cpu step", iterations, BenchmarkCpu),
+            Benchmark("machine step", iterations, BenchmarkMachine),
+            Benchmark("machine run with progress", Math.Max(1, iterations / 10), BenchmarkMachineWithProgress),
+            Benchmark("host call dispatch", iterations, BenchmarkHostCallDispatch),
             Benchmark("compiler emit", Math.Max(1, iterations / 100), BenchmarkCompiler)
         };
 
@@ -95,6 +98,42 @@ internal static class PerformanceBenchmarkTests
         }
 
         GC.KeepAlive(cpu.Steps);
+    }
+
+    private static void BenchmarkMachine(int iterations)
+    {
+        using var machine = CreateBenchmarkMachine();
+        machine.Run((ulong)iterations);
+        GC.KeepAlive(machine.Cpu.Steps);
+    }
+
+    private static void BenchmarkMachineWithProgress(int iterations)
+    {
+        using var machine = CreateBenchmarkMachine();
+        machine.Run(
+            (ulong)iterations,
+            static _ => { },
+            progressInterval: (ulong)Math.Max(1, iterations / 4));
+        GC.KeepAlive(machine.Cpu.Steps);
+    }
+
+    private static void BenchmarkHostCallDispatch(int iterations)
+    {
+        using var machine = new Machine();
+        var address = machine.Cpu.PcByte;
+        machine.HostCalls.Register(address, static context =>
+            context.Cpu.SetProgramCounter(context.Cpu.PcByte));
+        machine.Run((ulong)iterations);
+        GC.KeepAlive(machine.Cpu.Steps);
+    }
+
+    private static Machine CreateBenchmarkMachine()
+    {
+        var machine = new Machine();
+        var rom = new uint[Memory.RomWords];
+        Array.Fill(rom, TestFixtures.Alu(AluOperation.Add, 0, 0, 0));
+        machine.Memory.LoadRomWords(rom);
+        return machine;
     }
 
     private static void BenchmarkCompiler(int iterations)
