@@ -20,6 +20,7 @@ internal static partial class OberonFileSystemTests
         TestAssertions.Equal(4, content.Length);
         TestAssertions.Equal((byte)1, content[0]);
         TestAssertions.Equal((byte)4, content[3]);
+        fileSystem.Validate();
     }
 
     private static void DetectsMissingDataSectors()
@@ -36,5 +37,6 @@ internal static partial class OberonFileSystemTests
 
         TestAssertions.Throws<InvalidDataException>(() =>
             fileSystem.ReadFile(new OberonDirectoryEntry("Demo.Mod", headerAddress)));
+        TestAssertions.Throws<InvalidDataException>(() => fileSystem.Validate());
     }
 }

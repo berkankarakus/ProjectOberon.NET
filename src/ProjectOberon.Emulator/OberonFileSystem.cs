@@ -50,6 +50,37 @@ public sealed class OberonFileSystem
         return result;
     }
 
+    public void Validate()
+    {
+        var referencedSectors = new HashSet<int>();
+        foreach (var entry in Enumerate())
+        {
+            var header = ReadHeader(entry.HeaderAddress);
+            if (!string.Equals(header.Name, entry.Name, StringComparison.Ordinal))
+            {
+                throw new InvalidDataException(
+                    $"directory name does not match file header at sector {entry.HeaderAddress}");
+            }
+
+            foreach (var address in OberonFileHeaderCodec.ReadPageAddresses(header, ReadLogicalSector))
+            {
+                if (address <= 0 || address % LogicalSectorUnit != 0)
+                {
+                    throw new InvalidDataException(
+                        $"file {entry.Name} contains an invalid data sector {address}");
+                }
+
+                if (!referencedSectors.Add(address))
+                {
+                    throw new InvalidDataException(
+                        $"file sector {address} is referenced more than once");
+                }
+            }
+
+            _ = ReadFile(entry);
+        }
+    }
+
     public byte[] ReadLogicalSector(int address)
     {
         return OberonDiskLayout.ReadSector(_disk, address);
