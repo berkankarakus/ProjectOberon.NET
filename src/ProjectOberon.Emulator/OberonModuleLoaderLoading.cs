@@ -29,10 +29,9 @@ public sealed partial class OberonModuleLoader
             imports.Capacity = definition.Imports.Count;
             foreach (var import in definition.Imports)
             {
-                var wasLoaded = _loaded.ContainsKey(import.Name);
-                var imported = Load(import.Name);
-                if (!wasLoaded)
+                if (!_loaded.TryGetValue(import.Name, out var imported))
                 {
+                    imported = Load(import.Name);
                     newlyLoadedImports.Add(imported);
                 }
 
