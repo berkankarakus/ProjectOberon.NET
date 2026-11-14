@@ -14,6 +14,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsRealComparisons();
         EmitsIntegerComparisonsWithImmediateOperands();
         EmitsReversedIntegerComparisonWithImmediateOperand();
+        EmitsBooleanComparisonsWithoutBranches();
         EmitsPointerValues();
         EmitsPointerDereference();
         EmitsForLoop();
@@ -313,6 +314,21 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0003"));
         TestAssertions.False(instructions.Any(instruction => instruction == "MOV r0, 0x0003"));
+    }
+
+    private static void EmitsBooleanComparisonsWithoutBranches()
+    {
+        const string source = "MODULE BooleanCompare; VAR left, right, equal, different: BOOLEAN; BEGIN equal := left = right; different := left # right; END BooleanCompare.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal(9, instructions.Length);
+        TestAssertions.Equal(3, instructions.Count(instruction => instruction.StartsWith("XOR ", StringComparison.Ordinal)));
+        TestAssertions.Equal(1, instructions.Count(instruction => instruction == "XOR r0, r0, 0x0001"));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("B", StringComparison.Ordinal)));
     }
 
     private static void EmitsPointerValues()

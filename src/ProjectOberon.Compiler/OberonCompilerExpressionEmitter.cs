@@ -271,6 +271,11 @@ public sealed class OberonCompilerExpressionEmitter
             return destination;
         }
 
+        if (TryEmitBooleanComparison(binary, destination))
+        {
+            return destination;
+        }
+
         var temporary = _registers.AcquireTemporary(destination);
         using var protectedDestination = _registers.ReserveRangeScope(destination, 1);
         try
@@ -613,6 +618,41 @@ public sealed class OberonCompilerExpressionEmitter
             checked((int)literal.Value));
         EmitBooleanFromCondition(destination, condition, invert);
         return true;
+    }
+
+    private bool TryEmitBooleanComparison(
+        OberonCompilerBinaryExpression binary,
+        int destination)
+    {
+        if (binary.Operator is not (
+                OberonCompilerTokenKind.Equal or
+                OberonCompilerTokenKind.NotEqual)
+            || OberonCompilerExpressionTypeResolver.Resolve(binary.Left)?.Form
+                != OberonCompilerTypeForm.Boolean
+            || OberonCompilerExpressionTypeResolver.Resolve(binary.Right)?.Form
+                != OberonCompilerTypeForm.Boolean)
+        {
+            return false;
+        }
+
+        var temporary = _registers.AcquireTemporary(destination);
+        using var protectedDestination = _registers.ReserveRangeScope(destination, 1);
+        try
+        {
+            EmitExpression(binary.Left, destination);
+            EmitExpression(binary.Right, temporary);
+            _generator.EmitRegister(AluOperation.Xor, destination, destination, temporary);
+            if (binary.Operator == OberonCompilerTokenKind.Equal)
+            {
+                _generator.EmitImmediate(AluOperation.Xor, destination, destination, 1);
+            }
+
+            return true;
+        }
+        finally
+        {
+            _registers.ReleaseTemporary(temporary);
+        }
     }
 
     private static OberonCompilerTokenKind ReverseComparison(
