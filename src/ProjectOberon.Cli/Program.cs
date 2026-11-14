@@ -2,6 +2,7 @@ using ProjectOberon.Emulator;
 using ProjectOberon.Rsc;
 
 Machine? machine = null;
+MachineDebugger? debugger = null;
 try
 {
     var options = Options.Parse(args);
@@ -45,7 +46,11 @@ try
         }
     }
 
-    var debugger = new MachineDebugger(machine);
+    debugger = new MachineDebugger(machine);
+    if (options.TraceHistory is int traceHistory)
+    {
+        debugger.EnableTrace(traceHistory);
+    }
     if (options.Breakpoint is uint breakpoint)
     {
         debugger.AddBreakpoint(breakpoint);
@@ -108,6 +113,14 @@ try
 catch (Exception error)
 {
     Console.Error.WriteLine(OberonRuntimeDiagnostics.Format("project-oberon", machine, error));
+    if (debugger?.Trace.Count > 0)
+    {
+        Console.Error.WriteLine("trace history:");
+        foreach (var entry in debugger.Trace)
+        {
+            Console.Error.WriteLine(MachineTraceFormatter.Format(entry));
+        }
+    }
     Environment.ExitCode = 1;
 }
 finally

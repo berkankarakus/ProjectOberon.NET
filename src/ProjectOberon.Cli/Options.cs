@@ -5,6 +5,7 @@ internal sealed record Options(
     ulong Steps,
     bool Help,
     int? Trace,
+    int? TraceHistory,
     ulong? ProgressInterval,
     uint? Breakpoint,
     bool BootTrace,
@@ -20,7 +21,7 @@ internal sealed record Options(
         if (args.Contains("--help", StringComparer.Ordinal)
             || args.Contains("-h", StringComparer.Ordinal))
         {
-            return new Options(null, null, true, 1000, true, null, null, null,
+            return new Options(null, null, true, 1000, true, null, null, null, null,
                 false, false, null, false, false, null);
         }
 
@@ -31,6 +32,7 @@ internal sealed record Options(
         var stepsSpecified = false;
         var help = false;
         int? trace = null;
+        int? traceHistory = null;
         ulong? progressInterval = null;
         uint? breakpoint = null;
         var bootTrace = false;
@@ -85,6 +87,20 @@ internal sealed record Options(
                     if (!int.TryParse(Next(args, ref index, "--trace"), out var traceValue) || traceValue < 0)
                         throw new ArgumentException("--trace must be a non-negative integer");
                     trace = traceValue;
+                    break;
+                case "--trace-history":
+                    if (traceHistory is not null)
+                    {
+                        throw new ArgumentException("trace history size specified more than once");
+                    }
+
+                    if (!int.TryParse(Next(args, ref index, "--trace-history"), out var traceHistoryValue)
+                        || traceHistoryValue <= 0)
+                    {
+                        throw new ArgumentException("--trace-history must be a positive integer");
+                    }
+
+                    traceHistory = traceHistoryValue;
                     break;
                 case "--progress":
                     if (progressInterval is not null)
@@ -149,12 +165,12 @@ internal sealed record Options(
         if (command is not null && startModule is null)
             throw new ArgumentException("--command requires --start-module NAME");
 
-        return new Options(rom, disk, diskWritable, steps, help, trace, progressInterval, breakpoint, bootTrace, bootGraph,
+        return new Options(rom, disk, diskWritable, steps, help, trace, traceHistory, progressInterval, breakpoint, bootTrace, bootGraph,
             startModule, initialize, boot, command);
     }
 
     public static void PrintUsage() => Console.Error.WriteLine(
-        "usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--progress N] [--breakpoint HEX-PC] [--boot-trace] [--boot-graph] [--start-module NAME [--initialize|--boot] [--command NAME]]");
+        "usage: project-oberon [--rom FILE] [--disk FILE] [--read-only] [--steps N] [--trace N] [--trace-history N] [--progress N] [--breakpoint HEX-PC] [--boot-trace] [--boot-graph] [--start-module NAME [--initialize|--boot] [--command NAME]]");
 
     private static string Next(string[] args, ref int index, string option)
     {
