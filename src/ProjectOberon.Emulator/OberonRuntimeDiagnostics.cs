@@ -21,8 +21,14 @@ public static class OberonRuntimeDiagnostics
         {
             var cpu = machine.Cpu;
             output.AppendLine($"cpu: steps={cpu.Steps} pc=0x{cpu.PcByte:x6} high=0x{cpu.High:x8}");
-            output.AppendLine($"registers: r0=0x{cpu.Register(0):x8} r1=0x{cpu.Register(1):x8} "
-                + $"r12=0x{cpu.Register(12):x8} r14=0x{cpu.Register(14):x8} r15=0x{cpu.Register(15):x8}");
+            output.AppendLine($"last: pc=0x{cpu.LastPcByte:x6} instruction=0x{cpu.LastInstruction:x8} "
+                + Risc5Disassembler.Format(cpu.LastInstruction));
+            var registers = new StringBuilder("registers:");
+            for (var index = 0; index < 16; index++)
+            {
+                registers.Append($" r{index}=0x{cpu.Register(index):x8}");
+            }
+            output.AppendLine(registers.ToString());
             output.AppendLine($"flags: N={cpu.Negative} Z={cpu.Zero} C={cpu.Carry} V={cpu.Overflow}");
         }
 

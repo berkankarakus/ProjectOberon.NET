@@ -37,6 +37,8 @@ public sealed partial class Risc5Cpu
     public bool Carry => _carry;
     public bool Overflow => _overflow;
     public ulong Steps { get; private set; }
+    public uint LastPcByte { get; private set; }
+    public uint LastInstruction { get; private set; }
     public uint Register(int index) => _registers[index & 15];
 
     public void SetRegister(int index, uint value)
@@ -73,6 +75,8 @@ public sealed partial class Risc5Cpu
         _irqLevel = _interruptEnabled = _interruptPending = _interruptMode = false;
         _savedPc = 0;
         _savedNegative = _savedZero = _savedCarry = _savedOverflow = false;
+        LastPcByte = 0;
+        LastInstruction = 0;
         Steps = 0;
     }
 
@@ -80,7 +84,9 @@ public sealed partial class Risc5Cpu
 
     public void Step(bool irq)
     {
-        var instruction = Decode(_memory.ReadInstruction(PcByte));
+        LastPcByte = PcByte;
+        LastInstruction = _memory.ReadInstruction(LastPcByte);
+        var instruction = Decode(LastInstruction);
         var nextPc = (_pc + 1u) & InstructionBits.BranchDisplacementMask;
         var interruptAck = _interruptPending && _interruptEnabled && !_interruptMode;
         var irqRising = irq && !_irqLevel;
