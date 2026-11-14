@@ -17,6 +17,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Install SDL2 runtime
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libsdl2-2.0-0
+
       - name: Build and run deterministic tests
         env:
           PROJECT_OBERON_DOTNET_ARTIFACTS: ${{ github.workspace }}/artifacts/dotnet
