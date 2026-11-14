@@ -100,9 +100,15 @@ public sealed partial class Risc5Cpu
 
     public void Step() => Step(false);
 
-    public void Step(bool irq)
+    public void Step(bool irq) => Step(irq, instructionRecorded: false);
+
+    internal void Step(bool irq, bool instructionRecorded)
     {
-        RecordCurrentInstruction();
+        if (!instructionRecorded)
+        {
+            RecordCurrentInstruction();
+        }
+
         var instruction = Decode(LastInstruction);
         var nextPc = (_pc + 1u) & InstructionBits.BranchDisplacementMask;
         var interruptAck = _interruptPending && _interruptEnabled && !_interruptMode;

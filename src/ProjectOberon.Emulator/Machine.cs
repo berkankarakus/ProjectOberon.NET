@@ -38,7 +38,9 @@ public sealed class Machine : IDisposable
         Cpu.RecordCurrentInstruction();
         if (!HostCalls.TryDispatch(Memory, Cpu))
         {
-            Cpu.Step(irq || _timerPhase == TimerInterruptPeriod - 1);
+            Cpu.Step(
+                irq || _timerPhase == TimerInterruptPeriod - 1,
+                instructionRecorded: true);
         }
 
         _timerPhase++;
