@@ -2,6 +2,29 @@ using ProjectOberon.Emulator;
 
 internal static partial class OberonModuleTests
 {
+    public static void SharedDependencyReferenceCounts()
+    {
+        var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+        {
+            ["A.rsc"] = BuildRsc("A", 100, [("B", 200)], "Start"),
+            ["B.rsc"] = BuildRsc("B", 200, [], "Run"),
+            ["C.rsc"] = BuildRsc("C", 300, [("B", 200)], "Start")
+        };
+        var loader = new OberonModuleLoader(name => modules.TryGetValue($"{name}.rsc", out var data) ? data : null);
+
+        loader.Load("A");
+        loader.Load("C");
+
+        TestAssertions.Equal(3, loader.LoadedModules.Count);
+        TestAssertions.False(loader.Free("B"));
+        TestAssertions.True(loader.Free("A"));
+        TestAssertions.Equal(2, loader.LoadedModules.Count);
+        TestAssertions.False(loader.Free("B"));
+        TestAssertions.True(loader.Free("C"));
+        TestAssertions.True(loader.Free("B"));
+        TestAssertions.Equal(0, loader.LoadedModules.Count);
+    }
+
     public static void LoaderGraph()
     {
         var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal)

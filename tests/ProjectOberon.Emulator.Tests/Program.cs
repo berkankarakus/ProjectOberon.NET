@@ -55,6 +55,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon persistent files", OberonPersistenceTests.OberonPersistentFiles),
     ("Oberon failed file allocation rollback", OberonPersistenceTests.RollsBackFailedFileAllocation),
     ("Oberon module loader", OberonModuleTests.LoaderGraph),
+    ("shared module dependency reference counts", OberonModuleTests.SharedDependencyReferenceCounts),
     ("Oberon module memory image", OberonModuleTests.MemoryImage),
     ("Oberon module runtime validation", OberonModuleTests.ValidatesRuntimeArguments),
     ("Oberon module memory validation", OberonModuleMemoryValidationTests.ValidatesLoaderAddresses),
