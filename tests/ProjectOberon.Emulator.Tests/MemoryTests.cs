@@ -40,7 +40,8 @@ internal static class MemoryTests
             originalRom[0] = 0xdead_beefu;
             memory.LoadRomWords(originalRom);
 
-            TestAssertions.Throws<InvalidDataException>(() => memory.LoadRomFile(path));
+            var error = TestAssertions.Throws<InvalidDataException>(() => memory.LoadRomFile(path));
+            TestAssertions.True(error.Message.Contains("line 2", StringComparison.Ordinal));
             TestAssertions.Equal(0xdead_beefu, memory.Read32(Memory.RomBase));
             TestAssertions.Throws<ArgumentException>(() => new Memory().LoadRomWords([1u]));
         }

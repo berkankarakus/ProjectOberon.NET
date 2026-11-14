@@ -152,12 +152,13 @@ public sealed class Memory : IMemoryBus
         ArgumentException.ThrowIfNullOrEmpty(path);
         var words = new uint[MemoryMap.RomWords];
         var index = 0;
+        var lineNumber = 0;
         foreach (var originalLine in File.ReadLines(path))
         {
+            lineNumber++;
             if (index >= MemoryMap.RomWords)
             {
-                throw new InvalidDataException(
-                    $"ROM file contains more than {MemoryMap.RomWords} words: {path}");
+                throw new InvalidDataException($"ROM file contains more than {MemoryMap.RomWords} words at line {lineNumber}: {path}");
             }
             var line = originalLine;
             var comment = line.IndexOfAny(['#', ';']);
@@ -171,7 +172,7 @@ public sealed class Memory : IMemoryBus
                 continue;
             }
             if (!uint.TryParse(line.Trim(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var word))
-                throw new InvalidDataException($"Invalid ROM word at line {index + 1}: {path}");
+                throw new InvalidDataException($"Invalid ROM word at line {lineNumber}: {path}");
             words[index++] = word;
         }
 
