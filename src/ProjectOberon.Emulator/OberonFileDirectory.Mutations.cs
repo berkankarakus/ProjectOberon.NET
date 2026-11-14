@@ -181,6 +181,7 @@ public sealed partial class OberonFileDirectory
             page.Entries.RemoveAt(childIndex);
             page.Children.RemoveAt(childIndex + 1);
             WritePage(childAddress, child);
+            _kernel.FreeSector(rightAddress);
             return;
         }
 
@@ -204,6 +205,7 @@ public sealed partial class OberonFileDirectory
         page.Entries.RemoveAt(childIndex - 1);
         page.Children.RemoveAt(childIndex);
         WritePage(leftAddress, left);
+        _kernel.FreeSector(childAddress);
     }
 
     private EntryWithAddress Rightmost(int address)
