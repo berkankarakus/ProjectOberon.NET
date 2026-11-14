@@ -16,6 +16,7 @@ internal static class OberonCompilerOptimizationBaselineTests
         MeasuresLoopFixture();
         MeasuresForLoopFixture();
         MeasuresAggregateCopyFixture();
+        MatchesImmediateOptimizationGoldenFixture();
     }
 
     private static void MeasuresArithmeticFixture()
@@ -208,6 +209,22 @@ internal static class OberonCompilerOptimizationBaselineTests
             maxSteps: 256);
 
         AssertBaseline(module, steps, codeWords: 10, rscBytes: 102, runtimeSteps: 10);
+    }
+
+    private static void MatchesImmediateOptimizationGoldenFixture()
+    {
+        const string source =
+            "MODULE ImmediateGolden; VAR value, result: INTEGER; BEGIN result := value + (1 + 2) END ImmediateGolden.";
+        var parsed = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(parsed.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.SequenceEqual([
+            "LDR r0, [r13, 0]",
+            "ADD r0, r0, 0x0003",
+            "STR r0, [r13, 4]"
+        ]));
     }
 
     private static CompiledModule Compile(string moduleName, string source)
