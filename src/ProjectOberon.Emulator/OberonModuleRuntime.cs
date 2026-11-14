@@ -61,10 +61,9 @@ public sealed class OberonModuleRuntime
         }
 
         const uint returnAddress = Memory.RomBase;
-        var savedProgramCounter = _cpu.PcByte;
-        var savedRegisters = CaptureRegisters();
+        var savedState = _cpu.CaptureExecutionState();
 
-        var savedStack = savedRegisters[14];
+        var savedStack = _cpu.Register(14);
         try
         {
             var initializerStack = savedStack == 0 ? AlignStack(_memory.RamSize) : savedStack;
@@ -97,9 +96,7 @@ public sealed class OberonModuleRuntime
         }
         finally
         {
-            RestoreRegisters(savedRegisters);
-
-            _cpu.SetProgramCounter(savedProgramCounter);
+            _cpu.RestoreExecutionState(savedState);
         }
     }
 
@@ -145,30 +142,11 @@ public sealed class OberonModuleRuntime
         return (uint)(ramSize - 4);
     }
 
-    private uint[] CaptureRegisters()
-    {
-        var registers = new uint[16];
-        for (var index = 0; index < registers.Length; index++)
-        {
-            registers[index] = _cpu.Register(index);
-        }
-
-        return registers;
-    }
-
     private void ClearRegisters()
     {
         for (var index = 0; index < 16; index++)
         {
             _cpu.SetRegister(index, 0);
-        }
-    }
-
-    private void RestoreRegisters(IReadOnlyList<uint> registers)
-    {
-        for (var index = 0; index < registers.Count; index++)
-        {
-            _cpu.SetRegister(index, registers[index]);
         }
     }
 

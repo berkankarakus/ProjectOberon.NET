@@ -2,6 +2,24 @@ using System.Numerics;
 
 namespace ProjectOberon.Emulator;
 
+internal sealed record Risc5CpuExecutionState(
+    uint[] Registers,
+    uint ProgramCounter,
+    uint High,
+    bool Negative,
+    bool Zero,
+    bool Carry,
+    bool Overflow,
+    bool IrqLevel,
+    bool InterruptEnabled,
+    bool InterruptPending,
+    bool InterruptMode,
+    uint SavedProgramCounter,
+    bool SavedNegative,
+    bool SavedZero,
+    bool SavedCarry,
+    bool SavedOverflow);
+
 public sealed partial class Risc5Cpu
 {
     public const uint ResetPc = 0x003f_f800u;
@@ -146,6 +164,44 @@ public sealed partial class Risc5Cpu
     internal void CountHostCall()
     {
         Steps++;
+    }
+
+    internal Risc5CpuExecutionState CaptureExecutionState() => new(
+        (uint[])_registers.Clone(),
+        _pc,
+        _high,
+        _negative,
+        _zero,
+        _carry,
+        _overflow,
+        _irqLevel,
+        _interruptEnabled,
+        _interruptPending,
+        _interruptMode,
+        _savedPc,
+        _savedNegative,
+        _savedZero,
+        _savedCarry,
+        _savedOverflow);
+
+    internal void RestoreExecutionState(Risc5CpuExecutionState state)
+    {
+        state.Registers.CopyTo(_registers, 0);
+        _pc = state.ProgramCounter;
+        _high = state.High;
+        _negative = state.Negative;
+        _zero = state.Zero;
+        _carry = state.Carry;
+        _overflow = state.Overflow;
+        _irqLevel = state.IrqLevel;
+        _interruptEnabled = state.InterruptEnabled;
+        _interruptPending = state.InterruptPending;
+        _interruptMode = state.InterruptMode;
+        _savedPc = state.SavedProgramCounter;
+        _savedNegative = state.SavedNegative;
+        _savedZero = state.SavedZero;
+        _savedCarry = state.SavedCarry;
+        _savedOverflow = state.SavedOverflow;
     }
 
 }
