@@ -19,6 +19,32 @@ public sealed partial class OberonDisplay
 
             var left = Math.Max(0, glyphX);
             var right = Math.Min(Display.Width, glyphX + glyph.Width);
+
+            if (glyph.Width <= 32)
+            {
+                var rasterBits = 0u;
+                var rasterOffset = row * rowBytes;
+                for (var byteIndex = 0; byteIndex < rowBytes; byteIndex++)
+                {
+                    rasterBits |= (uint)glyph.Raster[rasterOffset + byteIndex] << (byteIndex * 8);
+                }
+
+                for (var wordX = left & ~31; wordX < right; wordX += 32)
+                {
+                    var start = Math.Max(left, wordX);
+                    var end = Math.Min(right, wordX + 32);
+                    var count = end - start;
+                    var column = start - glyphX;
+                    var mask = ((rasterBits >> column) & LowBits(count)) << (start & 31);
+                    if (mask != 0)
+                    {
+                        ApplyWordMask(PixelAddress(wordX, targetY), mask, color, mode);
+                    }
+                }
+
+                continue;
+            }
+
             for (var wordX = left & ~31; wordX < right; wordX += 32)
             {
                 var start = Math.Max(left, wordX);
