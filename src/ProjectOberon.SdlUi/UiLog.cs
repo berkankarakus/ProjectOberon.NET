@@ -22,5 +22,11 @@ internal sealed class UiLog : IDisposable
         _writer?.WriteLine($"{DateTimeOffset.UtcNow:O} {message}");
     }
 
+    public void WriteError(Exception error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        Write($"error type={error.GetType().FullName} message={error.Message}");
+    }
+
     public void Dispose() => _writer?.Dispose();
 }

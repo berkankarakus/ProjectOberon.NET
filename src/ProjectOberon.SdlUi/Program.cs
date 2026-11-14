@@ -50,7 +50,15 @@ try
             log.Write($"start module={image.Module.Name} pc=0x{machine.Cpu.PcByte:x6}");
         }
     }
-    Run(machine, options, log);
+    try
+    {
+        Run(machine, options, log);
+    }
+    catch (Exception error)
+    {
+        log.WriteError(error);
+        throw;
+    }
 }
 catch (Exception error)
 {

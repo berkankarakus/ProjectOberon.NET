@@ -82,5 +82,6 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Add a filesystem consistency validator for directory/header/data-sector relationships.
 - [x] Expose immutable heap statistics for diagnostics and performance measurements.
 - [x] Restore complete CPU execution state after module initializer execution.
+- [x] Persist SDL runtime exceptions to the configured UI log before rethrowing.
 - [x] [P1] Add end-to-end compiler fixtures covering pointers, records, arrays and imports; the deterministic RSC emulator suite covers these paths.
 - [x] [P1] Add an SDL frontend smoke test that does not require an interactive session; UI logic, input, framebuffer and editor routing are covered without opening a window.
