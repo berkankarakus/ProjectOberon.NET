@@ -55,29 +55,7 @@ public sealed class OberonFileSystem
         var referencedSectors = new HashSet<int>();
         foreach (var entry in Enumerate())
         {
-            var header = ReadHeader(entry.HeaderAddress);
-            if (!string.Equals(header.Name, entry.Name, StringComparison.Ordinal))
-            {
-                throw new InvalidDataException(
-                    $"directory name does not match file header at sector {entry.HeaderAddress}");
-            }
-
-            foreach (var address in OberonFileHeaderCodec.ReadPageAddresses(header, ReadLogicalSector))
-            {
-                if (address <= 0 || address % LogicalSectorUnit != 0)
-                {
-                    throw new InvalidDataException(
-                        $"file {entry.Name} contains an invalid data sector {address}");
-                }
-
-                if (!referencedSectors.Add(address))
-                {
-                    throw new InvalidDataException(
-                        $"file sector {address} is referenced more than once");
-                }
-            }
-
-            _ = ReadFile(entry);
+            ValidateEntry(entry, referencedSectors);
         }
     }
 
@@ -87,6 +65,51 @@ public sealed class OberonFileSystem
     }
 
     public static uint PhysicalSector(int address) => OberonDiskLayout.PhysicalSector(address);
+
+    private void ValidateEntry(OberonDirectoryEntry entry, HashSet<int> referencedSectors)
+    {
+        var header = ReadHeader(entry.HeaderAddress);
+        ValidateHeaderName(entry, header);
+        ValidatePageAddresses(entry.Name, header, referencedSectors);
+        _ = ReadFile(entry);
+    }
+
+    private static void ValidateHeaderName(OberonDirectoryEntry entry, OberonFileHeader header)
+    {
+        if (string.Equals(header.Name, entry.Name, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        throw new InvalidDataException(
+            $"directory name does not match file header at sector {entry.HeaderAddress}");
+    }
+
+    private void ValidatePageAddresses(
+        string fileName,
+        OberonFileHeader header,
+        HashSet<int> referencedSectors)
+    {
+        foreach (var address in OberonFileHeaderCodec.ReadPageAddresses(header, ReadLogicalSector))
+        {
+            ValidatePageAddress(fileName, address);
+            if (!referencedSectors.Add(address))
+            {
+                throw new InvalidDataException(
+                    $"file sector {address} is referenced more than once");
+            }
+        }
+    }
+
+    private static void ValidatePageAddress(string fileName, int address)
+    {
+        if (address > 0 && address % LogicalSectorUnit == 0)
+        {
+            return;
+        }
+
+        throw new InvalidDataException($"file {fileName} contains an invalid data sector {address}");
+    }
 
     private void EnumeratePage(int address, string prefix, List<OberonDirectoryEntry> entries, HashSet<int> visited)
     {
