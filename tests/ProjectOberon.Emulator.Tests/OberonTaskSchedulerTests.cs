@@ -10,6 +10,7 @@ internal static class OberonTaskSchedulerTests
         RejectsRemovingTasksOwnedByAnotherScheduler();
         CollectsActivityCount();
         ValidatesTasksAndRestoresStateAfterFailure();
+        RestoresExecutingTaskStateWhenHandlerRemovesAnotherTask();
     }
 
     private static void CreatesTasksOffAndInstallsOnce()
@@ -92,5 +93,21 @@ internal static class OberonTaskSchedulerTests
         scheduler.Install(task);
         TestAssertions.Throws<InvalidOperationException>(() => scheduler.Tick(0));
         TestAssertions.Equal(OberonTaskState.Idle, task.State);
+    }
+
+    private static void RestoresExecutingTaskStateWhenHandlerRemovesAnotherTask()
+    {
+        var scheduler = new OberonTaskScheduler();
+        var target = scheduler.NewTask(static () => { }, 1);
+        scheduler.Install(target);
+
+        var executing = scheduler.NewTask(() => scheduler.Remove(target), 1);
+        scheduler.Install(scheduler.NewTask(static () => { }, 1));
+        scheduler.Install(executing);
+
+        scheduler.Tick(0);
+
+        TestAssertions.Equal(OberonTaskState.Idle, executing.State);
+        TestAssertions.Equal(OberonTaskState.Off, target.State);
     }
 }

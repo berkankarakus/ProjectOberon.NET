@@ -122,17 +122,18 @@ public sealed class OberonTaskScheduler
             return;
         }
 
-        _currentTask.NextTime = checked(time + _currentTask.Period);
-        _currentTask.State = OberonTaskState.Active;
+        var executingTask = _currentTask;
+        executingTask.NextTime = checked(time + executingTask.Period);
+        executingTask.State = OberonTaskState.Active;
         try
         {
-            _currentTask.Handler();
+            executingTask.Handler();
         }
         finally
         {
-            if (_currentTask.State == OberonTaskState.Active)
+            if (executingTask.State == OberonTaskState.Active)
             {
-                _currentTask.State = OberonTaskState.Idle;
+                executingTask.State = OberonTaskState.Idle;
             }
         }
     }
