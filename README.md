@@ -53,6 +53,10 @@ PROJECT_OBERON_RUN_DISK_TESTS=1 \
   bash scripts/verify-dotnet.sh
 ```
 
+CI has an optional `boot-integration` job. Configure repository variables
+`PROJECT_OBERON_DISK_URL` and `PROJECT_OBERON_DISK_SHA256` to enable it; the
+image is downloaded and checksum-verified at runtime and is never committed.
+
 Run the CLI:
 
 ```sh

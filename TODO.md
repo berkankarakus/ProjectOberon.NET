@@ -62,10 +62,11 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Preserve scheduler state when a task handler removes another task.
 - [x] Include the last instruction and complete register state in runtime diagnostics.
 - [x] Report periodic machine progress and last PC in boot/input integration failures.
-- [ ] Add a CI-owned `RISC-work.img` artifact for full boot and input integration.
+- [x] Add an optional CI boot/input job with URL and SHA256-verified disk artifact provisioning.
+- [ ] Configure the repository-owned disk artifact URL and SHA256 variables.
 
 ## Integration
 
-- [ ] [P0] Provide a CI-owned compatible `RISC-work.img` artifact for boot and input tests; the official `RISC.img` was validated locally, but ROM/disk binaries remain intentionally excluded from this repository.
+- [ ] [P0] Configure a CI-owned compatible `RISC-work.img` artifact for boot and input tests; the official `RISC.img` was validated locally, but ROM/disk binaries remain intentionally excluded from this repository.
 - [x] [P1] Add end-to-end compiler fixtures covering pointers, records, arrays and imports; the deterministic RSC emulator suite covers these paths.
 - [x] [P1] Add an SDL frontend smoke test that does not require an interactive session; UI logic, input, framebuffer and editor routing are covered without opening a window.
