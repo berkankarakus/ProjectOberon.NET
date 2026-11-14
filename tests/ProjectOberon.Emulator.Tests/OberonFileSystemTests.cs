@@ -1,3 +1,5 @@
+using System.Text;
+
 internal static partial class OberonFileSystemTests
 {
     public static void Run()
@@ -6,6 +8,7 @@ internal static partial class OberonFileSystemTests
         RejectsReadOnlyMutations();
         DetectsDirectoryCycles();
         DetectsMissingDataSectors();
+        DetectsHeaderNameMismatches();
         RejectsAllocationPastDiskCapacity();
     }
 }

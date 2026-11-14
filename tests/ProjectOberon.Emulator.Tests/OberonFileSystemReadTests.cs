@@ -1,3 +1,4 @@
+using System.Text;
 using ProjectOberon.Emulator;
 
 internal static partial class OberonFileSystemTests
@@ -38,5 +39,24 @@ internal static partial class OberonFileSystemTests
         TestAssertions.Throws<InvalidDataException>(() =>
             fileSystem.ReadFile(new OberonDirectoryEntry("Demo.Mod", headerAddress)));
         TestAssertions.Throws<InvalidDataException>(() => fileSystem.Validate());
+    }
+
+    private static void DetectsHeaderNameMismatches()
+    {
+        using var fixture = new DiskFixture();
+        var kernel = new OberonKernel(new Memory(), fixture.Disk);
+        var files = new OberonFiles(kernel, initializeDirectory: true);
+        var file = files.New("Demo.Mod");
+        file.Set().Write([1]);
+        files.Register(file);
+
+        var header = kernel.GetSector(file.HeaderAddress);
+        Array.Clear(header, 4, 32);
+        Encoding.ASCII.GetBytes("Other.Mod").CopyTo(header, 4);
+        kernel.PutSector(file.HeaderAddress, header);
+
+        var fileSystem = new OberonFileSystem(fixture.Disk);
+        var error = TestAssertions.Throws<InvalidDataException>(() => fileSystem.Validate());
+        TestAssertions.True(error.Message.Contains("directory name", StringComparison.Ordinal));
     }
 }
