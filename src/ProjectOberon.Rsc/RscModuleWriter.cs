@@ -193,15 +193,11 @@ public static class RscModuleWriter
             _data.Advance(byteCount + 1);
         }
 
-        public void WriteBytes(IReadOnlyList<byte> bytes)
+        public void WriteBytes(ReadOnlySpan<byte> bytes)
         {
-            var buffer = _data.GetSpan(bytes.Count);
-            for (var index = 0; index < bytes.Count; index++)
-            {
-                buffer[index] = bytes[index];
-            }
-
-            _data.Advance(bytes.Count);
+            var buffer = _data.GetSpan(bytes.Length);
+            bytes.CopyTo(buffer);
+            _data.Advance(bytes.Length);
         }
 
         public byte[] ToArray()
