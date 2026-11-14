@@ -50,6 +50,16 @@ the SDL frontend with `--frames` so the process has a bounded lifetime. Keep
 trace files outside the repository unless they are deliberately being retained
 as an investigation artifact.
 
+Runtime failures also have a structured form for log aggregation:
+
+```csharp
+var json = OberonRuntimeDiagnostics.FormatJson("project-oberon", machine, error);
+```
+
+It includes the exception, module-load code when available, CPU counters,
+last instruction, all RISC5 registers and flags. The existing text formatter
+remains the default CLI/UI presentation.
+
 ## Review rules
 
 1. Run the full local verification script before and after an optimization.

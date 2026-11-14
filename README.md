@@ -511,6 +511,9 @@ count; it does not modify the disk image.
 Runtime failures from the CLI and SDL frontend are printed with the exception
 type, message, CPU steps, PC, selected registers, flags and stack trace. This
 makes a host-call or emulator fault actionable even when the SDL window closes.
+For structured log ingestion, the same snapshot is available through
+`OberonRuntimeDiagnostics.FormatJson`; it preserves the text output as the
+default human-readable presentation.
 The reported CPU step counter includes dispatched host calls as one emulator
 step, even though those steps do not decode a RISC5 instruction. CLI `--trace`
 indexes only the post-start debugger run, so compare its index with the final
