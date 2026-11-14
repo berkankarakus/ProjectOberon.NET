@@ -29,8 +29,24 @@ public sealed partial class OberonDisplay
     public void ReplConst(int color, int x, int y, int width, int height, int mode)
     {
         ValidateRectangle(x, y, width, height);
+        if (width == 0 || height == 0)
+        {
+            return;
+        }
+
+        var right = x + width;
         for (var row = y; row < y + height; row++)
-        for (var column = x; column < x + width; column++)
-            ApplyPixel(column, row, color, mode);
+        {
+            for (var wordX = x & ~31; wordX < right; wordX += 32)
+            {
+                var start = Math.Max(x, wordX);
+                var end = Math.Min(right, wordX + 32);
+                var length = end - start;
+                var mask = length == 32
+                    ? uint.MaxValue
+                    : ((1u << length) - 1) << (start & 31);
+                ApplyWordMask(PixelAddress(wordX, row), mask, color, mode);
+            }
+        }
     }
 }
