@@ -139,6 +139,9 @@ invent executable stubs for host-only C# implementations.
 `--trace N` prints the first `N` instructions with the program counter and
 selected registers, which is useful when learning the boot ROM and debugging
 differences between the two implementations.
+`--progress N` prints a compact step count and current PC every `N` executed
+instructions, which is useful for long headless runs where a timeout needs
+diagnostic context.
 
 Build and run the C# SDL2 frontend:
 
