@@ -15,6 +15,12 @@ internal static partial class DeviceTests
         TestAssertions.Equal(0x05, InputMapping.MouseButtonsFromState(1 | 4));
         TestAssertions.Equal(1023, InputMapping.ScaleCoordinate(999, 1000, Display.Width));
 
+        var devices = new DeviceBus();
+        TestAssertions.True(devices.Handles(DeviceBus.IoBase));
+        TestAssertions.True(devices.Handles(DeviceBus.IoBase + 0x27));
+        TestAssertions.False(devices.Handles(DeviceBus.IoBase + 0x28));
+        TestAssertions.True(devices.Handles(DeviceBus.IoBase + 0x0100_0000));
+
         var memory = new Memory();
         memory.EnqueueUartRx((byte)'O');
         TestAssertions.Equal(3u, memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.UartControl));
