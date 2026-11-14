@@ -41,6 +41,11 @@ public sealed class OberonCompilerAssignmentEmitter
                 return;
             }
 
+            if (IsSameAddress(assignment.Target, assignment.Value))
+            {
+                return;
+            }
+
             EmitAggregateCopy(assignment.Target, assignment.Value, targetType!.Size);
             return;
         }
@@ -159,5 +164,13 @@ public sealed class OberonCompilerAssignmentEmitter
             }
         }
     }
+
+    private static bool IsSameAddress(
+        OberonCompilerExpression target,
+        OberonCompilerExpression source) =>
+        target is OberonCompilerNameExpression targetName
+        && source is OberonCompilerNameExpression sourceName
+        && targetName.Symbol is not null
+        && ReferenceEquals(targetName.Symbol, sourceName.Symbol);
 
 }

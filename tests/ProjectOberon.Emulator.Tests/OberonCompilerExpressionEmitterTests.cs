@@ -47,6 +47,7 @@ internal static class OberonCompilerExpressionEmitterTests
         BranchesDirectlyOnNegatedIntegerComparisons();
         EmitsRecordFieldLoadAndStore();
         EmitsAggregateRecordCopy();
+        OmitsSelfAggregateCopy();
         EmitsConstantAtLastExpressionRegister();
         EmitsFieldAddressThroughDedicatedEmitter();
         EmitsArrayIndexLoadAndStore();
@@ -735,6 +736,17 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("STR r0, [r2, 0]", Risc5Disassembler.Format(generator.Code[3]));
         TestAssertions.Equal("LDR r0, [r1, 4]", Risc5Disassembler.Format(generator.Code[4]));
         TestAssertions.Equal("STR r0, [r2, 4]", Risc5Disassembler.Format(generator.Code[5]));
+    }
+
+    private static void OmitsSelfAggregateCopy()
+    {
+        const string source = "MODULE Aggregate; TYPE Values = ARRAY 4 OF INTEGER; VAR values: Values; BEGIN values := values; END Aggregate.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        TestAssertions.Equal(0, generator.Code.Count);
     }
 
     private static void EmitsFieldAddressThroughDedicatedEmitter()
