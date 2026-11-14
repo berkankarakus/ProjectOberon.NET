@@ -2,6 +2,54 @@ namespace ProjectOberon.Compiler;
 
 internal static class OberonCompilerConstantEvaluator
 {
+    public static bool TryEvaluateBoolean(
+        OberonCompilerExpression expression,
+        out bool value)
+    {
+        if (expression is OberonCompilerIntegerLiteralExpression literal
+            && literal.Type.Form == OberonCompilerTypeForm.Boolean
+            && literal.Value is 0 or 1)
+        {
+            value = literal.Value == 1;
+            return true;
+        }
+
+        if (expression is OberonCompilerUnaryExpression unary
+            && unary.Operator == OberonCompilerTokenKind.Not
+            && TryEvaluateBoolean(unary.Operand, out var operand))
+        {
+            value = !operand;
+            return true;
+        }
+
+        if (expression is not OberonCompilerBinaryExpression binary
+            || !TryEvaluateBoolean(binary.Left, out var left)
+            || !TryEvaluateBoolean(binary.Right, out var right))
+        {
+            value = false;
+            return false;
+        }
+
+        switch (binary.Operator)
+        {
+            case OberonCompilerTokenKind.And:
+                value = left && right;
+                return true;
+            case OberonCompilerTokenKind.Or:
+                value = left || right;
+                return true;
+            case OberonCompilerTokenKind.Equal:
+                value = left == right;
+                return true;
+            case OberonCompilerTokenKind.NotEqual:
+                value = left != right;
+                return true;
+            default:
+                value = false;
+                return false;
+        }
+    }
+
     public static bool TryEvaluateInteger(
         OberonCompilerExpression expression,
         out int value)

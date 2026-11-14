@@ -18,6 +18,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsBooleanLiteralComparisonsWithoutTemporaries();
         EmitsBooleanIdentitiesWithoutLogicalInstructions();
         FoldsBooleanUnaryLiterals();
+        FoldsBooleanConstantExpressions();
         EmitsPointerValues();
         EmitsPointerDereference();
         EmitsForLoop();
@@ -511,6 +512,19 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.Equal("MOV r0, 0x0000", instructions[0]);
         TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("XOR ", StringComparison.Ordinal)));
+    }
+
+    private static void FoldsBooleanConstantExpressions()
+    {
+        const string source = "MODULE Boolean; VAR result: BOOLEAN; BEGIN result := TRUE & (FALSE OR TRUE); END Boolean.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
+
+        TestAssertions.Equal(2, generator.Code.Count);
+        TestAssertions.Equal("MOV r0, 0x0001", Risc5Disassembler.Format(generator.Code[0]));
     }
 
     private static void EmitsPointerValues()

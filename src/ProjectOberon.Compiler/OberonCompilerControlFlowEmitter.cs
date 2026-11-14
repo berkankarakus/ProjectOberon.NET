@@ -374,18 +374,7 @@ public sealed class OberonCompilerControlFlowEmitter
     private static bool TryGetBooleanConstant(
         OberonCompilerExpression expression,
         out bool value)
-    {
-        if (expression is OberonCompilerIntegerLiteralExpression literal
-            && literal.Type.Form == OberonCompilerTypeForm.Boolean
-            && literal.Value is 0 or 1)
-        {
-            value = literal.Value == 1;
-            return true;
-        }
-
-        value = false;
-        return false;
-    }
+        => OberonCompilerConstantEvaluator.TryEvaluateBoolean(expression, out value);
 
     private bool TryEmitIntegerComparisonBranch(
         OberonCompilerExpression expression,

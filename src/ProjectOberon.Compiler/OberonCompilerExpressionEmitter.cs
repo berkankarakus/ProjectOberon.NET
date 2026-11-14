@@ -252,6 +252,12 @@ public sealed class OberonCompilerExpressionEmitter
             return EmitTypeTest(binary, destination);
         }
 
+        if (OberonCompilerConstantEvaluator.TryEvaluateBoolean(binary, out var booleanConstant))
+        {
+            _generator.EmitMoveImmediate(destination, booleanConstant ? 1 : 0);
+            return destination;
+        }
+
         if (TryEmitIntegerConstant(binary, destination))
         {
             return destination;
@@ -685,18 +691,7 @@ public sealed class OberonCompilerExpressionEmitter
     private static bool TryGetBooleanLiteral(
         OberonCompilerExpression expression,
         out bool value)
-    {
-        if (expression is OberonCompilerIntegerLiteralExpression literal
-            && literal.Type.Form == OberonCompilerTypeForm.Boolean
-            && literal.Value is 0 or 1)
-        {
-            value = literal.Value == 1;
-            return true;
-        }
-
-        value = false;
-        return false;
-    }
+        => OberonCompilerConstantEvaluator.TryEvaluateBoolean(expression, out value);
 
     private static bool TryGetImmediateSetLiteral(
         OberonCompilerExpression expression,
