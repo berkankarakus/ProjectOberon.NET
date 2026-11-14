@@ -542,7 +542,7 @@ public sealed class OberonCompilerExpressionEmitter
         }
         else if (constantOnLeft)
         {
-            comparison = ReverseComparison(binary.Operator);
+            comparison = OberonCompilerBranchConditions.ReverseComparison(binary.Operator);
         }
         else
         {
@@ -563,7 +563,7 @@ public sealed class OberonCompilerExpressionEmitter
             EmitExpression(binary.Right, destination);
         }
 
-        var (condition, invert) = ComparisonBranch(comparison);
+        var (condition, invert) = OberonCompilerBranchConditions.ComparisonBranch(comparison);
         _generator.EmitImmediate(
             AluOperation.Sub,
             destination,
@@ -709,18 +709,6 @@ public sealed class OberonCompilerExpressionEmitter
         return false;
     }
 
-    private static OberonCompilerTokenKind ReverseComparison(
-        OberonCompilerTokenKind operation) => operation switch
-    {
-        OberonCompilerTokenKind.Equal => OberonCompilerTokenKind.Equal,
-        OberonCompilerTokenKind.NotEqual => OberonCompilerTokenKind.NotEqual,
-        OberonCompilerTokenKind.Less => OberonCompilerTokenKind.Greater,
-        OberonCompilerTokenKind.LessOrEqual => OberonCompilerTokenKind.GreaterOrEqual,
-        OberonCompilerTokenKind.Greater => OberonCompilerTokenKind.Less,
-        OberonCompilerTokenKind.GreaterOrEqual => OberonCompilerTokenKind.LessOrEqual,
-        _ => throw new ArgumentOutOfRangeException(nameof(operation))
-    };
-
     private int EmitComparison(
         OberonCompilerBinaryExpression comparison,
         int destination,
@@ -739,7 +727,7 @@ public sealed class OberonCompilerExpressionEmitter
             return destination;
         }
 
-        var (condition, invert) = ComparisonBranch(comparison.Operator);
+        var (condition, invert) = OberonCompilerBranchConditions.ComparisonBranch(comparison.Operator);
         _generator.EmitRegister(AluOperation.Sub, destination, destination, rightRegister);
         EmitBooleanFromCondition(destination, condition, invert);
         return destination;
@@ -878,18 +866,6 @@ public sealed class OberonCompilerExpressionEmitter
         _generator.EmitMoveImmediate(destination, 1);
         _generator.Bind(endLabel);
     }
-
-    private static (ConditionCode Condition, bool Invert) ComparisonBranch(
-        OberonCompilerTokenKind operation) => operation switch
-    {
-        OberonCompilerTokenKind.Equal => (ConditionCode.Eq, false),
-        OberonCompilerTokenKind.NotEqual => (ConditionCode.Eq, true),
-        OberonCompilerTokenKind.Less => (ConditionCode.Lt, false),
-        OberonCompilerTokenKind.LessOrEqual => (ConditionCode.Le, false),
-        OberonCompilerTokenKind.Greater => (ConditionCode.Le, true),
-        OberonCompilerTokenKind.GreaterOrEqual => (ConditionCode.Lt, true),
-        _ => throw new ArgumentOutOfRangeException(nameof(operation))
-    };
 
     private static bool IsRelation(OberonCompilerTokenKind operation) => operation is
         OberonCompilerTokenKind.Equal or OberonCompilerTokenKind.NotEqual or

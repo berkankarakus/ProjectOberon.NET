@@ -491,7 +491,7 @@ public sealed class OberonCompilerControlFlowEmitter
         }
         else if (constantOnLeft && leftConstant is >= -0x8000 and <= 0xffff)
         {
-            comparisonOperator = ReverseComparison(comparisonOperator);
+            comparisonOperator = OberonCompilerBranchConditions.ReverseComparison(comparisonOperator);
             _emitExpression(comparison.Right, 0);
             _generator.EmitImmediate(
                 AluOperation.Sub,
@@ -503,7 +503,7 @@ public sealed class OberonCompilerControlFlowEmitter
         {
             if (constantOnLeft)
             {
-                comparisonOperator = ReverseComparison(comparisonOperator);
+                comparisonOperator = OberonCompilerBranchConditions.ReverseComparison(comparisonOperator);
                 _emitExpression(comparison.Right, 0);
                 _emitExpression(comparison.Left, 1);
             }
@@ -516,7 +516,7 @@ public sealed class OberonCompilerControlFlowEmitter
             _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
         }
 
-        var (condition, invert) = ComparisonBranch(comparisonOperator);
+        var (condition, invert) = OberonCompilerBranchConditions.ComparisonBranch(comparisonOperator);
         _generator.EmitBranch(
             falseLabel,
             condition,
@@ -524,18 +524,6 @@ public sealed class OberonCompilerControlFlowEmitter
             invert: branchWhenTrue ? invert : !invert);
         return true;
     }
-
-    private static OberonCompilerTokenKind ReverseComparison(
-        OberonCompilerTokenKind operation) => operation switch
-    {
-        OberonCompilerTokenKind.Equal => OberonCompilerTokenKind.Equal,
-        OberonCompilerTokenKind.NotEqual => OberonCompilerTokenKind.NotEqual,
-        OberonCompilerTokenKind.Less => OberonCompilerTokenKind.Greater,
-        OberonCompilerTokenKind.LessOrEqual => OberonCompilerTokenKind.GreaterOrEqual,
-        OberonCompilerTokenKind.Greater => OberonCompilerTokenKind.Less,
-        OberonCompilerTokenKind.GreaterOrEqual => OberonCompilerTokenKind.LessOrEqual,
-        _ => throw new ArgumentOutOfRangeException(nameof(operation))
-    };
 
     private bool TryEmitRealComparisonBranch(
         OberonCompilerExpression expression,
@@ -629,18 +617,6 @@ public sealed class OberonCompilerControlFlowEmitter
         value = 0;
         return false;
     }
-
-    private static (ConditionCode Condition, bool Invert) ComparisonBranch(
-        OberonCompilerTokenKind operation) => operation switch
-    {
-        OberonCompilerTokenKind.Equal => (ConditionCode.Eq, false),
-        OberonCompilerTokenKind.NotEqual => (ConditionCode.Eq, true),
-        OberonCompilerTokenKind.Less => (ConditionCode.Lt, false),
-        OberonCompilerTokenKind.LessOrEqual => (ConditionCode.Le, false),
-        OberonCompilerTokenKind.Greater => (ConditionCode.Le, true),
-        OberonCompilerTokenKind.GreaterOrEqual => (ConditionCode.Lt, true),
-        _ => throw new ArgumentOutOfRangeException(nameof(operation))
-    };
 
     private static bool IsInteger(OberonCompilerExpression expression) =>
         OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form is
