@@ -62,17 +62,28 @@ public sealed class OberonModuleMemoryLoader
 
     public OberonModuleImage Load(string name)
     {
+        var existingNames = _images.Keys.ToHashSet(StringComparer.Ordinal);
+        var savedNextAddress = _nextAddress;
+        var savedRootDescriptorAddress = _rootDescriptorAddress;
         var module = _modules.Load(name);
         if (_images.TryGetValue(module.Name, out var existing))
         {
             return existing;
         }
 
-        var image = module.IsExternal
-            ? LoadExternal(module)
-            : LoadManaged(module);
-        _images.Add(module.Name, image);
-        return image;
+        try
+        {
+            var image = module.IsExternal
+                ? LoadExternal(module)
+                : LoadManaged(module);
+            _images.Add(module.Name, image);
+            return image;
+        }
+        catch
+        {
+            RollbackMaterialization(existingNames, savedNextAddress, savedRootDescriptorAddress, module.Number);
+            throw;
+        }
     }
 
     private OberonModuleImage LoadExternal(LoadedOberonModule module)
@@ -196,6 +207,25 @@ public sealed class OberonModuleMemoryLoader
         {
             throw new OberonModuleLoadException(7, "not enough emulator memory for Oberon module");
         }
+    }
+
+    private void RollbackMaterialization(
+        IReadOnlySet<string> existingNames,
+        uint savedNextAddress,
+        uint savedRootDescriptorAddress,
+        int failedModuleNumber)
+    {
+        foreach (var image in _images.Values
+                     .Where(image => !existingNames.Contains(image.Module.Name))
+                     .ToArray())
+        {
+            _images.Remove(image.Module.Name);
+            _memory.Write32(ModuleTableAddress + checked((uint)image.Module.Number * 4), 0);
+        }
+
+        _memory.Write32(ModuleTableAddress + checked((uint)failedModuleNumber * 4), 0);
+        _nextAddress = savedNextAddress;
+        _rootDescriptorAddress = savedRootDescriptorAddress;
     }
 
     private static void ValidateWordAlignedOffsets(IReadOnlyList<uint> offsets, string parameterName)

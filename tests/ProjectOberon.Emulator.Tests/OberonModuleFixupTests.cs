@@ -31,5 +31,23 @@ internal static partial class OberonModuleTests
         var brokenMemoryLoader = new OberonModuleMemoryLoader(new Memory(64 * 1024), brokenLoader);
         var error = TestAssertions.Throws<OberonModuleLoadException>(() => brokenMemoryLoader.Load("Broken"));
         TestAssertions.Equal(5, error.Code);
+
+        var transactionalLoader = new OberonModuleLoader(name => name switch
+        {
+            "Broken" => BuildRsc("Broken", 300, [("B", 200)], "Start", code: [0, 0], fixupProgram: 1),
+            "B" => BuildRsc("B", 200, [], "Run"),
+            _ => null
+        });
+        var transactionalMemory = new Memory(64 * 1024);
+        var transactionalMemoryLoader = new OberonModuleMemoryLoader(transactionalMemory, transactionalLoader, 0x1000, 0x100);
+
+        var transactionalError = TestAssertions.Throws<OberonModuleLoadException>(
+            () => transactionalMemoryLoader.Load("Broken"));
+        TestAssertions.Equal(5, transactionalError.Code);
+        TestAssertions.Equal(0, transactionalMemoryLoader.LoadedImages.Count);
+        TestAssertions.Equal(0x1000u, transactionalMemoryLoader.NextAllocationAddress);
+        TestAssertions.Equal(0u, transactionalMemoryLoader.RootDescriptorAddress);
+        TestAssertions.Equal(0u, transactionalMemory.Read32(0x100 + 1 * 4));
+        TestAssertions.Equal(0u, transactionalMemory.Read32(0x100 + 2 * 4));
     }
 }
