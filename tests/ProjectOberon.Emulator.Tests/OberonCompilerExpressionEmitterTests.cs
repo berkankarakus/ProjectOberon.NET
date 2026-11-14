@@ -47,6 +47,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsConstantAtLastExpressionRegister();
         EmitsFieldAddressThroughDedicatedEmitter();
         EmitsArrayIndexLoadAndStore();
+        EmitsConstantExpressionArrayIndexAddress();
         EmitsNonPowerOfTwoArrayIndexWithMultiply();
         EmitsAggregateFieldAddress();
         EmitsAggregateArrayElementAddress();
@@ -735,6 +736,19 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("MOV ")
             && instruction.EndsWith("0x000c", StringComparison.Ordinal)));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("MUL ")));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("LSL ")));
+    }
+
+    private static void EmitsConstantExpressionArrayIndexAddress()
+    {
+        const string source = "MODULE Arrays; TYPE Values = ARRAY 8 OF INTEGER; VAR values: Values; BEGIN values[1 + 2] := 7; END Arrays.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction == "ADD r1, r1, 0x000c"));
         TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("LSL ")));
     }
 

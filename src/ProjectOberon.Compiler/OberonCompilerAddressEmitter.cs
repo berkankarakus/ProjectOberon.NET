@@ -219,7 +219,7 @@ public sealed class OberonCompilerAddressEmitter
         OberonCompilerIndexExpression index,
         int destination)
     {
-        if (index.Index is not OberonCompilerIntegerLiteralExpression literal)
+        if (!OberonCompilerConstantEvaluator.TryEvaluateInteger(index.Index, out var indexValue))
         {
             return false;
         }
@@ -227,7 +227,7 @@ public sealed class OberonCompilerAddressEmitter
         long offset;
         try
         {
-            offset = checked(literal.Value * index.ElementType.Size);
+            offset = checked((long)indexValue * index.ElementType.Size);
         }
         catch (OverflowException)
         {
