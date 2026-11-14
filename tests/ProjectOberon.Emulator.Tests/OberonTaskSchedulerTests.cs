@@ -11,6 +11,7 @@ internal static class OberonTaskSchedulerTests
         CollectsActivityCount();
         ValidatesTasksAndRestoresStateAfterFailure();
         RestoresExecutingTaskStateWhenHandlerRemovesAnotherTask();
+        RejectsNextTimeOverflow();
     }
 
     private static void CreatesTasksOffAndInstallsOnce()
@@ -109,5 +110,16 @@ internal static class OberonTaskSchedulerTests
 
         TestAssertions.Equal(OberonTaskState.Idle, executing.State);
         TestAssertions.Equal(OberonTaskState.Off, target.State);
+    }
+
+    private static void RejectsNextTimeOverflow()
+    {
+        var scheduler = new OberonTaskScheduler();
+        var task = scheduler.NewTask(static () => { }, 1);
+        scheduler.Install(task);
+
+        TestAssertions.Throws<OverflowException>(() => scheduler.Tick(int.MaxValue));
+        TestAssertions.Equal(OberonTaskState.Idle, task.State);
+        TestAssertions.Equal(0, scheduler.ActivityCount);
     }
 }
