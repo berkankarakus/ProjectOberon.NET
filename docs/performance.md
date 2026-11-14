@@ -52,3 +52,12 @@ as an investigation artifact.
    original boundary behavior for unaligned and wrapped memory accesses.
 4. Do not add unsafe code or a benchmark package for a change that does not show
    a measurable improvement.
+
+## Compiler peephole boundary
+
+The compiler performs peephole-like reductions while emitting expressions and
+branches. A generic post-emission deletion pass is intentionally not enabled:
+branch labels store instruction indexes and removing an instruction would need
+to rewrite every label and fixup. The current source-level folds preserve those
+indexes and have golden fixtures, so a later post-emission pass should only be
+added together with a label-aware representation and before/after measurements.
