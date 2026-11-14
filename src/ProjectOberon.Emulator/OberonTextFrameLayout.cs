@@ -70,7 +70,18 @@ public sealed partial class OberonTextFrame
     {
         var lines = Layout(maximumWidth);
         var range = VisibleRange(lines, viewportHeight, scrollLine);
-        return lines.Skip(range.Start).Take(range.End - range.Start).ToArray();
+        if (range.Start == 0 && range.End == lines.Count)
+        {
+            return lines;
+        }
+
+        var visible = new OberonTextLine[range.End - range.Start];
+        for (var index = 0; index < visible.Length; index++)
+        {
+            visible[index] = lines[range.Start + index];
+        }
+
+        return visible;
     }
 
     private (int Start, int End) VisibleRange(
