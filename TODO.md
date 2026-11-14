@@ -65,6 +65,7 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Add CLI progress output for long-running headless sessions.
 - [x] Roll back module initializer state when a dependency or root initializer fails.
 - [x] Make sector-map mark/free operations idempotent without counting reserved boot sectors.
+- [x] Reuse the GC scan free-block buffer between collections.
 - [x] Add an optional CI boot/input job with URL and SHA256-verified disk artifact provisioning.
 - [ ] Configure the repository-owned disk artifact URL and SHA256 variables.
 

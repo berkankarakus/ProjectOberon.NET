@@ -12,6 +12,7 @@ public sealed class OberonKernel
     private readonly bool[] _sectorMap = new bool[MapSize];
     private readonly bool[] _countedSectors = new bool[MapSize];
     private readonly List<FreeBlock> _freeBlocks = [];
+    private readonly List<FreeBlock> _scanFreeBlocks = [];
     private readonly uint _heapOrigin;
     private readonly uint _heapLimit;
     private uint _heapNext;
@@ -162,7 +163,7 @@ public sealed class OberonKernel
 
     public void Scan()
     {
-        var freeBlocks = new List<FreeBlock>();
+        _scanFreeBlocks.Clear();
         var liveBytes = 0;
         var address = _heapOrigin;
         while (address < _heapNext)
@@ -178,7 +179,7 @@ public sealed class OberonKernel
 
             if (mark == -1 || mark == 0)
             {
-                freeBlocks.Add(new FreeBlock(address, size));
+                _scanFreeBlocks.Add(new FreeBlock(address, size));
             }
             else
             {
@@ -190,7 +191,7 @@ public sealed class OberonKernel
         }
 
         _freeBlocks.Clear();
-        foreach (var block in Coalesce(freeBlocks))
+        foreach (var block in Coalesce(_scanFreeBlocks))
         {
             _memory.Write32(block.Address, block.Size);
             _memory.Write32(block.Address + 4, unchecked((uint)-1));
