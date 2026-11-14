@@ -396,24 +396,39 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerBinaryExpression binary,
         int destination)
     {
-        if (binary.Right is not OberonCompilerIntegerLiteralExpression literal
-            || !IsInteger(binary.Left))
+        if (!IsInteger(binary.Left)
+            || !TryEvaluateInteger(binary.Right, out var constant))
         {
             return false;
         }
 
         var isIdentity = binary.Operator switch
         {
-            OberonCompilerTokenKind.Plus or OberonCompilerTokenKind.Minus => literal.Value == 0,
-            OberonCompilerTokenKind.Multiply or OberonCompilerTokenKind.Divide => literal.Value == 1,
+            OberonCompilerTokenKind.Plus or OberonCompilerTokenKind.Minus => constant == 0,
+            OberonCompilerTokenKind.Multiply or OberonCompilerTokenKind.Divide => constant == 1,
+            OberonCompilerTokenKind.And => constant == -1,
+            OberonCompilerTokenKind.Or => constant == 0,
             _ => false
         };
-        if (!isIdentity)
+        if (isIdentity)
+        {
+            EmitExpression(binary.Left, destination);
+            return true;
+        }
+
+        var isAbsorbing = binary.Operator switch
+        {
+            OberonCompilerTokenKind.And => constant == 0,
+            OberonCompilerTokenKind.Or => constant == -1,
+            _ => false
+        };
+        if (!isAbsorbing)
         {
             return false;
         }
 
         EmitExpression(binary.Left, destination);
+        _generator.EmitMoveImmediate(destination, binary.Operator == OberonCompilerTokenKind.Or ? -1 : 0);
         return true;
     }
 

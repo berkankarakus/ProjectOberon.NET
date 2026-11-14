@@ -54,6 +54,7 @@ internal static class OberonCompilerExpressionEmitterTests
         FoldsIntegerConstantExpressions();
         FoldsUnaryIntegerConstantExpressions();
         EliminatesIntegerIdentityOperations();
+        EliminatesIntegerBitwiseIdentityOperations();
     }
 
     private static void EmitsArithmeticAssignment()
@@ -825,6 +826,21 @@ internal static class OberonCompilerExpressionEmitterTests
             TestAssertions.Equal(1, writer.Calls.Count);
             TestAssertions.Equal("MOV r4, 0x0009", writer.Calls[0]);
         }
+    }
+
+    private static void EliminatesIntegerBitwiseIdentityOperations()
+    {
+        const string source = "MODULE IntegerBitwiseIdentity; VAR value, first, second, third, fourth: INTEGER; BEGIN first := value OR 0; second := value & (-1); third := value & 0; fourth := value OR (-1); END IntegerBitwiseIdentity.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("AND ", StringComparison.Ordinal)));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("IOR ", StringComparison.Ordinal)));
+        TestAssertions.Equal(1, instructions.Count(instruction => instruction == "MOV r0, 0x0000"));
+        TestAssertions.Equal(1, instructions.Count(instruction => instruction == "MOV r0, -1"));
     }
 
     private sealed class RecordingInstructionWriter : IOberonCompilerInstructionWriter
