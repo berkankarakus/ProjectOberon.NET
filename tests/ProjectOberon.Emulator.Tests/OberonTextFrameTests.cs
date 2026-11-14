@@ -7,5 +7,6 @@ internal static partial class OberonTextFrameTests
         MapsCaretAndMouseCoordinates();
         RendersSelectionAndCaret();
         ScrollsViewportAndMapsCoordinates();
+        ReusesLayoutUntilTextChanges();
     }
 }

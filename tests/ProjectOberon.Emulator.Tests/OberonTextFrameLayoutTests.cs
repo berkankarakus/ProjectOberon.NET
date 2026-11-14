@@ -14,6 +14,23 @@ internal static partial class OberonTextFrameTests
         TestAssertions.Equal("C", frame.VisibleLines(3, 8, 100)[0].Text);
     }
 
+    public static void ReusesLayoutUntilTextChanges()
+    {
+        var text = new OberonText("AB");
+        var frame = new OberonTextFrame(text, CreateFont());
+
+        var first = frame.Layout(9);
+        TestAssertions.True(ReferenceEquals(first, frame.Layout(9)));
+
+        var buffer = new OberonTextBuffer();
+        buffer.Append("C");
+        text.Append(buffer);
+
+        var changed = frame.Layout(9);
+        TestAssertions.False(ReferenceEquals(first, changed));
+        TestAssertions.Equal("ABC", changed[0].Text);
+    }
+
     private static void WrapsAndSplitsLines()
     {
         var frame = new OberonTextFrame(new OberonText("ABA\r\nBA"), CreateFont());

@@ -15,6 +15,7 @@ public sealed partial class OberonText
         _pieces.InsertRange(index, ClonePieces(buffer.Pieces));
         Length += buffer.Length;
         MergeAdjacentPieces();
+        _cachedText = null;
         MarkChanged(OberonTextOperation.Insert, position, position + buffer.Length);
     }
 
@@ -37,6 +38,7 @@ public sealed partial class OberonText
         _pieces.RemoveRange(start, finish - start);
         Length -= end - begin;
         MergeAdjacentPieces();
+        _cachedText = null;
         MarkChanged(OberonTextOperation.Delete, begin, end);
         return buffer;
     }

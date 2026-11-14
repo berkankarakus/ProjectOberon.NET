@@ -10,6 +10,13 @@ public sealed partial class OberonTextFrame
         }
 
         var source = Text.GetText();
+        if (_layoutCache is not null
+            && _layoutWidth == maximumWidth
+            && ReferenceEquals(_layoutSource, source))
+        {
+            return _layoutCache;
+        }
+
         var lines = new List<OberonTextLine>();
         var lineStart = 0;
         var lineWidth = 0;
@@ -46,6 +53,9 @@ public sealed partial class OberonTextFrame
             lines.Add(new OberonTextLine(lineStart, lineLength, lineWidth, source[lineStart..]));
         }
 
+        _layoutSource = source;
+        _layoutWidth = maximumWidth;
+        _layoutCache = lines;
         return lines;
     }
 

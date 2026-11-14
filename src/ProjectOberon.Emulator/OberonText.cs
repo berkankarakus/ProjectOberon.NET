@@ -3,6 +3,7 @@ namespace ProjectOberon.Emulator;
 public sealed partial class OberonText
 {
     private readonly List<OberonTextPiece> _pieces = [];
+    private string? _cachedText;
 
     public OberonText(string text = "", OberonTextStyle? style = null)
     {
@@ -22,7 +23,7 @@ public sealed partial class OberonText
 
     public string GetText()
     {
-        return string.Concat(_pieces.Select(piece => piece.Text));
+        return _cachedText ??= string.Concat(_pieces.Select(piece => piece.Text));
     }
 
     public OberonTextReader OpenReader(int position = 0)

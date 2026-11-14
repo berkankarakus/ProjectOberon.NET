@@ -6,11 +6,13 @@ public sealed partial class OberonText
     {
         if (text.Length == 0)
         {
+            _cachedText = string.Empty;
             return;
         }
 
         _pieces.Add(new OberonTextPiece(text, style));
         Length = text.Length;
+        _cachedText = text;
     }
 
     private void CopyRange(int begin, int end, OberonTextBuffer buffer)
