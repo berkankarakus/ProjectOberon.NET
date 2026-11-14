@@ -22,6 +22,18 @@ internal static class HostCallTests
         TestAssertions.Equal(1ul, machine.Cpu.Steps);
     }
 
+    public static void RecordsInstructionBeforeHostCallFailure()
+    {
+        using var machine = new Machine();
+        machine.HostCalls.Register(0x100, static _ => throw new InvalidOperationException("host failure"));
+        machine.Cpu.SetProgramCounter(0x100);
+
+        TestAssertions.Throws<InvalidOperationException>(() => machine.Step());
+        TestAssertions.Equal(0x100u, machine.Cpu.LastPcByte);
+        TestAssertions.Equal(0u, machine.Cpu.LastInstruction);
+        TestAssertions.Equal(0ul, machine.Cpu.Steps);
+    }
+
     public static void BindsExternalEntryHandlers()
     {
         var symbol = new OberonSymbolModule(

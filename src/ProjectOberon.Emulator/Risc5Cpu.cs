@@ -84,8 +84,7 @@ public sealed partial class Risc5Cpu
 
     public void Step(bool irq)
     {
-        LastPcByte = PcByte;
-        LastInstruction = _memory.ReadInstruction(LastPcByte);
+        RecordCurrentInstruction();
         var instruction = Decode(LastInstruction);
         var nextPc = (_pc + 1u) & InstructionBits.BranchDisplacementMask;
         var interruptAck = _interruptPending && _interruptEnabled && !_interruptMode;
@@ -136,6 +135,12 @@ public sealed partial class Risc5Cpu
         }
 
         Steps++;
+    }
+
+    internal void RecordCurrentInstruction()
+    {
+        LastPcByte = PcByte;
+        LastInstruction = _memory.ReadInstruction(LastPcByte);
     }
 
     internal void CountHostCall()

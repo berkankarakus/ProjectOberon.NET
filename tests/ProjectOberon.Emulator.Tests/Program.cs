@@ -20,6 +20,7 @@ var tests = new (string Name, Action Test)[]
     ("machine timer", DeviceTests.MachineTimer),
     ("machine run progress", DeviceTests.MachineRunReportsProgress),
     ("host call dispatcher", HostCallTests.DispatchesRegisteredHostCalls),
+    ("host call failure diagnostics", HostCallTests.RecordsInstructionBeforeHostCallFailure),
     ("external host binding", HostCallTests.BindsExternalEntryHandlers),
     ("host call argument validation", HostCallTests.ValidatesHostCallContextArguments),
     ("host call string validation", HostCallTests.ValidatesHostCallStrings),

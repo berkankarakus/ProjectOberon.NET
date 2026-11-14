@@ -35,6 +35,7 @@ public sealed class Machine : IDisposable
 
     public void Step(bool irq = false)
     {
+        Cpu.RecordCurrentInstruction();
         if (!HostCalls.TryDispatch(Memory, Cpu))
         {
             Cpu.Step(irq || _timerPhase == TimerInterruptPeriod - 1);
