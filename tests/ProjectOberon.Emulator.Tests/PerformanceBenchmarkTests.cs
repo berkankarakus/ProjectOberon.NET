@@ -16,6 +16,7 @@ internal static class PerformanceBenchmarkTests
             Benchmark("machine step", iterations, BenchmarkMachine),
             Benchmark("machine run with progress", Math.Max(1, iterations / 10), BenchmarkMachineWithProgress),
             Benchmark("host call dispatch", iterations, BenchmarkHostCallDispatch),
+            Benchmark("display pattern copy", Math.Max(1, iterations / 10), BenchmarkDisplayPattern),
             Benchmark("compiler emit", Math.Max(1, iterations / 100), BenchmarkCompiler)
         };
 
@@ -125,6 +126,21 @@ internal static class PerformanceBenchmarkTests
             context.Cpu.SetProgramCounter(context.Cpu.PcByte));
         machine.Run((ulong)iterations);
         GC.KeepAlive(machine.Cpu.Steps);
+    }
+
+    private static void BenchmarkDisplayPattern(int iterations)
+    {
+        var memory = new Memory();
+        memory.Write8(0x100, 32);
+        memory.Write8(0x101, 1);
+        memory.Write32(0x102, uint.MaxValue);
+        var display = new OberonDisplay(memory);
+        for (var index = 0; index < iterations; index++)
+        {
+            display.CopyPattern(Display.White, 0x100, 0, index % Display.Height, Display.Paint);
+        }
+
+        GC.KeepAlive(memory);
     }
 
     private static Machine CreateBenchmarkMachine()
