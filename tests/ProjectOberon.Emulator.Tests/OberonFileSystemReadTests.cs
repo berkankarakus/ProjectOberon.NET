@@ -59,4 +59,23 @@ internal static partial class OberonFileSystemTests
         var error = TestAssertions.Throws<InvalidDataException>(() => fileSystem.Validate());
         TestAssertions.True(error.Message.Contains("directory name", StringComparison.Ordinal));
     }
+
+    private static void DetectsDuplicateDataSectors()
+    {
+        using var fixture = new DiskFixture();
+        var kernel = new OberonKernel(new Memory(), fixture.Disk);
+        var files = new OberonFiles(kernel, initializeDirectory: true);
+        var file = files.New("Demo.Mod");
+        file.Set().Write(new byte[OberonDiskLayout.SectorLength + 1]);
+        files.Register(file);
+
+        var header = kernel.GetSector(file.HeaderAddress);
+        var dataSector = BitConverter.ToInt32(header, 96);
+        BitConverter.GetBytes(dataSector).CopyTo(header, 100);
+        kernel.PutSector(file.HeaderAddress, header);
+
+        var error = TestAssertions.Throws<InvalidDataException>(() =>
+            new OberonFileSystem(fixture.Disk).Validate());
+        TestAssertions.True(error.Message.Contains("referenced more than once", StringComparison.Ordinal));
+    }
 }

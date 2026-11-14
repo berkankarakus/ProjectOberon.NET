@@ -9,6 +9,7 @@ internal static partial class OberonFileSystemTests
         DetectsDirectoryCycles();
         DetectsMissingDataSectors();
         DetectsHeaderNameMismatches();
+        DetectsDuplicateDataSectors();
         RejectsAllocationPastDiskCapacity();
     }
 }
