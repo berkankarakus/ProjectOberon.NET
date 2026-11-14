@@ -130,18 +130,38 @@ public static class OberonModulesHostBinding
 
         public void Initialize(OberonModuleImage image)
         {
+            var newlyInitialized = new List<string>();
+            try
+            {
+                Initialize(image, newlyInitialized);
+            }
+            catch
+            {
+                for (var index = newlyInitialized.Count - 1; index >= 0; index--)
+                {
+                    _initialized.Remove(newlyInitialized[index]);
+                }
+
+                throw;
+            }
+        }
+
+        private void Initialize(OberonModuleImage image, ICollection<string> newlyInitialized)
+        {
             foreach (var importedModule in image.Module.Imports)
             {
                 var importedImage = Image(importedModule.Name)
                     ?? throw new OberonModuleLoadException(5,
                         $"module image is not materialized: {importedModule.Name}");
-                Initialize(importedImage);
+                Initialize(importedImage, newlyInitialized);
             }
 
             if (!_initialized.Add(image.Module.Name))
             {
                 return;
             }
+
+            newlyInitialized.Add(image.Module.Name);
 
             if (image.Module.IsExternal)
             {
