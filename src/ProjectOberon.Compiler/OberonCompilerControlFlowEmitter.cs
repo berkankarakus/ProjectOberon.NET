@@ -407,16 +407,20 @@ public sealed class OberonCompilerControlFlowEmitter
         }
 
         var comparisonOperator = comparison.Operator;
-        if (comparison.Right is OberonCompilerIntegerLiteralExpression literal)
+        var rightConstant = 0;
+        var constantOnRight = OberonCompilerConstantEvaluator.TryEvaluateInteger(comparison.Right, out rightConstant);
+        var leftConstant = 0;
+        var constantOnLeft = OberonCompilerConstantEvaluator.TryEvaluateInteger(comparison.Left, out leftConstant);
+        if (constantOnRight)
         {
             _emitExpression(comparison.Left, 0);
-            if (literal.Value is >= -0x8000 and <= 0xffff)
+            if (rightConstant is >= -0x8000 and <= 0xffff)
             {
                 _generator.EmitImmediate(
                     AluOperation.Sub,
                     0,
                     0,
-                    checked((int)literal.Value));
+                    rightConstant);
             }
             else
             {
@@ -424,8 +428,7 @@ public sealed class OberonCompilerControlFlowEmitter
                 _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
             }
         }
-        else if (comparison.Left is OberonCompilerIntegerLiteralExpression leftLiteral
-            && leftLiteral.Value is >= -0x8000 and <= 0xffff)
+        else if (constantOnLeft && leftConstant is >= -0x8000 and <= 0xffff)
         {
             comparisonOperator = ReverseComparison(comparisonOperator);
             _emitExpression(comparison.Right, 0);
@@ -433,11 +436,22 @@ public sealed class OberonCompilerControlFlowEmitter
                 AluOperation.Sub,
                 0,
                 0,
-                checked((int)leftLiteral.Value));
+                leftConstant);
         }
         else
         {
-            _emitExpression(comparison.Right, 1);
+            if (constantOnLeft)
+            {
+                comparisonOperator = ReverseComparison(comparisonOperator);
+                _emitExpression(comparison.Right, 0);
+                _emitExpression(comparison.Left, 1);
+            }
+            else
+            {
+                _emitExpression(comparison.Left, 0);
+                _emitExpression(comparison.Right, 1);
+            }
+
             _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
         }
 

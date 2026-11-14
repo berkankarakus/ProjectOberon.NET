@@ -27,6 +27,8 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsConstantControlFlowWithoutBranches();
         BranchesDirectlyOnIntegerComparisons();
         BranchesDirectlyOnReversedIntegerComparisons();
+        BranchesWithTwoIntegerOperands();
+        BranchesWithConstantExpressionImmediate();
         BranchesDirectlyOnIntegerConjunctions();
         BranchesDirectlyOnIntegerDisjunctions();
         BranchesDirectlyOnRealComparisons();
@@ -296,6 +298,33 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0003"));
         TestAssertions.False(instructions.Any(instruction => instruction == "MOV r0, 0x0003"));
+    }
+
+    private static void BranchesWithTwoIntegerOperands()
+    {
+        const string source = "MODULE Branch; VAR left, right, result: INTEGER; BEGIN IF left < right THEN result := 1 END; END Branch.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal("LDR r0, [r13, 0]", instructions[0]);
+        TestAssertions.Equal("LDR r1, [r13, 4]", instructions[1]);
+        TestAssertions.Equal("SUB r0, r0, r1", instructions[2]);
+    }
+
+    private static void BranchesWithConstantExpressionImmediate()
+    {
+        const string source = "MODULE Branch; VAR value, result: INTEGER; BEGIN IF value < (1 + 2) THEN result := 1 END; END Branch.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0003"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0003"));
     }
 
     private static void BranchesDirectlyOnSetMembership()
