@@ -245,5 +245,5 @@ public sealed class Memory : IMemoryBus
     public string TakeUartOutput() => _devices.TakeUartOutput();
 
     private static bool IsRom(uint address) => ((address & MemoryMap.AddressMask) >> 14) == 0x3ffu;
-    private int RamIndex(uint address) => (int)((address & MemoryMap.AddressMask) % (uint)_ram.Length);
+    private int RamIndex(uint maskedAddress) => (int)(maskedAddress % (uint)_ram.Length);
 }
