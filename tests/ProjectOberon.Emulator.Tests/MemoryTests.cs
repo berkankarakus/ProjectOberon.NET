@@ -8,6 +8,7 @@ internal static class MemoryTests
         RejectsInvalidRomFiles();
         ReadsUnalignedRamWordsAcrossBoundaries();
         WritesUnalignedRamWordsAcrossBoundaries();
+        TestsAddressMaskAndRegionBoundaries();
         CollectsOptionalWordAccessStatistics();
         ClearsRamRomAndDevices();
     }
@@ -125,5 +126,21 @@ internal static class MemoryTests
         TestAssertions.Equal(0x66u, memory.Read8(7));
         TestAssertions.Equal(0x77u, memory.Read8(0));
         TestAssertions.Equal(0x88u, memory.Read8(1));
+    }
+
+    private static void TestsAddressMaskAndRegionBoundaries()
+    {
+        var memory = new Memory(8);
+        memory.Write32(Memory.AddressMask + 2, 0xaabb_ccdd);
+        TestAssertions.Equal(0xaabb_ccddu, memory.Read32(1));
+
+        var rom = new uint[Memory.RomWords];
+        rom[^1] = 0xfeed_beefu;
+        memory.LoadRomWords(rom);
+        TestAssertions.Equal(0xfeed_beefu, memory.ReadInstruction(Memory.RomBase + (uint)(Memory.RomWords - 1) * 4));
+        TestAssertions.Equal(0xaau, memory.Read32(Memory.RomBase - 4));
+
+        memory.Write32(Memory.RomBase, 0x1234_5678);
+        TestAssertions.Equal(0u, memory.Read32(Memory.RomBase));
     }
 }
