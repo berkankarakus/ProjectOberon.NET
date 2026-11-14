@@ -254,6 +254,14 @@ dotnet run --project src/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
   --disk RISC-work.img
 ```
 
+Validate directory entries, file headers and referenced data sectors:
+
+```sh
+dotnet run --project src/ProjectOberon.FsCli/ProjectOberon.FsCli.csproj -- \
+  --disk RISC-work.img \
+  --validate
+```
+
 The filesystem reader follows `FileDir.Mod` and `Kernel.Mod`: it understands
 the 256 MB filesystem offset, 1024-byte logical sectors, and the directory
 B-tree.

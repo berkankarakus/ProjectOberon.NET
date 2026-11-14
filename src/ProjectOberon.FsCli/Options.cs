@@ -4,7 +4,8 @@ internal enum FsCommand
     Cat,
     Put,
     Delete,
-    Rename
+    Rename,
+    Validate
 }
 
 internal sealed record FsOptions(
@@ -68,6 +69,10 @@ internal sealed record FsOptions(
                     command = FsCommand.Rename;
                     name = args[++index];
                     newName = args[++index];
+                    break;
+                case "--validate":
+                    EnsureCommand(command, FsCommand.Validate);
+                    command = FsCommand.Validate;
                     break;
                 default:
                     throw new ArgumentException($"unknown or incomplete option: {args[index]}");

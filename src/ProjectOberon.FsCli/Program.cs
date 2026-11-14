@@ -8,6 +8,7 @@ if (options.Help)
     Console.WriteLine("       project-oberon-fs --disk FILE --put NAME HOST-FILE --writable");
     Console.WriteLine("       project-oberon-fs --disk FILE --delete NAME --writable");
     Console.WriteLine("       project-oberon-fs --disk FILE --rename OLD NEW --writable");
+    Console.WriteLine("       project-oberon-fs --disk FILE --validate");
     return;
 }
 
@@ -32,6 +33,12 @@ if (entry is null)
 }
     using var output = Console.OpenStandardOutput();
     output.Write(fileSystem.ReadFile(entry));
+}
+else if (options.Command == FsCommand.Validate)
+{
+    var fileSystem = new OberonFileSystem(disk);
+    fileSystem.Validate();
+    Console.WriteLine("filesystem is valid");
 }
 else
 {

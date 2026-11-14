@@ -38,6 +38,10 @@ internal static class SubcommandOptionTests
         TestAssertions.Equal(FsCommand.Rename, rename.Command);
         TestAssertions.Equal("Old.Mod", rename.Name);
         TestAssertions.Equal("New.Mod", rename.NewName);
+
+        var validate = FsOptions.Parse(["--disk", "work.img", "--validate"]);
+        TestAssertions.Equal(FsCommand.Validate, validate.Command);
+        TestAssertions.False(validate.Writable);
     }
 
     private static void HandlesFileSystemHelp()
@@ -55,6 +59,7 @@ internal static class SubcommandOptionTests
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--unknown"]));
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--disk", "work.img", "--delete", "Demo.Mod"]));
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--disk", "work.img", "--cat", "A", "--delete", "B"]));
+        TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--disk", "work.img", "--validate", "--cat", "A"]));
     }
 
     private static void ParsesRscOptions()
