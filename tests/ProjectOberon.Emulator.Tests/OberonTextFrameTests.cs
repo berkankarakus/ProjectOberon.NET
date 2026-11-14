@@ -8,5 +8,6 @@ internal static partial class OberonTextFrameTests
         RendersSelectionAndCaret();
         ScrollsViewportAndMapsCoordinates();
         ReusesLayoutUntilTextChanges();
+        InvalidatesLayoutWhenWrapModeChanges();
     }
 }

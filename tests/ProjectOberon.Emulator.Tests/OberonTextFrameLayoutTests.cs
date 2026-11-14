@@ -31,6 +31,21 @@ internal static partial class OberonTextFrameTests
         TestAssertions.Equal("ABC", changed[0].Text);
     }
 
+    public static void InvalidatesLayoutWhenWrapModeChanges()
+    {
+        var frame = new OberonTextFrame(new OberonText("ABABA"), CreateFont());
+        var wrapped = frame.Layout(6);
+        TestAssertions.True(wrapped.Count > 1);
+
+        frame.WrapLines = false;
+        var unwrapped = frame.Layout(6);
+        TestAssertions.False(ReferenceEquals(wrapped, unwrapped));
+        TestAssertions.Equal(1, unwrapped.Count);
+
+        frame.WrapLines = true;
+        TestAssertions.False(ReferenceEquals(unwrapped, frame.Layout(6)));
+    }
+
     private static void WrapsAndSplitsLines()
     {
         var frame = new OberonTextFrame(new OberonText("ABA\r\nBA"), CreateFont());
