@@ -45,4 +45,25 @@ internal static partial class OberonPersistenceTests
         }
         finally { File.Delete(path); }
     }
+
+    public static void RollsBackFailedFileAllocation()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"project-oberon-files-capacity-{Guid.NewGuid():N}.img");
+        try
+        {
+            using (var file = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite))
+                file.SetLength(((long)OberonKernel.FileSystemOffset + 2 * 65) * DiskImage.SectorSize);
+            using var disk = new DiskImage();
+            disk.Open(path);
+            var kernel = new OberonKernel(new Memory(), disk);
+            var files = new OberonFiles(kernel, initializeDirectory: true);
+            var oversized = files.New("TooLarge.Mod");
+            oversized.Set().WriteString(new string('x', 700));
+
+            TestAssertions.Throws<InvalidOperationException>(() => files.Register(oversized));
+            TestAssertions.Equal(0, kernel.AllocatedSectors);
+            TestAssertions.True(files.Old("TooLarge.Mod") is null);
+        }
+        finally { File.Delete(path); }
+    }
 }

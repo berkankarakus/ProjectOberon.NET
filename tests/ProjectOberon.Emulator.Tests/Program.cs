@@ -51,6 +51,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon file directory", OberonPersistenceTests.OberonFileDirectoryBTree),
     ("Oberon file directory boundaries", OberonPersistenceTests.OberonFileDirectoryBoundaries),
     ("Oberon persistent files", OberonPersistenceTests.OberonPersistentFiles),
+    ("Oberon failed file allocation rollback", OberonPersistenceTests.RollsBackFailedFileAllocation),
     ("Oberon module loader", OberonModuleTests.LoaderGraph),
     ("Oberon module memory image", OberonModuleTests.MemoryImage),
     ("Oberon module runtime validation", OberonModuleTests.ValidatesRuntimeArguments),

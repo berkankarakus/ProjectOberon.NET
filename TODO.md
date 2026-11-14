@@ -68,6 +68,7 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Reuse the GC scan free-block buffer between collections.
 - [x] Include heap addresses and sizes in corruption diagnostics.
 - [x] Remove stale module memory images after a successful module free.
+- [x] Roll back persistent file sectors when registration allocation or I/O fails.
 - [x] Add an optional CI boot/input job with URL and SHA256-verified disk artifact provisioning.
 - [ ] Configure the repository-owned disk artifact URL and SHA256 variables.
 

@@ -35,26 +35,37 @@ internal sealed class PersistentOberonFilesBackend : IOberonFilesBackend
         var totalLength = checked(OberonFileHeader.HeaderSize + file.Length);
         var fullPages = (totalLength - 1) / OberonDiskLayout.SectorLength;
         var lastPageLength = totalLength - fullPages * OberonDiskLayout.SectorLength;
-        var pageAddresses = AllocatePages(fullPages + 1);
-        var extensionAddresses = AllocateExtensions(fullPages, pageAddresses);
-        var header = new byte[OberonDiskLayout.SectorLength];
-        OberonFileHeaderCodec.Write(header, file.Name, fullPages, lastPageLength, file.Date, extensionAddresses, pageAddresses);
-        var content = file.Content;
-        var firstPageLength = Math.Min(content.Length, OberonDiskLayout.SectorLength - OberonFileHeader.HeaderSize);
-        content[..firstPageLength].CopyTo(header.AsSpan(OberonFileHeader.HeaderSize));
-        _kernel.PutSector(pageAddresses[0], header);
-
-        var copied = firstPageLength;
-        for (var page = 1; page < pageAddresses.Length; page++)
+        var pageAddresses = Array.Empty<int>();
+        var extensionAddresses = Array.Empty<int>();
+        try
         {
-            var data = new byte[OberonDiskLayout.SectorLength];
-            var count = Math.Min(data.Length, content.Length - copied);
-            content.Slice(copied, count).CopyTo(data);
-            copied += count;
-            _kernel.PutSector(pageAddresses[page], data);
+            pageAddresses = AllocatePages(fullPages + 1);
+            extensionAddresses = AllocateExtensions(fullPages, pageAddresses);
+            var header = new byte[OberonDiskLayout.SectorLength];
+            OberonFileHeaderCodec.Write(header, file.Name, fullPages, lastPageLength, file.Date, extensionAddresses, pageAddresses);
+            var content = file.Content;
+            var firstPageLength = Math.Min(content.Length, OberonDiskLayout.SectorLength - OberonFileHeader.HeaderSize);
+            content[..firstPageLength].CopyTo(header.AsSpan(OberonFileHeader.HeaderSize));
+            _kernel.PutSector(pageAddresses[0], header);
+
+            var copied = firstPageLength;
+            for (var page = 1; page < pageAddresses.Length; page++)
+            {
+                var data = new byte[OberonDiskLayout.SectorLength];
+                var count = Math.Min(data.Length, content.Length - copied);
+                content.Slice(copied, count).CopyTo(data);
+                copied += count;
+                _kernel.PutSector(pageAddresses[page], data);
+            }
+            _directory.Insert(file.Name, pageAddresses[0]);
+            file.MarkRegistered(pageAddresses[0]);
         }
-        _directory.Insert(file.Name, pageAddresses[0]);
-        file.MarkRegistered(pageAddresses[0]);
+        catch
+        {
+            FreeAllocated(extensionAddresses);
+            FreeAllocated(pageAddresses);
+            throw;
+        }
     }
 
     public bool Delete(string name)
@@ -118,10 +129,18 @@ internal sealed class PersistentOberonFilesBackend : IOberonFilesBackend
     {
         var pages = new int[count];
         var hint = 0;
-        for (var index = 0; index < pages.Length; index++)
+        try
         {
-            pages[index] = _kernel.AllocSector(hint);
-            hint = pages[index];
+            for (var index = 0; index < pages.Length; index++)
+            {
+                pages[index] = _kernel.AllocSector(hint);
+                hint = pages[index];
+            }
+        }
+        catch
+        {
+            FreeAllocated(pages);
+            throw;
         }
         return pages;
     }
@@ -131,23 +150,42 @@ internal sealed class PersistentOberonFilesBackend : IOberonFilesBackend
         var count = (fullPages + (256 - 64)) / 256;
         var extensions = new int[Math.Max(0, count)];
         var hint = pages[^1];
-        for (var index = 0; index < extensions.Length; index++)
+        try
         {
-            extensions[index] = _kernel.AllocSector(hint);
-            hint = extensions[index];
-            var data = new byte[OberonDiskLayout.SectorLength];
-            for (var entry = 0; entry < 256; entry++)
+            for (var index = 0; index < extensions.Length; index++)
             {
-                var pageIndex = 64 + index * 256 + entry;
-                if (pageIndex >= pages.Length)
+                extensions[index] = _kernel.AllocSector(hint);
+                hint = extensions[index];
+                var data = new byte[OberonDiskLayout.SectorLength];
+                for (var entry = 0; entry < 256; entry++)
                 {
-                    break;
+                    var pageIndex = 64 + index * 256 + entry;
+                    if (pageIndex >= pages.Length)
+                    {
+                        break;
+                    }
+                    BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(entry * 4), pages[pageIndex]);
                 }
-                BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(entry * 4), pages[pageIndex]);
+                _kernel.PutSector(extensions[index], data);
             }
-            _kernel.PutSector(extensions[index], data);
+        }
+        catch
+        {
+            FreeAllocated(extensions);
+            throw;
         }
         return extensions;
+    }
+
+    private void FreeAllocated(IEnumerable<int> addresses)
+    {
+        foreach (var address in addresses)
+        {
+            if (address != 0)
+            {
+                _kernel.FreeSector(address);
+            }
+        }
     }
 
     private OberonFile ReadPersisted(string name, int headerAddress)
