@@ -76,6 +76,10 @@ internal static partial class DeviceTests
         TestAssertions.Equal(1, kernel.AllocatedSectors);
         kernel.MarkSector(100 * 29);
         TestAssertions.Equal(2, kernel.AllocatedSectors);
+        kernel.MarkSector(100 * 29);
+        TestAssertions.Equal(2, kernel.AllocatedSectors);
+        kernel.FreeSector(100 * 29);
+        TestAssertions.Equal(1, kernel.AllocatedSectors);
         kernel.FreeSector(100 * 29);
         TestAssertions.Equal(1, kernel.AllocatedSectors);
         kernel.SetClock(1234);

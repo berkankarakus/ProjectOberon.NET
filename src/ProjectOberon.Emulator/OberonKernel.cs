@@ -10,6 +10,7 @@ public sealed class OberonKernel
     private readonly Memory _memory;
     private readonly DiskImage? _disk;
     private readonly bool[] _sectorMap = new bool[MapSize];
+    private readonly bool[] _countedSectors = new bool[MapSize];
     private readonly List<FreeBlock> _freeBlocks = [];
     private readonly uint _heapOrigin;
     private readonly uint _heapLimit;
@@ -43,6 +44,7 @@ public sealed class OberonKernel
     public void InitSectorMap()
     {
         Array.Clear(_sectorMap);
+        Array.Clear(_countedSectors);
         for (var index = 0; index < 64; index++)
         {
             _sectorMap[index] = true;
@@ -53,7 +55,13 @@ public sealed class OberonKernel
     public void MarkSector(int sector)
     {
         var index = SectorIndex(sector);
+        if (_countedSectors[index])
+        {
+            return;
+        }
+
         _sectorMap[index] = true;
+        _countedSectors[index] = true;
         AllocatedSectors++;
     }
 
@@ -65,14 +73,24 @@ public sealed class OberonKernel
             return;
         }
         _sectorMap[index] = true;
+        _countedSectors[index] = true;
         AllocatedSectors++;
     }
 
     public void FreeSector(int sector)
     {
         var index = SectorIndex(sector);
+        if (!_sectorMap[index])
+        {
+            return;
+        }
+
         _sectorMap[index] = false;
-        AllocatedSectors--;
+        if (_countedSectors[index])
+        {
+            _countedSectors[index] = false;
+            AllocatedSectors--;
+        }
     }
 
     public int AllocSector(int hint)
@@ -94,6 +112,7 @@ public sealed class OberonKernel
             }
 
             _sectorMap[index] = true;
+            _countedSectors[index] = true;
             AllocatedSectors++;
             return checked(index * LogicalSectorUnit);
         }
