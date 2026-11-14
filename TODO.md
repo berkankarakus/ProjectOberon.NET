@@ -52,7 +52,8 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Fuse side-effect-free INTEGER conjunction comparisons directly into branches.
 - [x] Fuse side-effect-free INTEGER disjunction comparisons directly into branches.
 - [x] Fuse negated INTEGER comparisons directly into branches.
-- [ ] Measure whether further comparison/branch fusion provides a meaningful gain before introducing a larger control-flow rewrite.
+- [x] Measure and apply safe side-effect-free INTEGER comparison branch fusion.
+- [ ] Consider general boolean control-flow fusion for side-effectful, REAL, and SET expressions.
 
 ## Integration
 
