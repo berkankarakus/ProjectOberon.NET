@@ -11,6 +11,7 @@ internal static class PerformanceBenchmarkTests
         var results = new[]
         {
             Benchmark("memory read/write", iterations, BenchmarkMemory),
+            Benchmark("memory read/write with statistics", iterations, BenchmarkMemoryWithStatistics),
             Benchmark("cpu step", iterations, BenchmarkCpu),
             Benchmark("compiler emit", Math.Max(1, iterations / 100), BenchmarkCompiler)
         };
@@ -59,6 +60,18 @@ internal static class PerformanceBenchmarkTests
     private static void BenchmarkMemory(int iterations)
     {
         var memory = new Memory();
+        RunMemoryLoop(memory, iterations);
+    }
+
+    private static void BenchmarkMemoryWithStatistics(int iterations)
+    {
+        var memory = new Memory { CollectStatistics = true };
+        RunMemoryLoop(memory, iterations);
+        GC.KeepAlive(memory.GetStatistics());
+    }
+
+    private static void RunMemoryLoop(Memory memory, int iterations)
+    {
         uint value = 0;
         for (var index = 0; index < iterations; index++)
         {
