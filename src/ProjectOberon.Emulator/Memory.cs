@@ -244,6 +244,6 @@ public sealed class Memory : IMemoryBus
     public void SetMouse(ushort x, ushort y, byte buttons) => _devices.SetMouse(x, y, buttons);
     public string TakeUartOutput() => _devices.TakeUartOutput();
 
-    private static bool IsRom(uint address) => ((address & MemoryMap.AddressMask) >> 14) == 0x3ffu;
+    private static bool IsRom(uint maskedAddress) => (maskedAddress >> 14) == 0x3ffu;
     private int RamIndex(uint maskedAddress) => (int)(maskedAddress % (uint)_ram.Length);
 }
