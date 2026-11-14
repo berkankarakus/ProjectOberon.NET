@@ -8,6 +8,7 @@ internal static class MemoryTests
         RejectsInvalidRomFiles();
         ReadsUnalignedRamWordsAcrossBoundaries();
         WritesUnalignedRamWordsAcrossBoundaries();
+        CollectsOptionalWordAccessStatistics();
         ClearsRamRomAndDevices();
     }
 
@@ -63,6 +64,29 @@ internal static class MemoryTests
         TestAssertions.Equal(0u, memory.Read32(0x100));
         TestAssertions.Equal(0u, memory.Read32(Memory.RomBase));
         TestAssertions.Equal(0u, memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.Timer));
+    }
+
+    private static void CollectsOptionalWordAccessStatistics()
+    {
+        var memory = new Memory();
+        memory.CollectStatistics = true;
+        memory.Write32(0x100, 0x1234_5678);
+        _ = memory.Read32(0x100);
+        _ = memory.Read32(Memory.RomBase);
+        memory.Write32(Memory.RomBase, 1);
+        _ = memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.Timer);
+        memory.Write32(DeviceBus.IoBase + (uint)MmioRegister.Leds, 1);
+
+        var statistics = memory.GetStatistics();
+        TestAssertions.Equal(3ul, statistics.Read32Count);
+        TestAssertions.Equal(3ul, statistics.Write32Count);
+        TestAssertions.Equal(1ul, statistics.RomRead32Count);
+        TestAssertions.Equal(1ul, statistics.MmioRead32Count);
+        TestAssertions.Equal(1ul, statistics.RomWrite32Count);
+        TestAssertions.Equal(1ul, statistics.MmioWrite32Count);
+
+        memory.ResetStatistics();
+        TestAssertions.Equal(0ul, memory.GetStatistics().Read32Count);
     }
 
     private static void ReadsUnalignedRamWordsAcrossBoundaries()

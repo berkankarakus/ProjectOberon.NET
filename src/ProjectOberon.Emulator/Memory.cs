@@ -21,6 +21,12 @@ public sealed class Memory : IMemoryBus
     private readonly byte[] _ram;
     private readonly uint[] _rom = new uint[MemoryMap.RomWords];
     private readonly DeviceBus _devices = new();
+    private ulong _read32Count;
+    private ulong _write32Count;
+    private ulong _romRead32Count;
+    private ulong _mmioRead32Count;
+    private ulong _romWrite32Count;
+    private ulong _mmioWrite32Count;
 
     public Memory(int ramBytes = 1 << 20)
     {
@@ -34,6 +40,25 @@ public sealed class Memory : IMemoryBus
 
     public int RamSize => _ram.Length;
     public DeviceBus Devices => _devices;
+    public bool CollectStatistics { get; set; }
+
+    public MemoryStatistics GetStatistics() => new(
+        _read32Count,
+        _write32Count,
+        _romRead32Count,
+        _mmioRead32Count,
+        _romWrite32Count,
+        _mmioWrite32Count);
+
+    public void ResetStatistics()
+    {
+        _read32Count = 0;
+        _write32Count = 0;
+        _romRead32Count = 0;
+        _mmioRead32Count = 0;
+        _romWrite32Count = 0;
+        _mmioWrite32Count = 0;
+    }
 
     public byte Read8(uint address)
     {
@@ -51,14 +76,29 @@ public sealed class Memory : IMemoryBus
 
     public uint Read32(uint address)
     {
+        if (CollectStatistics)
+        {
+            _read32Count++;
+        }
+
         address &= MemoryMap.AddressMask;
         if (_devices.Handles(address))
         {
+            if (CollectStatistics)
+            {
+                _mmioRead32Count++;
+            }
+
             return _devices.Read(address & ~3u);
         }
 
         if (IsRom(address))
         {
+            if (CollectStatistics)
+            {
+                _romRead32Count++;
+            }
+
             return _rom[(int)((address >> 2) & (MemoryMap.RomWords - 1))];
         }
 
@@ -100,15 +140,30 @@ public sealed class Memory : IMemoryBus
 
     public void Write32(uint address, uint value)
     {
+        if (CollectStatistics)
+        {
+            _write32Count++;
+        }
+
         address &= MemoryMap.AddressMask;
         if (_devices.Handles(address))
         {
+            if (CollectStatistics)
+            {
+                _mmioWrite32Count++;
+            }
+
             _devices.Write(address & ~3u, value);
             return;
         }
 
         if (IsRom(address))
         {
+            if (CollectStatistics)
+            {
+                _romWrite32Count++;
+            }
+
             return;
         }
 
@@ -133,6 +188,7 @@ public sealed class Memory : IMemoryBus
         Array.Clear(_ram);
         Array.Clear(_rom);
         _devices.Reset();
+        ResetStatistics();
     }
 
     public void LoadRomWords(ReadOnlySpan<uint> words)
