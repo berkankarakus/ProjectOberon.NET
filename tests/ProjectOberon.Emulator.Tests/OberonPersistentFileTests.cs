@@ -39,6 +39,11 @@ internal static partial class OberonPersistenceTests
             var reopenedText = reopenedFiles.OpenText("Note.Text");
             TestAssertions.Equal("Persistent text", reopenedText.GetText());
             TestAssertions.Equal(new OberonTextStyle("Oberon12", 15, 0), reopenedText.Attributes(0));
+            reopenedFiles.RegisterText("Existing.Text", new OberonText("existing"));
+            reopenedFiles.RegisterText("Incoming.Text", new OberonText("incoming"));
+            TestAssertions.False(reopenedFiles.Rename("Existing.Text", "Incoming.Text"));
+            TestAssertions.True(reopenedFiles.Old("Existing.Text") is not null);
+            TestAssertions.Equal("incoming", reopenedFiles.OpenText("Incoming.Text").GetText());
             TestAssertions.True(reopenedFiles.Rename("Persist.Mod", "Renamed.Mod"));
             TestAssertions.True(reopenedFiles.Delete("Renamed.Mod"));
             TestAssertions.True(reopenedFiles.Old("Renamed.Mod") is null);

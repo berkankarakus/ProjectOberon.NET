@@ -71,6 +71,7 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Roll back persistent file sectors when registration allocation or I/O fails.
 - [x] Release directory pages discarded during B-tree deletion merges.
 - [x] Release the child page copied into the fixed directory root after root collapse.
+- [x] Reject persistent file renames that would overwrite an existing directory entry.
 - [x] Add an optional CI boot/input job with URL and SHA256-verified disk artifact provisioning.
 - [ ] Configure the repository-owned disk artifact URL and SHA256 variables.
 

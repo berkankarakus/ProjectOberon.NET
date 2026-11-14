@@ -104,6 +104,16 @@ internal sealed class PersistentOberonFilesBackend : IOberonFilesBackend
         {
             return false;
         }
+        if (oldName == newName)
+        {
+            return true;
+        }
+
+        if (_directory.Search(newName) != 0)
+        {
+            return false;
+        }
+
         var header = _kernel.GetSector(address);
         header.AsSpan(4, 32).Clear();
         Encoding.ASCII.GetBytes(newName).CopyTo(header, 4);
