@@ -197,11 +197,9 @@ public sealed class OberonCompilerExpressionEmitter
 
     private int EmitUnary(OberonCompilerUnaryExpression unary, int destination)
     {
-        if (unary.Operator == OberonCompilerTokenKind.Minus
-            && unary.Operand is OberonCompilerRealLiteralExpression realLiteral)
+        if (TryEvaluateReal(unary, out var realConstant))
         {
-            var negated = -(float)realLiteral.Value;
-            _generator.EmitMoveImmediate(destination, BitConverter.SingleToInt32Bits(negated));
+            _generator.EmitMoveImmediate(destination, BitConverter.SingleToInt32Bits(realConstant));
             return destination;
         }
 
@@ -249,6 +247,12 @@ public sealed class OberonCompilerExpressionEmitter
 
         if (TryEmitIntegerConstant(binary, destination))
         {
+            return destination;
+        }
+
+        if (TryEvaluateReal(binary, out var realConstant))
+        {
+            _generator.EmitMoveImmediate(destination, BitConverter.SingleToInt32Bits(realConstant));
             return destination;
         }
 
@@ -490,6 +494,65 @@ public sealed class OberonCompilerExpressionEmitter
 
         value = (int)result;
         return true;
+    }
+
+    private static bool TryEvaluateReal(
+        OberonCompilerExpression expression,
+        out float value)
+    {
+        if (expression is OberonCompilerRealLiteralExpression literal)
+        {
+            value = (float)literal.Value;
+            return true;
+        }
+
+        if (expression is OberonCompilerUnaryExpression unary
+            && TryEvaluateReal(unary.Operand, out var operandValue))
+        {
+            switch (unary.Operator)
+            {
+                case OberonCompilerTokenKind.Plus:
+                    value = operandValue;
+                    return true;
+                case OberonCompilerTokenKind.Minus:
+                    value = -operandValue;
+                    return true;
+            }
+        }
+
+        if (expression is not OberonCompilerBinaryExpression binary
+            || !TryEvaluateReal(binary.Left, out var left)
+            || !TryEvaluateReal(binary.Right, out var right))
+        {
+            value = 0;
+            return false;
+        }
+
+        switch (binary.Operator)
+        {
+            case OberonCompilerTokenKind.Plus:
+                value = left + right;
+                return true;
+            case OberonCompilerTokenKind.Minus:
+                value = left - right;
+                return true;
+            case OberonCompilerTokenKind.Multiply:
+                value = left * right;
+                return true;
+            case OberonCompilerTokenKind.Divide:
+            case OberonCompilerTokenKind.RealDivide:
+                if (right == 0f)
+                {
+                    value = 0;
+                    return false;
+                }
+
+                value = left / right;
+                return true;
+            default:
+                value = 0;
+                return false;
+        }
     }
 
     private bool TryEmitIntegerComparisonImmediate(

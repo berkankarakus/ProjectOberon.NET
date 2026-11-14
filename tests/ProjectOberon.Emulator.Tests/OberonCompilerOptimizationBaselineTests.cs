@@ -6,6 +6,7 @@ internal static class OberonCompilerOptimizationBaselineTests
     {
         MeasuresArithmeticFixture();
         MeasuresConstantArithmeticFixture();
+        MeasuresRealConstantFixture();
         MeasuresLoopFixture();
         MeasuresForLoopFixture();
         MeasuresAggregateCopyFixture();
@@ -37,6 +38,21 @@ internal static class OberonCompilerOptimizationBaselineTests
             maxSteps: 64);
 
         AssertBaseline(module, steps, codeWords: 2, rscBytes: 79, runtimeSteps: 2);
+    }
+
+    private static void MeasuresRealConstantFixture()
+    {
+        const string source =
+            "MODULE RealConstant; VAR result: REAL; BEGIN result := 1.5 + 2.5 * 2.0 END RealConstant.";
+        var module = Compile("RealConstant", source);
+        var result = module.ParseResult.ModuleScope!.Objects.Single(symbol => symbol.Name == "result");
+        var steps = RunUntil(
+            module,
+            () => module.Memory.Read32(module.Image.DataAddress + checked((uint)result.Value))
+                == 0x40d00000u,
+            maxSteps: 64);
+
+        AssertBaseline(module, steps, codeWords: 2, rscBytes: 73, runtimeSteps: 2);
     }
 
     private static void MeasuresLoopFixture()
