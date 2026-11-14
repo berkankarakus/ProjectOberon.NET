@@ -38,6 +38,12 @@ internal static partial class DeviceTests
         display.CopyBlock(10, 2, 3, 2, 20, 4, Display.Replace);
         TestAssertions.True((memory.Read32(Display.Base + (uint)(4 * Display.RowBytes)) & (1u << 20)) != 0);
         TestAssertions.True((memory.Read32(Display.Base + (uint)(5 * Display.RowBytes)) & (1u << 21)) != 0);
+
+        display.Dot(Display.White, 0, 10, Display.Replace);
+        display.Dot(Display.White, 1, 10, Display.Replace);
+        display.Dot(Display.White, 2, 10, Display.Replace);
+        display.CopyBlock(0, 10, 3, 1, 1, 10, Display.Replace);
+        TestAssertions.Equal(0b1111u, memory.Read32(Display.Base + (uint)(10 * Display.RowBytes)) & 0b1111u);
     }
 
     public static void OberonInputDecoder()
