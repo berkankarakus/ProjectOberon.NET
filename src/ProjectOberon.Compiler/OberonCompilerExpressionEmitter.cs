@@ -197,6 +197,13 @@ public sealed class OberonCompilerExpressionEmitter
 
     private int EmitUnary(OberonCompilerUnaryExpression unary, int destination)
     {
+        if (unary.Operator == OberonCompilerTokenKind.Not
+            && TryGetBooleanLiteral(unary.Operand, out var booleanValue))
+        {
+            _generator.EmitMoveImmediate(destination, booleanValue ? 0 : 1);
+            return destination;
+        }
+
         if (TryEvaluateReal(unary, out var realConstant))
         {
             _generator.EmitMoveImmediate(destination, BitConverter.SingleToInt32Bits(realConstant));
@@ -257,6 +264,11 @@ public sealed class OberonCompilerExpressionEmitter
         }
 
         if (TryEmitIntegerIdentity(binary, destination))
+        {
+            return destination;
+        }
+
+        if (TryEmitBooleanIdentity(binary, destination))
         {
             return destination;
         }
@@ -635,6 +647,28 @@ public sealed class OberonCompilerExpressionEmitter
             return false;
         }
 
+        if (TryGetBooleanLiteral(binary.Right, out var rightValue))
+        {
+            EmitExpression(binary.Left, destination);
+            if (binary.Operator == OberonCompilerTokenKind.Equal ? !rightValue : rightValue)
+            {
+                _generator.EmitImmediate(AluOperation.Xor, destination, destination, 1);
+            }
+
+            return true;
+        }
+
+        if (TryGetBooleanLiteral(binary.Left, out var leftValue))
+        {
+            EmitExpression(binary.Right, destination);
+            if (binary.Operator == OberonCompilerTokenKind.Equal ? !leftValue : leftValue)
+            {
+                _generator.EmitImmediate(AluOperation.Xor, destination, destination, 1);
+            }
+
+            return true;
+        }
+
         var temporary = _registers.AcquireTemporary(destination);
         using var protectedDestination = _registers.ReserveRangeScope(destination, 1);
         try
@@ -653,6 +687,63 @@ public sealed class OberonCompilerExpressionEmitter
         {
             _registers.ReleaseTemporary(temporary);
         }
+    }
+
+    private bool TryEmitBooleanIdentity(
+        OberonCompilerBinaryExpression binary,
+        int destination)
+    {
+        if (binary.Operator is not (OberonCompilerTokenKind.And or OberonCompilerTokenKind.Or)
+            || !IsBoolean(binary.Left)
+            || !IsBoolean(binary.Right))
+        {
+            return false;
+        }
+
+        if (TryGetBooleanLiteral(binary.Right, out var rightValue))
+        {
+            EmitExpression(binary.Left, destination);
+            if (IsBooleanIdentity(binary.Operator, rightValue))
+            {
+                return true;
+            }
+
+            _generator.EmitMoveImmediate(destination, binary.Operator == OberonCompilerTokenKind.Or ? 1 : 0);
+            return true;
+        }
+
+        if (TryGetBooleanLiteral(binary.Left, out var leftValue))
+        {
+            EmitExpression(binary.Right, destination);
+            if (IsBooleanIdentity(binary.Operator, leftValue))
+            {
+                return true;
+            }
+
+            _generator.EmitMoveImmediate(destination, binary.Operator == OberonCompilerTokenKind.Or ? 1 : 0);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsBooleanIdentity(OberonCompilerTokenKind operation, bool value) =>
+        operation == OberonCompilerTokenKind.And ? value : !value;
+
+    private static bool TryGetBooleanLiteral(
+        OberonCompilerExpression expression,
+        out bool value)
+    {
+        if (expression is OberonCompilerIntegerLiteralExpression literal
+            && literal.Type.Form == OberonCompilerTypeForm.Boolean
+            && literal.Value is 0 or 1)
+        {
+            value = literal.Value == 1;
+            return true;
+        }
+
+        value = false;
+        return false;
     }
 
     private static OberonCompilerTokenKind ReverseComparison(
@@ -854,6 +945,9 @@ public sealed class OberonCompilerExpressionEmitter
             OberonCompilerTypeForm.Byte or
             OberonCompilerTypeForm.Character or
             OberonCompilerTypeForm.Integer;
+
+    private static bool IsBoolean(OberonCompilerExpression expression) =>
+        OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form == OberonCompilerTypeForm.Boolean;
 
     private static bool IsSet(OberonCompilerBinaryExpression expression) =>
         OberonCompilerExpressionTypeResolver.Resolve(expression.Left)?.Form == OberonCompilerTypeForm.Set;

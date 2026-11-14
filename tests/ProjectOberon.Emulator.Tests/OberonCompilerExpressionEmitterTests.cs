@@ -15,6 +15,9 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsIntegerComparisonsWithImmediateOperands();
         EmitsReversedIntegerComparisonWithImmediateOperand();
         EmitsBooleanComparisonsWithoutBranches();
+        EmitsBooleanLiteralComparisonsWithoutTemporaries();
+        EmitsBooleanIdentitiesWithoutLogicalInstructions();
+        FoldsBooleanUnaryLiterals();
         EmitsPointerValues();
         EmitsPointerDereference();
         EmitsForLoop();
@@ -416,6 +419,49 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal(3, instructions.Count(instruction => instruction.StartsWith("XOR ", StringComparison.Ordinal)));
         TestAssertions.Equal(1, instructions.Count(instruction => instruction == "XOR r0, r0, 0x0001"));
         TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("B", StringComparison.Ordinal)));
+    }
+
+    private static void EmitsBooleanIdentitiesWithoutLogicalInstructions()
+    {
+        const string source = "MODULE BooleanIdentity; VAR flag, first, second, third, fourth: BOOLEAN; BEGIN first := flag & TRUE; second := flag OR FALSE; third := flag & FALSE; fourth := flag OR TRUE; END BooleanIdentity.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("AND ", StringComparison.Ordinal)));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("IOR ", StringComparison.Ordinal)));
+        TestAssertions.Equal(1, instructions.Count(instruction => instruction == "MOV r0, 0x0000"));
+        TestAssertions.Equal(1, instructions.Count(instruction => instruction == "MOV r0, 0x0001"));
+    }
+
+    private static void EmitsBooleanLiteralComparisonsWithoutTemporaries()
+    {
+        const string source = "MODULE BooleanLiteralCompare; VAR flag, first, second, third, fourth: BOOLEAN; BEGIN first := flag = TRUE; second := flag # FALSE; third := flag = FALSE; fourth := flag # TRUE; END BooleanLiteralCompare.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal(2, instructions.Count(instruction => instruction == "XOR r0, r0, 0x0001"));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("XOR r0, r0, r1", StringComparison.Ordinal)));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0000"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0001"));
+    }
+
+    private static void FoldsBooleanUnaryLiterals()
+    {
+        const string source = "MODULE BooleanUnary; VAR result: BOOLEAN; BEGIN result := ~TRUE; END BooleanUnary.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal("MOV r0, 0x0000", instructions[0]);
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("XOR ", StringComparison.Ordinal)));
     }
 
     private static void EmitsPointerValues()
