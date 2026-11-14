@@ -35,18 +35,25 @@ public sealed partial class OberonDisplay
         }
 
         var right = x + width;
+        var firstWord = x & ~31;
+        var lastWord = (right - 1) & ~31;
+        var firstMask = uint.MaxValue << (x & 31);
+        var lastMask = LowBits(((right - 1) & 31) + 1);
         for (var row = y; row < y + height; row++)
         {
-            for (var wordX = x & ~31; wordX < right; wordX += 32)
+            if (firstWord == lastWord)
             {
-                var start = Math.Max(x, wordX);
-                var end = Math.Min(right, wordX + 32);
-                var length = end - start;
-                var mask = length == 32
-                    ? uint.MaxValue
-                    : ((1u << length) - 1) << (start & 31);
-                ApplyWordMask(PixelAddress(wordX, row), mask, color, mode);
+                ApplyWordMask(PixelAddress(firstWord, row), firstMask & lastMask, color, mode);
+                continue;
             }
+
+            ApplyWordMask(PixelAddress(firstWord, row), firstMask, color, mode);
+            for (var wordX = firstWord + 32; wordX < lastWord; wordX += 32)
+            {
+                ApplyWordMask(PixelAddress(wordX, row), uint.MaxValue, color, mode);
+            }
+
+            ApplyWordMask(PixelAddress(lastWord, row), lastMask, color, mode);
         }
     }
 }
