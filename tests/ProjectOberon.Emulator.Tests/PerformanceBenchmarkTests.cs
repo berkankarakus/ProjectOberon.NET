@@ -85,6 +85,9 @@ internal static class PerformanceBenchmarkTests
     private static void BenchmarkCpu(int iterations)
     {
         var memory = new Memory();
+        var rom = new uint[Memory.RomWords];
+        Array.Fill(rom, TestFixtures.Alu(AluOperation.Add, 0, 0, 0));
+        memory.LoadRomWords(rom);
         var cpu = new Risc5Cpu(memory);
         for (var index = 0; index < iterations; index++)
         {
