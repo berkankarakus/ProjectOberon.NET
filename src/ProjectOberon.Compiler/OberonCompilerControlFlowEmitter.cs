@@ -303,12 +303,13 @@ public sealed class OberonCompilerControlFlowEmitter
             return IsInteger(condition.Left) && IsSet(condition.Right);
         }
 
-        return condition.Operator is OberonCompilerTokenKind.Equal or
+        var isComparison = condition.Operator is OberonCompilerTokenKind.Equal or
             OberonCompilerTokenKind.NotEqual or
             OberonCompilerTokenKind.Less or
             OberonCompilerTokenKind.LessOrEqual or
             OberonCompilerTokenKind.Greater or
-            OberonCompilerTokenKind.GreaterOrEqual
+            OberonCompilerTokenKind.GreaterOrEqual;
+        return isComparison
             && (IsInteger(condition.Left) && IsInteger(condition.Right)
                 || IsReal(condition.Left) && IsReal(condition.Right));
     }
