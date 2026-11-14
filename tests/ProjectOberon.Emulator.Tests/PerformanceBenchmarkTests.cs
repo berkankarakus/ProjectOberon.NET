@@ -18,6 +18,7 @@ internal static class PerformanceBenchmarkTests
             Benchmark("host call dispatch", iterations, BenchmarkHostCallDispatch),
             Benchmark("display pattern copy", Math.Max(1, iterations / 10), BenchmarkDisplayPattern),
             Benchmark("text editor edit", Math.Max(1, iterations / 100), BenchmarkTextEditor),
+            Benchmark("compiler register allocator", Math.Max(1, iterations / 10), BenchmarkRegisterAllocator),
             Benchmark("compiler emit", Math.Max(1, iterations / 100), BenchmarkCompiler)
         };
 
@@ -157,6 +158,18 @@ internal static class PerformanceBenchmarkTests
             editor.SetCursor(1);
             editor.Insert("B");
             GC.KeepAlive(editor);
+        }
+    }
+
+    private static void BenchmarkRegisterAllocator(int iterations)
+    {
+        var allocator = new OberonCompilerRegisterAllocator();
+        for (var index = 0; index < iterations; index++)
+        {
+            var first = allocator.AcquireTemporary();
+            var second = allocator.AcquireTemporary(first);
+            allocator.ReleaseTemporary(second);
+            allocator.ReleaseTemporary(first);
         }
     }
 
