@@ -60,6 +60,16 @@ internal static partial class DeviceTests
         keyboard.Enqueue(0x21);
         TestAssertions.True(keyboard.TryRead(out character));
         TestAssertions.Equal('\x03', character);
+        TestAssertions.True(keyboard.Ctrl);
+        keyboard.Enqueue(0xf0);
+        keyboard.Enqueue(0x14);
+        TestAssertions.Equal(0, keyboard.Available());
+        TestAssertions.Equal(0, keyboard.Available());
+        TestAssertions.False(keyboard.Ctrl);
+        keyboard.Reset();
+        TestAssertions.False(keyboard.Shift);
+        TestAssertions.False(keyboard.Ctrl);
+        TestAssertions.False(keyboard.Extended);
     }
 
     public static void OberonKernelSectors()
