@@ -29,7 +29,9 @@ internal sealed record FsOptions(
         }
 
         string? disk = null;
+        var diskSpecified = false;
         var prefix = string.Empty;
+        var prefixSpecified = false;
         var writable = false;
         var command = FsCommand.List;
         string? name = null;
@@ -40,10 +42,16 @@ internal sealed record FsOptions(
             switch (args[index])
             {
                 case "--disk" when index + 1 < args.Length:
+                    if (diskSpecified)
+                        throw new ArgumentException("disk file specified more than once");
                     disk = args[++index];
+                    diskSpecified = true;
                     break;
                 case "--prefix" when index + 1 < args.Length:
+                    if (prefixSpecified)
+                        throw new ArgumentException("prefix specified more than once");
                     prefix = args[++index];
+                    prefixSpecified = true;
                     break;
                 case "--writable":
                     writable = true;

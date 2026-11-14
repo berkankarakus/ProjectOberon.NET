@@ -56,6 +56,8 @@ internal static class SubcommandOptionTests
         TestAssertions.Throws<ArgumentNullException>(() => FsOptions.Parse(null!));
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--prefix", "Ober"]));
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--disk"]));
+        TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--disk", "one.img", "--disk", "two.img"]));
+        TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--disk", "work.img", "--prefix", "A", "--prefix", "B"]));
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--unknown"]));
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--disk", "work.img", "--delete", "Demo.Mod"]));
         TestAssertions.Throws<ArgumentException>(() => FsOptions.Parse(["--disk", "work.img", "--cat", "A", "--delete", "B"]));
