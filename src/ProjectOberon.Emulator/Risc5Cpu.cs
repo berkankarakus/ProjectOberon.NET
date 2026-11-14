@@ -25,7 +25,7 @@ public sealed partial class Risc5Cpu
     public const uint ResetPc = 0x003f_f800u;
 
     private readonly IMemoryBus _memory;
-    private readonly uint[] _registers = new uint[32];
+    private readonly uint[] _registers = new uint[16];
     private uint _pc = ResetPc;
     private uint _high;
     private bool _negative;
