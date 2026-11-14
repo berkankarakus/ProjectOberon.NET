@@ -17,6 +17,7 @@ internal static class PerformanceBenchmarkTests
             Benchmark("machine run with progress", Math.Max(1, iterations / 10), BenchmarkMachineWithProgress),
             Benchmark("host call dispatch", iterations, BenchmarkHostCallDispatch),
             Benchmark("display pattern copy", Math.Max(1, iterations / 10), BenchmarkDisplayPattern),
+            Benchmark("text editor edit", Math.Max(1, iterations / 100), BenchmarkTextEditor),
             Benchmark("compiler emit", Math.Max(1, iterations / 100), BenchmarkCompiler)
         };
 
@@ -141,6 +142,22 @@ internal static class PerformanceBenchmarkTests
         }
 
         GC.KeepAlive(memory);
+    }
+
+    private static void BenchmarkTextEditor(int iterations)
+    {
+        var font = OberonFont.Parse([
+            0xdb, 0, 0x53, 0,
+            8, 0, 0, 0, 3, 0, 0, 0, 7, 0,
+            1, 0, (byte)'A', 0, (byte)'B', 0, 3, 0, 0, 0, 0, 0, 2, 0, 2, 0,
+            0b0000_0001, 0b0000_0010]);
+        for (var index = 0; index < iterations; index++)
+        {
+            var editor = new OberonTextEditor(new OberonTextFrame(new OberonText("A"), font));
+            editor.SetCursor(1);
+            editor.Insert("B");
+            GC.KeepAlive(editor);
+        }
     }
 
     private static Machine CreateBenchmarkMachine()
