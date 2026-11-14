@@ -25,6 +25,15 @@ jobs:
           set -o pipefail
           bash scripts/verify-dotnet.sh 2>&1 | tee artifacts/verify-dotnet.log
 
+      - name: Run SDL dummy frontend smoke
+        env:
+          SDL_VIDEODRIVER: dummy
+          PROJECT_OBERON_DOTNET_ARTIFACTS: ${{ github.workspace }}/artifacts/dotnet
+        run: |
+          set -o pipefail
+          "$PROJECT_OBERON_DOTNET_ARTIFACTS/bin/ProjectOberon.SdlUi/release/ProjectOberon.SdlUi" \
+            --frames 1 --steps-per-frame 1 --scale 0.5 2>&1 | tee -a artifacts/verify-dotnet.log
+
       - name: Upload deterministic test diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

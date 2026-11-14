@@ -182,8 +182,16 @@ sudo apt install libsdl2-2.0-0    # Debian/Ubuntu runtime
 ```
 
 The SDL frontend also supports `--read-only`, `--steps-per-frame N`,
-`--scale N`, `--no-flip-y`, `--log FILE` and the shared module startup options
-`--start-module NAME`, `--initialize`, `--boot` and `--command NAME`.
+`--frames N`, `--scale N`, `--no-flip-y`, `--log FILE` and the shared module
+startup options `--start-module NAME`, `--initialize`, `--boot` and
+`--command NAME`. `--frames N` exits automatically after N rendered frames,
+which enables a windowless smoke test:
+
+```sh
+SDL_VIDEODRIVER=dummy \
+  dotnet run --project src/ProjectOberon.SdlUi/ProjectOberon.SdlUi.csproj -- \
+  --frames 1 --steps-per-frame 1 --scale 0.5
+```
 
 When diagnosing input or startup behavior, pass `--log FILE`. The log records
 boot/startup state, SDL keyboard, mouse-button and text-input events, and

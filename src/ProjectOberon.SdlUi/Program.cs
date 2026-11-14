@@ -113,6 +113,7 @@ static void Run(Machine machine, UiOptions options, UiLog log)
         }
         SdlNative.SDL_StartTextInput();
         var running = true;
+        ulong frameCount = 0;
         var paused = false;
         var uartOutput = string.Empty;
         byte mouseButtons = 0;
@@ -122,7 +123,7 @@ static void Run(Machine machine, UiOptions options, UiLog log)
         var lastLoggedMouseY = -1;
         UiLogic.UpdateMouse(machine.Memory, width / 2, height / 2, width, height, options.FlipY, mouseButtons);
 
-        while (running)
+        while (running && (options.FrameLimit is null || frameCount < options.FrameLimit.Value))
         {
             while (SdlNative.SDL_PollEvent(out var sdlEvent) != 0)
             {
@@ -225,6 +226,7 @@ static void Run(Machine machine, UiOptions options, UiLog log)
             }
             SdlNative.SDL_RenderPresent(renderer);
             SdlNative.SDL_Delay(1);
+            frameCount++;
         }
     }
     finally

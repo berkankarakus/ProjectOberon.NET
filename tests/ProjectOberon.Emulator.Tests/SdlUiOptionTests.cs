@@ -5,12 +5,13 @@ internal static partial class SdlUiTests
 {
     private static void ParsesUiOptions()
     {
-        var options = UiOptions.Parse(["--rom", "prom.mem", "--disk", "work.img", "--read-only", "--steps-per-frame", "200", "--scale", "2", "--no-flip-y", "--log", "ui.log", "--editor", "notes.txt", "--font", "Oberon10.Scn.Fnt", "--start-module", "Input", "--boot", "--command", "Start"]);
+        var options = UiOptions.Parse(["--rom", "prom.mem", "--disk", "work.img", "--read-only", "--steps-per-frame", "200", "--frames", "3", "--scale", "2", "--no-flip-y", "--log", "ui.log", "--editor", "notes.txt", "--font", "Oberon10.Scn.Fnt", "--start-module", "Input", "--boot", "--command", "Start"]);
 
         TestAssertions.Equal("prom.mem", options.Rom);
         TestAssertions.Equal("work.img", options.Disk);
         TestAssertions.False(options.DiskWritable);
         TestAssertions.Equal(200UL, options.StepsPerFrame);
+        TestAssertions.Equal(3UL, options.FrameLimit!.Value);
         TestAssertions.Equal(2d, options.Scale);
         TestAssertions.False(options.FlipY);
         TestAssertions.Equal("notes.txt", options.Editor);
@@ -37,6 +38,8 @@ internal static partial class SdlUiTests
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--scale", "NaN"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--scale", "Infinity"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--steps-per-frame", "x"]));
+        TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--frames", "0"]));
+        TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--frames", "1", "--frames", "2"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--unknown"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--disk"]));
         TestAssertions.Throws<ArgumentException>(() => UiOptions.Parse(["--font", "Oberon10.Scn.Fnt"]));

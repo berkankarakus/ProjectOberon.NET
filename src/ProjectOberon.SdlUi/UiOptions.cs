@@ -7,6 +7,7 @@ internal sealed record UiOptions(
     string? Disk,
     bool DiskWritable,
     ulong StepsPerFrame,
+    ulong? FrameLimit,
     double Scale,
     bool FlipY,
     string? Editor,
@@ -30,6 +31,7 @@ internal sealed record UiOptions(
                 Disk: null,
                 DiskWritable: true,
                 StepsPerFrame: 100_000UL,
+                FrameLimit: null,
                 Scale: 1.25,
                 FlipY: true,
                 Editor: null,
@@ -46,6 +48,7 @@ internal sealed record UiOptions(
         string? rom = null, disk = null;
         var writable = true;
         var steps = 100_000UL;
+        ulong? frameLimit = null;
         var scale = 1.25;
         var flipY = true;
         string? editor = null, font = null, logPath = null, startModule = null, command = null;
@@ -82,6 +85,19 @@ internal sealed record UiOptions(
                 case "--steps-per-frame" when index + 1 < args.Length:
                     if (!ulong.TryParse(args[++index], out steps))
                         throw new ArgumentException("--steps-per-frame must be an unsigned integer");
+                    break;
+                case "--frames" when index + 1 < args.Length:
+                    if (frameLimit is not null)
+                    {
+                        throw new ArgumentException("frame limit specified more than once");
+                    }
+
+                    if (!ulong.TryParse(args[++index], out var frameCount) || frameCount == 0)
+                    {
+                        throw new ArgumentException("--frames must be a positive unsigned integer");
+                    }
+
+                    frameLimit = frameCount;
                     break;
                 case "--scale" when index + 1 < args.Length:
                     if (!double.TryParse(args[++index], NumberStyles.Float, CultureInfo.InvariantCulture, out scale)
@@ -132,10 +148,10 @@ internal sealed record UiOptions(
             throw new ArgumentException("--initialize and --boot cannot be used together");
         if (command is not null && startModule is null)
             throw new ArgumentException("--command requires --start-module NAME");
-        return new UiOptions(rom, disk, writable, steps, scale, flipY, editor, font, logPath,
+        return new UiOptions(rom, disk, writable, steps, frameLimit, scale, flipY, editor, font, logPath,
             startModule, initialize, boot, command, help);
     }
 
     public static void PrintUsage() => Console.Error.WriteLine(
-        "usage: project-oberon-ui [--rom FILE] [--disk FILE] [--read-only] [--steps-per-frame N] [--scale N] [--no-flip-y] [--log FILE] [--editor FILE --font FILE] [--start-module NAME [--initialize|--boot] [--command NAME]]");
+        "usage: project-oberon-ui [--rom FILE] [--disk FILE] [--read-only] [--steps-per-frame N] [--frames N] [--scale N] [--no-flip-y] [--log FILE] [--editor FILE --font FILE] [--start-module NAME [--initialize|--boot] [--command NAME]]");
 }
