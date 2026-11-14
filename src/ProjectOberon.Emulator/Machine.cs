@@ -67,12 +67,21 @@ public sealed class Machine : IDisposable
             throw new ArgumentOutOfRangeException(nameof(progressInterval));
         }
 
+        if (progress is null)
+        {
+            for (ulong index = 0; index < steps; index++)
+            {
+                Step();
+            }
+
+            return;
+        }
+
         for (ulong index = 0; index < steps; index++)
         {
             Step();
             var executedSteps = index + 1;
-            if (progress is not null
-                && (executedSteps % progressInterval == 0 || executedSteps == steps))
+            if (executedSteps % progressInterval == 0 || executedSteps == steps)
             {
                 progress(new MachineRunProgress(executedSteps, Cpu.PcByte));
             }
