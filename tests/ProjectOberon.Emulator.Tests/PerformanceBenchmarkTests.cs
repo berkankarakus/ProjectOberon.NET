@@ -8,12 +8,27 @@ internal static class PerformanceBenchmarkTests
     {
         var iterations = ReadIterations();
         Console.WriteLine($"benchmark iterations={iterations}");
-        Benchmark("memory read/write", iterations, BenchmarkMemory);
-        Benchmark("cpu step", iterations, BenchmarkCpu);
-        Benchmark("compiler emit", Math.Max(1, iterations / 100), BenchmarkCompiler);
+        var results = new[]
+        {
+            Benchmark("memory read/write", iterations, BenchmarkMemory),
+            Benchmark("cpu step", iterations, BenchmarkCpu),
+            Benchmark("compiler emit", Math.Max(1, iterations / 100), BenchmarkCompiler)
+        };
+
+        var outputPath = Environment.GetEnvironmentVariable("PROJECT_OBERON_BENCHMARK_OUTPUT");
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            var fullPath = Path.GetFullPath(outputPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            File.WriteAllText(
+                fullPath,
+                System.Text.Json.JsonSerializer.Serialize(results,
+                    new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            Console.WriteLine($"benchmark output={fullPath}");
+        }
     }
 
-    private static void Benchmark(string name, int iterations, Action<int> action)
+    private static BenchmarkResult Benchmark(string name, int iterations, Action<int> action)
     {
         GC.Collect();
         GC.WaitForPendingFinalizers();
@@ -27,6 +42,12 @@ internal static class PerformanceBenchmarkTests
         Console.WriteLine(
             $"{name}: {stopwatch.Elapsed.TotalMilliseconds:F2} ms, "
             + $"{operationsPerSecond:F0} ops/s, allocated={allocatedBytes} bytes");
+        return new BenchmarkResult(
+            name,
+            iterations,
+            stopwatch.Elapsed.TotalMilliseconds,
+            operationsPerSecond,
+            allocatedBytes);
     }
 
     private static void BenchmarkMemory(int iterations)
@@ -75,4 +96,11 @@ internal static class PerformanceBenchmarkTests
 
         return 1_000_000;
     }
+
+    private sealed record BenchmarkResult(
+        string Name,
+        int Iterations,
+        double ElapsedMilliseconds,
+        double OperationsPerSecond,
+        long AllocatedBytes);
 }

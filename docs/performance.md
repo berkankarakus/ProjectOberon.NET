@@ -14,6 +14,13 @@ reports elapsed time, operations per second, and managed allocations for memory,
 CPU, and compiler workloads. Compare runs on the same machine and build mode;
 the output is a measurement aid, not a cross-machine score.
 
+To retain machine-readable results for a later comparison:
+
+```sh
+PROJECT_OBERON_BENCHMARK_OUTPUT=artifacts/benchmark.json \
+  bash scripts/benchmark-dotnet.sh
+```
+
 ## SDL benchmark
 
 The SDL benchmark uses the dummy video driver and exits after a fixed frame count:
