@@ -142,6 +142,18 @@ differences between the two implementations.
 `--progress N` prints a compact step count and current PC every `N` executed
 instructions, which is useful for long headless runs where a timeout needs
 diagnostic context.
+`--trace-history N` keeps the last `N` attempted instructions in a ring buffer
+and prints them after a runtime failure. It is useful when the failing
+instruction is a host call or when the CPU stops before the normal trace can
+be inspected:
+
+```sh
+dotnet run --project src/ProjectOberon.Cli/ProjectOberon.Cli.csproj -- \
+  --rom RISC5Verilog/prom.mem \
+  --disk RISC-work.img \
+  --steps 100000 \
+  --trace-history 32
+```
 
 Build and run the C# SDL2 frontend:
 
