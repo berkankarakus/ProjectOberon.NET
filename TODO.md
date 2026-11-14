@@ -55,6 +55,14 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Measure and apply safe side-effect-free INTEGER comparison branch fusion.
 - [ ] Consider general boolean control-flow fusion for side-effectful, REAL, and SET expressions.
 
+## OS/runtime
+
+- [x] Coalesce adjacent heap free blocks in scan order without re-sorting.
+- [x] Use heap mark words for cycle detection instead of a per-mark `HashSet`.
+- [x] Preserve scheduler state when a task handler removes another task.
+- [x] Include the last instruction and complete register state in runtime diagnostics.
+- [ ] Add a CI-owned `RISC-work.img` artifact for full boot and input integration.
+
 ## Integration
 
 - [ ] [P0] Provide a CI-owned compatible `RISC-work.img` artifact for boot and input tests; the official `RISC.img` was validated locally, but ROM/disk binaries remain intentionally excluded from this repository.
