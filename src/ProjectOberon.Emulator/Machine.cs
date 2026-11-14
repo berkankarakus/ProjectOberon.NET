@@ -1,5 +1,7 @@
 namespace ProjectOberon.Emulator;
 
+public readonly record struct MachineRunProgress(ulong ExecutedSteps, uint ProgramCounter);
+
 public sealed class Machine : IDisposable
 {
     public Machine(int ramBytes = 1 << 20)
@@ -49,7 +51,29 @@ public sealed class Machine : IDisposable
 
     public void Run(ulong steps)
     {
-        for (ulong index = 0; index < steps; index++) Step();
+        Run(steps, progress: null);
+    }
+
+    public void Run(
+        ulong steps,
+        Action<MachineRunProgress>? progress,
+        ulong progressInterval = 100_000)
+    {
+        if (progress is not null && progressInterval == 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(progressInterval));
+        }
+
+        for (ulong index = 0; index < steps; index++)
+        {
+            Step();
+            var executedSteps = index + 1;
+            if (progress is not null
+                && (executedSteps % progressInterval == 0 || executedSteps == steps))
+            {
+                progress(new MachineRunProgress(executedSteps, Cpu.PcByte));
+            }
+        }
     }
 
     public void Dispose() => CloseDisk();

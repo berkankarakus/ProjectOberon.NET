@@ -9,6 +9,22 @@ internal static partial class DeviceTests
         TestAssertions.Equal(1000u, machine.Memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.Timer));
     }
 
+    public static void MachineRunReportsProgress()
+    {
+        using var machine = new Machine();
+        var reports = new List<MachineRunProgress>();
+
+        machine.Run(5, reports.Add, progressInterval: 2);
+
+        TestAssertions.Equal(3, reports.Count);
+        TestAssertions.Equal(2ul, reports[0].ExecutedSteps);
+        TestAssertions.Equal(4ul, reports[1].ExecutedSteps);
+        TestAssertions.Equal(5ul, reports[2].ExecutedSteps);
+        TestAssertions.Equal(machine.Cpu.PcByte, reports[^1].ProgramCounter);
+        TestAssertions.Throws<ArgumentOutOfRangeException>(() =>
+            machine.Run(1, reports.Add, progressInterval: 0));
+    }
+
     public static void DisassemblerAndBreakpoint()
     {
         TestAssertions.Equal("BT 337", Risc5Disassembler.Format(0xe700_0151u));

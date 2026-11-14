@@ -21,9 +21,18 @@ internal static class OberonBootSessionTests
         var boot = OberonBootSession.Create(machine);
         boot.Boot("Oberon");
         machine.Memory.EnqueueKeyboard(0x1c);
-        machine.Run(3_000_000);
+        var lastProgress = default(MachineRunProgress);
+        machine.Run(
+            3_000_000,
+            progress => lastProgress = progress,
+            progressInterval: 250_000);
         var status = machine.Memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.KeyboardStatus);
-        TestAssertions.Equal(0u, status & (1u << 28));
+        if ((status & (1u << 28)) != 0)
+        {
+            throw new InvalidOperationException(
+                $"Oberon boot did not consume keyboard input; steps={lastProgress.ExecutedSteps} "
+                + $"pc=0x{lastProgress.ProgramCounter:x6}");
+        }
     }
 
     public static void InitializesAndStartsModule()

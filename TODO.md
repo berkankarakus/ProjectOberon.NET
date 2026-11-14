@@ -61,6 +61,7 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Use heap mark words for cycle detection instead of a per-mark `HashSet`.
 - [x] Preserve scheduler state when a task handler removes another task.
 - [x] Include the last instruction and complete register state in runtime diagnostics.
+- [x] Report periodic machine progress and last PC in boot/input integration failures.
 - [ ] Add a CI-owned `RISC-work.img` artifact for full boot and input integration.
 
 ## Integration

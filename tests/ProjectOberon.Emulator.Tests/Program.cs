@@ -18,6 +18,7 @@ var tests = new (string Name, Action Test)[]
     ("disk image lifecycle", DeviceTests.DiskImageValidatesLifecycle),
     ("SPI disk read/write", DeviceTests.SpiDiskReadWrite),
     ("machine timer", DeviceTests.MachineTimer),
+    ("machine run progress", DeviceTests.MachineRunReportsProgress),
     ("host call dispatcher", HostCallTests.DispatchesRegisteredHostCalls),
     ("external host binding", HostCallTests.BindsExternalEntryHandlers),
     ("host call argument validation", HostCallTests.ValidatesHostCallContextArguments),
