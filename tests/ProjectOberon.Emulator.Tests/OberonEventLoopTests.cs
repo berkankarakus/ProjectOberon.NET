@@ -7,6 +7,7 @@ internal static class OberonEventLoopTests
         FocusesViewerOnMouseAndDispatchesKeyboard();
         HandlesEscapeAndSetStarControlCharacters();
         SuppressesUnchangedIdleMouseEvents();
+        DispatchesKeyCodesAndModifiers();
     }
 
     private static void FocusesViewerOnMouseAndDispatchesKeyboard()
@@ -64,6 +65,28 @@ internal static class OberonEventLoopTests
         TestAssertions.False(loop.ProcessIdleMouse(10, 20));
         TestAssertions.True(loop.ProcessIdleMouse(11, 20));
         TestAssertions.Equal(2, received);
+    }
+
+    private static void DispatchesKeyCodesAndModifiers()
+    {
+        OberonInputMessage? received = null;
+        var system = CreateSystem();
+        var viewer = new OberonViewer("editor", (_, message) =>
+        {
+            if (message.Payload is OberonInputMessage input)
+            {
+                received = input;
+                input.Handled = true;
+            }
+        });
+        system.Open(viewer, 10, 50);
+        TestAssertions.True(system.PassFocus(viewer));
+        var loop = new OberonEventLoop(system);
+
+        TestAssertions.True(loop.ProcessConsumedKey(0x75, 0x0002));
+        TestAssertions.Equal(0x75, received!.KeyCode);
+        TestAssertions.Equal((ushort)0x0002, received.Modifiers);
+        TestAssertions.Equal(OberonInputMessageKind.Consume, received.Kind);
     }
 
     private static OberonViewerSystem CreateSystem()
