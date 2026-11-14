@@ -99,12 +99,21 @@ public sealed partial class OberonDisplay
         for (var row = 0; row < height; row++)
         {
             var pattern = _memory.Read32(patternAddress + 4u + (uint)((row % patternHeight) * 4));
-            for (var column = 0; column < width; column++)
+            for (var column = 0; column < width;)
             {
-                if ((pattern & (1u << ((x + column) & 31))) != 0)
+                var xPosition = x + column;
+                var count = Math.Min(width - column, 32 - (xPosition & 31));
+                var shift = xPosition & 31;
+                var rotated = shift == 0
+                    ? pattern
+                    : (pattern >> shift) | (pattern << (32 - shift));
+                var mask = (rotated & LowBits(count)) << shift;
+                if (mask != 0)
                 {
-                    TogglePixel(x + column, y + row);
+                    ApplyWordMask(PixelAddress(xPosition, y + row), mask, color, mode);
                 }
+
+                column += count;
             }
         }
     }
