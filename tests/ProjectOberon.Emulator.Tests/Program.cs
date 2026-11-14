@@ -79,6 +79,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon compiler parser", OberonCompilerParserTests.Run),
     ("Oberon compiler code generator", OberonCompilerCodeGeneratorTests.Run),
     ("Oberon compiler expression emitter", OberonCompilerExpressionEmitterTests.Run),
+    ("Oberon compiler constant evaluator", OberonCompilerConstantEvaluatorTests.Run),
     ("Oberon compiler module emitter", OberonCompilerModuleEmitterTests.Run),
     ("Oberon compiler RSC output", OberonCompilerRscTests.Run),
     ("Oberon compiler optimization baseline", OberonCompilerOptimizationBaselineTests.Run),
