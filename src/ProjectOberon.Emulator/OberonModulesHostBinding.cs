@@ -76,6 +76,7 @@ public static class OberonModulesHostBinding
                 if (state.Modules.Free(name))
                 {
                     state.Forget(name);
+                    state.Runtime.MemoryLoader.Unload(name);
                 }
 
                 state.SetResult(result, name);

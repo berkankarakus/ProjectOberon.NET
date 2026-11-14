@@ -62,6 +62,11 @@ internal static class ModulesHostBindingTests
         machine.Cpu.SetProgramCounter(0x5028);
         machine.Step();
         TestAssertions.False(loader.LoadedModules.Any(module => module.Name == "Demo"));
+        TestAssertions.Equal(0, runtime.MemoryLoader.LoadedImages.Count);
+
+        var reloaded = runtime.MemoryLoader.Load("Demo");
+        TestAssertions.Equal("Demo", reloaded.Module.Name);
+        TestAssertions.Equal(1, runtime.MemoryLoader.LoadedImages.Count);
     }
 
     public static void ReportsLoadErrorsThroughModuleState()

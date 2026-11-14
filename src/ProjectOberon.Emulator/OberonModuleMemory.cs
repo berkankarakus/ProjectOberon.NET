@@ -60,6 +60,40 @@ public sealed class OberonModuleMemoryLoader
         _externalBindings[module.Name] = binding;
     }
 
+    internal bool Unload(string name)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        if (!_images.Remove(name, out var image))
+        {
+            return false;
+        }
+
+        var previousRoot = _memory.Read32(image.DescriptorAddress + 32);
+        if (_rootDescriptorAddress == image.DescriptorAddress)
+        {
+            _rootDescriptorAddress = previousRoot;
+        }
+        else
+        {
+            foreach (var successor in _images.Values)
+            {
+                if (_memory.Read32(successor.DescriptorAddress + 32) == image.DescriptorAddress)
+                {
+                    _memory.Write32(successor.DescriptorAddress + 32, previousRoot);
+                    break;
+                }
+            }
+        }
+
+        _memory.Write32(ModuleTableAddress + checked((uint)image.Module.Number * 4), 0);
+        if (_nextAddress == image.DescriptorAddress + image.AllocationSize)
+        {
+            _nextAddress = image.DescriptorAddress;
+        }
+
+        return true;
+    }
+
     public OberonModuleImage Load(string name)
     {
         var existingNames = _images.Keys.ToHashSet(StringComparer.Ordinal);
