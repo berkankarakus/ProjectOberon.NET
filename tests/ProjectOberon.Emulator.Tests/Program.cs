@@ -60,6 +60,7 @@ var tests = new (string Name, Action Test)[]
     ("Oberon module runtime validation", OberonModuleTests.ValidatesRuntimeArguments),
     ("Oberon module memory validation", OberonModuleMemoryValidationTests.ValidatesLoaderAddresses),
     ("Oberon module fixups", OberonModuleTests.Fixups),
+    ("Oberon module image unload", OberonModuleTests.UnloadsMemoryImagesInRootOrder),
     ("Oberon disk format", OberonDiskFormatTests.Run),
     ("Oberon file system", OberonFileSystemTests.Run),
     ("Oberon text model", OberonTextTests.Run),

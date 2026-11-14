@@ -2,6 +2,33 @@ using ProjectOberon.Emulator;
 
 internal static partial class OberonModuleTests
 {
+    public static void UnloadsMemoryImagesInRootOrder()
+    {
+        var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+        {
+            ["A.rsc"] = BuildRsc("A", 100, [("B", 200)], "Start"),
+            ["B.rsc"] = BuildRsc("B", 200, [], "Run")
+        };
+        var loader = new OberonModuleLoader(name => modules.TryGetValue($"{name}.rsc", out var data) ? data : null);
+        var memory = new Memory(64 * 1024);
+        var images = new OberonModuleMemoryLoader(memory, loader, 0x1000, 0x100);
+
+        var root = images.Load("A");
+        var dependency = images.LoadedImages.Single(image => image.Module.Name == "B");
+        TestAssertions.Equal(root.DescriptorAddress, images.RootDescriptorAddress);
+
+        TestAssertions.True(images.Unload("A"));
+        TestAssertions.Equal(dependency.DescriptorAddress, images.RootDescriptorAddress);
+        TestAssertions.Equal(0u, memory.Read32(0x100u + (uint)root.Module.Number * 4));
+        TestAssertions.Equal(root.DescriptorAddress, images.NextAllocationAddress);
+
+        TestAssertions.True(images.Unload("B"));
+        TestAssertions.Equal(0u, images.RootDescriptorAddress);
+        TestAssertions.Equal(0x1000u, images.NextAllocationAddress);
+        TestAssertions.Equal(0u, memory.Read32(0x100u + (uint)dependency.Module.Number * 4));
+        TestAssertions.False(images.Unload("B"));
+    }
+
     public static void Fixups()
     {
         var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal)
