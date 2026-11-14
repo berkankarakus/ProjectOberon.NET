@@ -31,8 +31,10 @@ internal static class OberonCompilerExpressionEmitterTests
         BranchesDirectlyOnIntegerDisjunctions();
         BranchesDirectlyOnRealComparisons();
         BranchesDirectlyOnSetMembership();
+        BranchesDirectlyOnSetLiteralMembership();
         BranchesDirectlyOnRealAndSetPredicates();
         EmitsSetMembership();
+        EmitsSetLiteralMembershipWithImmediate();
         EmitsSetLiteralAndOperations();
         EmitsControlFlow();
         BranchesOnBooleanValuesWithImmediateZero();
@@ -307,6 +309,20 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
     }
 
+    private static void BranchesDirectlyOnSetLiteralMembership()
+    {
+        const string source = "MODULE SetBranch; VAR value, result: INTEGER; BEGIN IF value IN {1, 3} THEN result := 1 END; END SetBranch.";
+        var parseResult = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(parseResult.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction == "AND r0, r0, 0x000a"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x000a"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "AND r0, r0, r1"));
+    }
+
     private static void BranchesDirectlyOnRealComparisons()
     {
         const string source = "MODULE RealBranch; VAR value: REAL; result: INTEGER; BEGIN IF value < 1.5 THEN result := 1 END; END RealBranch.";
@@ -573,6 +589,21 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("AND r0, r0, r1", instructions[2]);
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
         TestAssertions.Equal("STR.B r0, [r13, 8]", instructions[^1]);
+    }
+
+    private static void EmitsSetLiteralMembershipWithImmediate()
+    {
+        const string source = "MODULE SetLiteral; VAR value: INTEGER; result: BOOLEAN; BEGIN result := value IN {1, 3}; END SetLiteral.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal("LDR r0, [r13, 0]", instructions[0]);
+        TestAssertions.True(instructions.Any(instruction => instruction == "AND r0, r0, 0x000a"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x000a"));
+        TestAssertions.False(instructions.Any(instruction => instruction == "AND r0, r0, r1"));
     }
 
     private static void EmitsRecordFieldLoadAndStore()

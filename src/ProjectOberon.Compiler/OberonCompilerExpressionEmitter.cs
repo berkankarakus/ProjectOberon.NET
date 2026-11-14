@@ -273,6 +273,11 @@ public sealed class OberonCompilerExpressionEmitter
             return destination;
         }
 
+        if (TryEmitSetMembershipImmediate(binary, destination))
+        {
+            return destination;
+        }
+
         if (TryEmitIntegerImmediate(binary, destination))
         {
             return destination;
@@ -727,6 +732,23 @@ public sealed class OberonCompilerExpressionEmitter
         return false;
     }
 
+    private bool TryEmitSetMembershipImmediate(
+        OberonCompilerBinaryExpression binary,
+        int destination)
+    {
+        if (binary.Operator != OberonCompilerTokenKind.In
+            || !IsInteger(binary.Left)
+            || !TryGetImmediateSetLiteral(binary.Right, out var mask))
+        {
+            return false;
+        }
+
+        EmitExpression(binary.Left, destination);
+        _generator.EmitImmediate(AluOperation.And, destination, destination, mask);
+        EmitBooleanFromNonZero(destination);
+        return true;
+    }
+
     private static bool IsBooleanIdentity(OberonCompilerTokenKind operation, bool value) =>
         operation == OberonCompilerTokenKind.And ? value : !value;
 
@@ -743,6 +765,22 @@ public sealed class OberonCompilerExpressionEmitter
         }
 
         value = false;
+        return false;
+    }
+
+    private static bool TryGetImmediateSetLiteral(
+        OberonCompilerExpression expression,
+        out int value)
+    {
+        if (expression is OberonCompilerIntegerLiteralExpression literal
+            && literal.Type.Form == OberonCompilerTypeForm.Set
+            && literal.Value is >= -0x8000 and <= 0xffff)
+        {
+            value = checked((int)literal.Value);
+            return true;
+        }
+
+        value = 0;
         return false;
     }
 

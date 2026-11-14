@@ -526,10 +526,33 @@ public sealed class OberonCompilerControlFlowEmitter
         }
 
         _emitExpression(membership.Left, 0);
+        if (TryGetImmediateSetLiteral(membership.Right, out var mask))
+        {
+            _generator.EmitImmediate(AluOperation.And, 0, 0, mask);
+            _generator.EmitBranch(falseLabel, ConditionCode.Eq);
+            return true;
+        }
+
         _emitExpression(membership.Right, 1);
         _generator.EmitRegister(AluOperation.And, 0, 0, 1);
         _generator.EmitBranch(falseLabel, ConditionCode.Eq);
         return true;
+    }
+
+    private static bool TryGetImmediateSetLiteral(
+        OberonCompilerExpression expression,
+        out int value)
+    {
+        if (expression is OberonCompilerIntegerLiteralExpression literal
+            && literal.Type.Form == OberonCompilerTypeForm.Set
+            && literal.Value is >= -0x8000 and <= 0xffff)
+        {
+            value = checked((int)literal.Value);
+            return true;
+        }
+
+        value = 0;
+        return false;
     }
 
     private static (ConditionCode Condition, bool Invert) ComparisonBranch(
