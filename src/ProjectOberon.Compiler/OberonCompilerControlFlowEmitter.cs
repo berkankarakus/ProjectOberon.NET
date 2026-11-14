@@ -222,8 +222,7 @@ public sealed class OberonCompilerControlFlowEmitter
         }
 
         _emitExpression(condition, 0);
-        _generator.EmitMoveImmediate(1, 0);
-        _generator.EmitRegister(AluOperation.Sub, 0, 0, 1);
+        _generator.EmitImmediate(AluOperation.Sub, 0, 0, 0);
         _generator.EmitBranch(falseLabel, ConditionCode.Eq);
     }
 

@@ -29,6 +29,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsSetMembership();
         EmitsSetLiteralAndOperations();
         EmitsControlFlow();
+        BranchesOnBooleanValuesWithImmediateZero();
         EmitsRecordFieldLoadAndStore();
         EmitsAggregateRecordCopy();
         EmitsConstantAtLastExpressionRegister();
@@ -100,6 +101,19 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNLT ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
+    }
+
+    private static void BranchesOnBooleanValuesWithImmediateZero()
+    {
+        const string source = "MODULE Branch; VAR flag: BOOLEAN; result: INTEGER; BEGIN IF flag THEN result := 1; END; END Branch.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Contains("SUB r0, r0, 0x0000"));
+        TestAssertions.False(instructions.Contains("MOV r1, 0x0000"));
     }
 
     private static void EmitsPackedByteLoadsAndStores()

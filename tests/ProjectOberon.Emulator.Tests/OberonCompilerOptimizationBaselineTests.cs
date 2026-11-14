@@ -8,6 +8,7 @@ internal static class OberonCompilerOptimizationBaselineTests
         MeasuresConstantArithmeticFixture();
         MeasuresRealConstantFixture();
         MeasuresBooleanComparisonFixture();
+        MeasuresBooleanBranchFixture();
         MeasuresLoopFixture();
         MeasuresForLoopFixture();
         MeasuresAggregateCopyFixture();
@@ -68,6 +69,22 @@ internal static class OberonCompilerOptimizationBaselineTests
             maxSteps: 64);
 
         AssertBaseline(module, steps, codeWords: 5, rscBytes: 87, runtimeSteps: 5);
+    }
+
+    private static void MeasuresBooleanBranchFixture()
+    {
+        const string source =
+            "MODULE BooleanBranch; VAR flag: BOOLEAN; result: INTEGER; BEGIN IF flag THEN result := 1; END; END BooleanBranch.";
+        var module = Compile("BooleanBranch", source);
+        var flag = module.ParseResult.ModuleScope!.Objects.Single(symbol => symbol.Name == "flag");
+        var result = module.ParseResult.ModuleScope.Objects.Single(symbol => symbol.Name == "result");
+        module.Memory.Write8(module.Image.DataAddress + checked((uint)flag.Value), 1);
+        var steps = RunUntil(
+            module,
+            () => module.Memory.Read32(module.Image.DataAddress + checked((uint)result.Value)) == 1,
+            maxSteps: 64);
+
+        AssertBaseline(module, steps, codeWords: 6, rscBytes: 90, runtimeSteps: 5);
     }
 
     private static void MeasuresLoopFixture()
