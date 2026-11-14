@@ -42,8 +42,10 @@ public sealed partial class OberonFileDirectory
         var root = ReadPage(RootAddress);
         if (root.Entries.Count == 0 && root.Children[0] != 0)
         {
-            var child = ReadPage(root.Children[0]);
+            var childAddress = root.Children[0];
+            var child = ReadPage(childAddress);
             WritePage(RootAddress, child);
+            _kernel.FreeSector(childAddress);
         }
         return true;
     }
