@@ -1,4 +1,10 @@
 var skipDiskTests = args.Contains("--skip-disk-tests", StringComparer.Ordinal);
+if (args.Contains("--benchmark", StringComparer.Ordinal))
+{
+    PerformanceBenchmarkTests.Run();
+    return;
+}
+
 var diskTests = new HashSet<string>(StringComparer.Ordinal)
 {
     "Oberon boot consumes keyboard"
