@@ -18,7 +18,23 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Build and run deterministic tests
-        run: bash scripts/verify-dotnet.sh
+        env:
+          PROJECT_OBERON_DOTNET_ARTIFACTS: ${{ github.workspace }}/artifacts/dotnet
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          bash scripts/verify-dotnet.sh 2>&1 | tee artifacts/verify-dotnet.log
+
+      - name: Upload deterministic test diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-ci-${{ github.run_id }}-${{ github.job }}
+          path: |
+            artifacts/verify-dotnet.log
+            artifacts/traces/**
+          if-no-files-found: ignore
+          retention-days: 14
 
   boot-integration:
     if: ${{ vars.PROJECT_OBERON_DISK_URL != '' && vars.PROJECT_OBERON_DISK_SHA256 != '' }}
@@ -47,4 +63,19 @@ jobs:
         env:
           PROJECT_OBERON_DISK: ${{ github.workspace }}/RISC-work.img
           PROJECT_OBERON_RUN_DISK_TESTS: "1"
-        run: bash scripts/verify-dotnet.sh
+          PROJECT_OBERON_DOTNET_ARTIFACTS: ${{ github.workspace }}/artifacts/dotnet
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          bash scripts/verify-dotnet.sh 2>&1 | tee artifacts/verify-dotnet.log
+
+      - name: Upload boot integration diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-boot-ci-${{ github.run_id }}-${{ github.job }}
+          path: |
+            artifacts/verify-dotnet.log
+            artifacts/traces/**
+          if-no-files-found: ignore
+          retention-days: 14
