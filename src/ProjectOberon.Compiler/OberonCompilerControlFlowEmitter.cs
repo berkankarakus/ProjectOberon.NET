@@ -256,8 +256,8 @@ public sealed class OberonCompilerControlFlowEmitter
     {
         if (expression is not OberonCompilerBinaryExpression conjunction
             || conjunction.Operator != OberonCompilerTokenKind.And
-            || !IsDirectBranchCondition(conjunction.Left)
-            || !IsDirectBranchCondition(conjunction.Right))
+            || !IsSideEffectFreeCondition(conjunction.Left)
+            || !IsSideEffectFreeCondition(conjunction.Right))
         {
             return false;
         }
@@ -273,8 +273,8 @@ public sealed class OberonCompilerControlFlowEmitter
     {
         if (expression is not OberonCompilerBinaryExpression disjunction
             || disjunction.Operator != OberonCompilerTokenKind.Or
-            || !IsDirectBranchCondition(disjunction.Left)
-            || !IsDirectBranchCondition(disjunction.Right))
+            || !IsSideEffectFreeCondition(disjunction.Left)
+            || !IsSideEffectFreeCondition(disjunction.Right))
         {
             return false;
         }
@@ -289,8 +289,15 @@ public sealed class OberonCompilerControlFlowEmitter
         return true;
     }
 
-    private static bool IsDirectBranchCondition(OberonCompilerExpression expression)
+    private static bool IsSideEffectFreeCondition(OberonCompilerExpression expression)
     {
+        if (expression is OberonCompilerBinaryExpression logical
+            && logical.Operator is OberonCompilerTokenKind.And or OberonCompilerTokenKind.Or)
+        {
+            return IsSideEffectFreeCondition(logical.Left)
+                && IsSideEffectFreeCondition(logical.Right);
+        }
+
         if (expression is not OberonCompilerBinaryExpression condition
             || !IsSideEffectFreeBranchOperand(condition.Left)
             || !IsSideEffectFreeBranchOperand(condition.Right))
@@ -318,7 +325,9 @@ public sealed class OberonCompilerControlFlowEmitter
         OberonCompilerExpression expression,
         OberonCompilerLabel falseLabel)
     {
-        return TryEmitSetMembershipBranch(expression, falseLabel)
+        return TryEmitConjunctionBranch(expression, falseLabel)
+            || TryEmitDisjunctionBranch(expression, falseLabel)
+            || TryEmitSetMembershipBranch(expression, falseLabel)
             || TryEmitRealComparisonBranch(expression, falseLabel)
             || TryEmitIntegerComparisonBranch(expression, falseLabel);
     }
