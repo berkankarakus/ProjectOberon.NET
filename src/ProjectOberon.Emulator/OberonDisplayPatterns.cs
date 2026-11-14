@@ -17,13 +17,17 @@ public sealed partial class OberonDisplay
         for (var row = 0; row < height; row++)
         {
             var pattern = ReadPatternWord(patternAddress + 2u + (uint)(row * ((width + 7) / 8)), width);
-            for (var column = 0; column < width; column++)
+            for (var column = 0; column < width;)
             {
-                if ((pattern & (1u << column)) == 0)
+                var xPosition = x + column;
+                var count = Math.Min(width - column, 32 - (xPosition & 31));
+                var mask = ((pattern >> column) & LowBits(count)) << (xPosition & 31);
+                if (mask != 0)
                 {
-                    continue;
+                    ApplyWordMask(PixelAddress(xPosition, y + row), mask, color, mode);
                 }
-                ApplyPixel(x + column, y + row, color, mode);
+
+                column += count;
             }
         }
     }
