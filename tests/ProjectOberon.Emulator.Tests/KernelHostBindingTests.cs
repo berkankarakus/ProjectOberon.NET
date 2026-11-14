@@ -150,6 +150,7 @@ internal static class KernelHostBindingTests
         var orphan = Allocate(machine, 0x708, 0x2000);
         var adjacentOrphan = Allocate(machine, 0x70c, 0x2000);
         machine.Memory.Write32(root, child);
+        machine.Memory.Write32(child, root);
         machine.Memory.Write32(0x800, 0x900);
         machine.Memory.Write32(0x804, 0);
         machine.Memory.Write32(0x900, root);

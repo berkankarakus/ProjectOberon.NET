@@ -127,7 +127,6 @@ public sealed class OberonKernel
 
     public void Mark(uint rootListAddress)
     {
-        var visited = new HashSet<uint>();
         var rootListCursor = rootListAddress;
         while (true)
         {
@@ -137,7 +136,7 @@ public sealed class OberonKernel
                 return;
             }
 
-            MarkObject(_memory.Read32(pointerAddress), visited);
+            MarkObject(_memory.Read32(pointerAddress));
             rootListCursor = checked(rootListCursor + 4);
         }
     }
@@ -196,7 +195,7 @@ public sealed class OberonKernel
         return block + 8;
     }
 
-    private void MarkObject(uint objectAddress, HashSet<uint> visited)
+    private void MarkObject(uint objectAddress)
     {
         if (objectAddress < _heapOrigin + 8 || objectAddress >= _heapNext
             || (objectAddress & 3) != 0)
@@ -205,7 +204,7 @@ public sealed class OberonKernel
         }
 
         var blockAddress = objectAddress - 8;
-        if (!visited.Add(blockAddress) || _memory.Read32(blockAddress + 4) != 0)
+        if (_memory.Read32(blockAddress + 4) != 0)
         {
             return;
         }
@@ -227,7 +226,7 @@ public sealed class OberonKernel
                 throw new InvalidDataException("invalid Oberon pointer offset");
             }
 
-            MarkObject(_memory.Read32(objectAddress + offset), visited);
+            MarkObject(_memory.Read32(objectAddress + offset));
             offsetAddress = checked(offsetAddress + 4);
         }
     }
