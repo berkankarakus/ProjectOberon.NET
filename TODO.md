@@ -55,7 +55,10 @@ follow-up batches are complete.
 - [x] Fuse negated INTEGER comparisons directly into branches.
 - [x] Measure and apply safe side-effect-free INTEGER comparison branch fusion.
 - [x] Fuse side-effect-free REAL and SET predicate conjunctions/disjunctions directly into branches.
-- [ ] Consider boolean control-flow fusion for side-effectful expressions.
+- [x] Audit boolean control-flow fusion for side-effectful expressions; it is
+  intentionally not applied because skipping an operand would change the
+  current eager-expression semantics. Revisit only if the language/runtime
+  semantics explicitly become short-circuiting.
 
 ## OS/runtime
 

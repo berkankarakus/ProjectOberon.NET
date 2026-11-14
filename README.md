@@ -384,6 +384,20 @@ The same Release build and deterministic test flow can be run with:
 bash scripts/verify-dotnet.sh
 ```
 
+Local performance measurements are available without adding a benchmark package
+or consuming CI minutes:
+
+```sh
+bash scripts/benchmark-dotnet.sh
+PROJECT_OBERON_ROM=/path/to/prom.mem PROJECT_OBERON_DISK=/path/to/RISC-work.img \
+  bash scripts/benchmark-sdl.sh
+```
+
+The managed benchmark reports memory, CPU and compiler throughput plus
+allocations. The SDL benchmark uses the dummy video driver and requires the ROM
+and disk paths to be supplied. See [`docs/performance.md`](docs/performance.md)
+for trace collection and comparison rules.
+
 The project layout and dependency direction are documented in
 [`docs/architecture.md`](docs/architecture.md) and enforced by the architecture
 tests. Shared instruction/RSC contracts are kept in
