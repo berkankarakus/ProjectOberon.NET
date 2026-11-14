@@ -50,6 +50,30 @@ internal static partial class DeviceTests
         display.Dot(Display.White, 2, 10, Display.Replace);
         display.CopyBlock(0, 10, 3, 1, 1, 10, Display.Replace);
         TestAssertions.Equal(0b1111u, memory.Read32(Display.Base + (uint)(10 * Display.RowBytes)) & 0b1111u);
+
+        memory.Write8(0x200, 3);
+        memory.Write8(0x201, 1);
+        memory.Write8(0x202, 0b111);
+        display.CopyPattern(Display.White, 0x200, 31, 20, Display.Paint);
+        var patternRow = Display.Base + (uint)(20 * Display.RowBytes);
+        TestAssertions.True((memory.Read32(patternRow) & (1u << 31)) != 0);
+        TestAssertions.Equal(0x03u, memory.Read32(patternRow + 4) & 0x03u);
+
+        memory.Write8(0x300, 0);
+        memory.Write8(0x301, 1);
+        memory.Write32(0x304, 0x8000_0007);
+        display.ReplPattern(Display.White, 0x300, 31, 21, 3, 1, Display.Invert);
+        var replRow = Display.Base + (uint)(21 * Display.RowBytes);
+        TestAssertions.True((memory.Read32(replRow) & (1u << 31)) != 0);
+        TestAssertions.Equal(0x03u, memory.Read32(replRow + 4) & 0x03u);
+
+        display.Dot(Display.White, 31, 22, Display.Replace);
+        display.Dot(Display.White, 32, 22, Display.Replace);
+        display.Dot(Display.White, 33, 22, Display.Replace);
+        display.CopyBlock(31, 22, 3, 1, 63, 22, Display.Replace);
+        var blockRow = Display.Base + (uint)(22 * Display.RowBytes);
+        TestAssertions.True((memory.Read32(blockRow + 4) & (1u << 31)) != 0);
+        TestAssertions.Equal(0x03u, memory.Read32(blockRow + 8) & 0x03u);
     }
 
     public static void OberonInputDecoder()
