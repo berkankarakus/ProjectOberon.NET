@@ -148,6 +148,7 @@ internal static class KernelHostBindingTests
         var root = Allocate(machine, 0x700, 0x2000);
         var child = Allocate(machine, 0x704, 0x2000);
         var orphan = Allocate(machine, 0x708, 0x2000);
+        var adjacentOrphan = Allocate(machine, 0x70c, 0x2000);
         machine.Memory.Write32(root, child);
         machine.Memory.Write32(0x800, 0x900);
         machine.Memory.Write32(0x804, 0);
@@ -166,9 +167,12 @@ internal static class KernelHostBindingTests
         TestAssertions.Equal(0u, machine.Memory.Read32(root - 4));
         TestAssertions.Equal(unchecked((uint)-1), machine.Memory.Read32(orphan - 4));
 
-        var reused = Allocate(machine, 0x70c, 0x2000);
+        machine.Memory.Write32(0x2020, 32);
+        machine.Memory.Write32(0x2024, 0);
+        machine.Memory.Write32(0x2028, unchecked((uint)-1));
+        var reused = Allocate(machine, 0x710, 0x2020);
         TestAssertions.Equal(orphan, reused);
-        TestAssertions.Equal(48, kernel.AllocatedBytes);
+        TestAssertions.Equal(64, kernel.AllocatedBytes);
     }
 
     private static uint Allocate(Machine machine, uint resultAddress, uint tagAddress)

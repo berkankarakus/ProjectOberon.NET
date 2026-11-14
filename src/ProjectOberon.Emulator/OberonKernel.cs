@@ -276,31 +276,28 @@ public sealed class OberonKernel
         return false;
     }
 
-    private static IEnumerable<FreeBlock> Coalesce(IEnumerable<FreeBlock> blocks)
+    private static IEnumerable<FreeBlock> Coalesce(IReadOnlyList<FreeBlock> blocks)
     {
-        FreeBlock? pending = null;
-        foreach (var block in blocks.OrderBy(block => block.Address))
+        if (blocks.Count == 0)
         {
-            if (pending is not FreeBlock current)
+            yield break;
+        }
+
+        var pending = blocks[0];
+        for (var index = 1; index < blocks.Count; index++)
+        {
+            var block = blocks[index];
+            if (pending.Address + pending.Size == block.Address)
             {
-                pending = block;
+                pending = new FreeBlock(pending.Address, pending.Size + block.Size);
                 continue;
             }
 
-            if (current.Address + current.Size == block.Address)
-            {
-                pending = new FreeBlock(current.Address, current.Size + block.Size);
-                continue;
-            }
-
-            yield return current;
+            yield return pending;
             pending = block;
         }
 
-        if (pending is FreeBlock last)
-        {
-            yield return last;
-        }
+        yield return pending;
     }
 
     private readonly record struct FreeBlock(uint Address, uint Size);
