@@ -60,6 +60,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsImmediateOperandsForConstantExpressions();
         EmitsImmediateForConstantLeftArithmetic();
         EmitsComparisonImmediateForConstantExpressions();
+        ValidatesImmediateBoundaryOptimizations();
         FoldsIntegerConstantExpressions();
         FoldsUnaryIntegerConstantExpressions();
         EliminatesIntegerIdentityOperations();
@@ -913,6 +914,27 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0003"));
         TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0003"));
+    }
+
+    private static void ValidatesImmediateBoundaryOptimizations()
+    {
+        var lower = EmitIntegerAssignment("value + (-32768)");
+        var upper = EmitIntegerAssignment("value + 65535");
+        var outside = EmitIntegerAssignment("value + 65536");
+
+        TestAssertions.Equal(3, lower.Length);
+        TestAssertions.Equal(3, upper.Length);
+        TestAssertions.True(outside.Any(instruction => instruction.StartsWith("MOV r1,")));
+        TestAssertions.True(outside.Any(instruction => instruction == "ADD r0, r0, r1"));
+    }
+
+    private static string[] EmitIntegerAssignment(string expression)
+    {
+        var source = $"MODULE Immediate; VAR value, result: INTEGER; BEGIN result := {expression}; END Immediate.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+        return generator.Code.Select(Risc5Disassembler.Format).ToArray();
     }
 
     private static void FoldsIntegerConstantExpressions()
