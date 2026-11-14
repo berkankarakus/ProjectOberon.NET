@@ -45,6 +45,14 @@ that own a compatible disk artifact should run the test project without that
 flag and set `PROJECT_OBERON_DISK`; the test reports the missing artifact and
 the remediation command explicitly.
 
+To run the complete local suite, including the boot/input integration test:
+
+```sh
+PROJECT_OBERON_DISK=/path/to/RISC-work.img \
+PROJECT_OBERON_RUN_DISK_TESTS=1 \
+  bash scripts/verify-dotnet.sh
+```
+
 Run the CLI:
 
 ```sh

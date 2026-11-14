@@ -20,4 +20,18 @@ if [[ ! -x "$test_binary" ]]; then
   exit 1
 fi
 
-PROJECT_OBERON_REPO_ROOT="$repo_root" "$test_binary" --skip-disk-tests
+test_args=(--skip-disk-tests)
+if [[ "${PROJECT_OBERON_RUN_DISK_TESTS:-0}" == "1" ]]; then
+  if [[ -z "${PROJECT_OBERON_DISK:-}" || ! -f "$PROJECT_OBERON_DISK" ]]; then
+    echo "PROJECT_OBERON_DISK must point to a compatible RISC-work.img when PROJECT_OBERON_RUN_DISK_TESTS=1" >&2
+    exit 1
+  fi
+
+  test_args=()
+fi
+
+if (( ${#test_args[@]} == 0 )); then
+  PROJECT_OBERON_REPO_ROOT="$repo_root" "$test_binary"
+else
+  PROJECT_OBERON_REPO_ROOT="$repo_root" "$test_binary" "${test_args[@]}"
+fi
