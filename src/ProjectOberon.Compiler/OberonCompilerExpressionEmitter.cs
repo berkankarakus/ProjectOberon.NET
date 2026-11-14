@@ -364,16 +364,17 @@ public sealed class OberonCompilerExpressionEmitter
         OberonCompilerBinaryExpression binary,
         int destination)
     {
-        if (!IsInteger(binary.Right)
-            || !OberonCompilerConstantEvaluator.TryEvaluateInteger(binary.Right, out var constant)
-            || IsReal(binary)
-            || IsSet(binary)
-            || IsRelation(binary.Operator)
-            || constant is < -0x8000 or > 0xffff)
+        if (IsReal(binary) || IsSet(binary) || IsRelation(binary.Operator))
         {
             return false;
         }
 
+        var rightConstant = 0;
+        var constantOnRight = IsInteger(binary.Right)
+            && OberonCompilerConstantEvaluator.TryEvaluateInteger(binary.Right, out rightConstant);
+        var leftConstant = 0;
+        var constantOnLeft = IsInteger(binary.Left)
+            && OberonCompilerConstantEvaluator.TryEvaluateInteger(binary.Left, out leftConstant);
         AluOperation? operation = binary.Operator switch
         {
             OberonCompilerTokenKind.Plus => AluOperation.Add,
@@ -390,7 +391,38 @@ public sealed class OberonCompilerExpressionEmitter
             return false;
         }
 
-        EmitExpression(binary.Left, destination);
+        var constant = 0;
+        if (constantOnRight)
+        {
+            constant = rightConstant;
+        }
+        else if (constantOnLeft
+            && binary.Operator is OberonCompilerTokenKind.Plus
+                or OberonCompilerTokenKind.Multiply
+                or OberonCompilerTokenKind.And
+                or OberonCompilerTokenKind.Or)
+        {
+            constant = leftConstant;
+        }
+        else
+        {
+            return false;
+        }
+
+        if (constant is < -0x8000 or > 0xffff)
+        {
+            return false;
+        }
+
+        if (constantOnRight)
+        {
+            EmitExpression(binary.Left, destination);
+        }
+        else
+        {
+            EmitExpression(binary.Right, destination);
+        }
+
         _generator.EmitImmediate(
             immediateOperation,
             destination,

@@ -58,6 +58,7 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsThroughInstructionWriterAbstraction();
         EmitsLargeIntegerLiteralsThroughInstructionWriter();
         EmitsImmediateOperandsForConstantExpressions();
+        EmitsImmediateForConstantLeftArithmetic();
         EmitsComparisonImmediateForConstantExpressions();
         FoldsIntegerConstantExpressions();
         FoldsUnaryIntegerConstantExpressions();
@@ -884,6 +885,21 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.Equal("LDR r0, [r13, 0]", instructions[0]);
         TestAssertions.Equal("ADD r0, r0, 0x0003", instructions[1]);
         TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0003"));
+    }
+
+    private static void EmitsImmediateForConstantLeftArithmetic()
+    {
+        const string source = "MODULE Arithmetic; VAR value, result: INTEGER; BEGIN result := 2 + value; END Arithmetic.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var assignment = (OberonCompilerAssignmentStatement)result.Body!.Statements[0];
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitAssignment(assignment);
+
+        TestAssertions.Equal("LDR r0, [r13, 0]", Risc5Disassembler.Format(generator.Code[0]));
+        TestAssertions.Equal("ADD r0, r0, 0x0002", Risc5Disassembler.Format(generator.Code[1]));
+        TestAssertions.False(generator.Code.Select(Risc5Disassembler.Format)
+            .Any(instruction => instruction.Contains("r1,", StringComparison.Ordinal)));
     }
 
     private static void EmitsComparisonImmediateForConstantExpressions()
