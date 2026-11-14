@@ -68,7 +68,14 @@ try
     }
     else
     {
-        debugger.Run(options.Steps);
+        if (options.ProgressInterval is ulong progressInterval)
+        {
+            RunWithProgress(debugger, machine, options.Steps, progressInterval);
+        }
+        else
+        {
+            debugger.Run(options.Steps);
+        }
     }
 
     if (debugger.IsAtBreakpoint)
@@ -157,6 +164,27 @@ static void PrintBootGraph(Machine machine, BootTraceState state)
         }
     }
     Console.WriteLine("}");
+}
+
+static void RunWithProgress(
+    MachineDebugger debugger,
+    Machine machine,
+    ulong steps,
+    ulong progressInterval)
+{
+    for (ulong index = 0; index < steps; index++)
+    {
+        if (!debugger.Step())
+        {
+            break;
+        }
+
+        var executed = index + 1;
+        if (executed % progressInterval == 0 || executed == steps)
+        {
+            Console.WriteLine($"[progress] steps={executed} pc=0x{machine.Cpu.PcByte:x6}");
+        }
+    }
 }
 
 internal sealed record BootModuleEvent(string Name, ulong Step);

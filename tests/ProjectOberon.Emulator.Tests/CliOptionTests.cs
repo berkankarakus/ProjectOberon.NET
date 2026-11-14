@@ -18,6 +18,7 @@ internal static class CliOptionTests
             "--read-only",
             "--steps", "42",
             "--trace", "3",
+            "--progress", "10",
             "--breakpoint", "0x00ff",
             "--boot-trace",
             "--boot-graph",
@@ -30,6 +31,7 @@ internal static class CliOptionTests
         TestAssertions.False(options.DiskWritable);
         TestAssertions.Equal(42UL, options.Steps);
         TestAssertions.Equal(3, options.Trace!.Value);
+        TestAssertions.Equal(10UL, options.ProgressInterval!.Value);
         TestAssertions.Equal(0xffu, options.Breakpoint!.Value);
         TestAssertions.True(options.BootTrace);
         TestAssertions.True(options.BootGraph);
@@ -47,6 +49,7 @@ internal static class CliOptionTests
         TestAssertions.True(options.DiskWritable);
         TestAssertions.False(options.Help);
         TestAssertions.True(options.Trace is null);
+        TestAssertions.True(options.ProgressInterval is null);
         TestAssertions.True(options.Breakpoint is null);
         TestAssertions.False(options.Initialize);
         TestAssertions.False(options.Boot);
@@ -70,6 +73,7 @@ internal static class CliOptionTests
         TestAssertions.Throws<ArgumentNullException>(() => Options.Parse(null!));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--steps", "x"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--trace", "-1"]));
+        TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--progress", "0"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--breakpoint", "not-hex"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--unknown"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--disk"]));
@@ -77,6 +81,7 @@ internal static class CliOptionTests
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--disk", "first.img", "--disk", "second.img"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--steps", "1", "--steps", "2"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--trace", "1", "--trace", "2"]));
+        TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--progress", "1", "--progress", "2"]));
         TestAssertions.Throws<ArgumentException>(() => Options.Parse(["--breakpoint", "10", "--breakpoint", "20"]));
     }
 }

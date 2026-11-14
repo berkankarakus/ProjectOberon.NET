@@ -62,6 +62,7 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Preserve scheduler state when a task handler removes another task.
 - [x] Include the last instruction and complete register state in runtime diagnostics.
 - [x] Report periodic machine progress and last PC in boot/input integration failures.
+- [x] Add CLI progress output for long-running headless sessions.
 - [x] Add an optional CI boot/input job with URL and SHA256-verified disk artifact provisioning.
 - [ ] Configure the repository-owned disk artifact URL and SHA256 variables.
 
