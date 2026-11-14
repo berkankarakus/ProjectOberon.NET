@@ -119,6 +119,11 @@ internal static class KernelHostBindingTests
         TestAssertions.Equal(0u, machine.Memory.Read32(pointer - 4));
         TestAssertions.Equal(0u, machine.Memory.Read32(pointer));
         TestAssertions.Equal(16, kernel.AllocatedBytes);
+        var statistics = kernel.HeapStatistics;
+        TestAssertions.Equal(0x10000u, statistics.Origin);
+        TestAssertions.Equal((uint)machine.Memory.RamSize - 0x8000u, statistics.Limit);
+        TestAssertions.Equal(0x10010u, statistics.Next);
+        TestAssertions.Equal(16, statistics.AllocatedBytes);
     }
 
     public static void DispatchesGarbageCollectionServices()

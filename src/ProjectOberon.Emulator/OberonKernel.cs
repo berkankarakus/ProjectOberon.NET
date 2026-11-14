@@ -1,5 +1,12 @@
 namespace ProjectOberon.Emulator;
 
+public readonly record struct OberonHeapStatistics(
+    uint Origin,
+    uint Limit,
+    uint Next,
+    int AllocatedBytes,
+    int FreeBlockCount);
+
 public sealed class OberonKernel
 {
     public const int SectorLength = OberonDiskLayout.SectorLength;
@@ -32,6 +39,12 @@ public sealed class OberonKernel
     public int AllocatedBytes { get; private set; }
     public int Clock => _clock;
     public int Time => checked((int)_memory.Read32(DeviceBus.IoBase + (uint)MmioRegister.Timer));
+    public OberonHeapStatistics HeapStatistics => new(
+        _heapOrigin,
+        _heapLimit,
+        _heapNext,
+        AllocatedBytes,
+        _freeBlocks.Count);
 
     public void Initialize()
     {
