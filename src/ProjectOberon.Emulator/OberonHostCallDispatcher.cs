@@ -1,6 +1,6 @@
 namespace ProjectOberon.Emulator;
 
-public sealed class OberonHostCallContext
+public readonly struct OberonHostCallContext
 {
     internal OberonHostCallContext(Memory memory, Risc5Cpu cpu)
     {
