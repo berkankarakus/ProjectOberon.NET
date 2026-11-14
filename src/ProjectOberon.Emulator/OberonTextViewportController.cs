@@ -76,7 +76,13 @@ public sealed class OberonTextViewportController
             return 0;
         }
 
-        var maximumLineWidth = Editor.Frame.Layout(viewportWidth).Max(line => line.Width);
+        var lines = Editor.Frame.Layout(viewportWidth);
+        var maximumLineWidth = 0;
+        for (var index = 0; index < lines.Count; index++)
+        {
+            maximumLineWidth = Math.Max(maximumLineWidth, lines[index].Width);
+        }
+
         return Math.Max(0, maximumLineWidth - viewportWidth);
     }
 
