@@ -176,6 +176,30 @@ internal static class KernelHostBindingTests
         TestAssertions.Equal(64, kernel.AllocatedBytes);
     }
 
+    public static void ReportsHeapCorruptionLocation()
+    {
+        var memory = new Memory();
+        var kernel = new OberonKernel(memory);
+        memory.Write32(0x500, 16);
+        var pointer = kernel.New(0x500);
+
+        memory.Write32(pointer - 8, 6);
+        memory.Write32(pointer - 4, unchecked((uint)-1));
+        var blockError = TestAssertions.Throws<InvalidDataException>(() => kernel.Scan());
+        TestAssertions.True(blockError.Message.Contains("0x00010000", StringComparison.Ordinal));
+        TestAssertions.True(blockError.Message.Contains("size=6", StringComparison.Ordinal));
+
+        memory.Write32(pointer - 8, 0x510);
+        memory.Write32(pointer - 4, 0);
+        memory.Write32(0x510, 16);
+        memory.Write32(0x520, 2);
+        memory.Write32(0x600, 0x700);
+        memory.Write32(0x700, pointer);
+        var pointerError = TestAssertions.Throws<InvalidDataException>(() => kernel.Mark(0x600));
+        TestAssertions.True(pointerError.Message.Contains("invalid Oberon pointer offset", StringComparison.Ordinal));
+        TestAssertions.True(pointerError.Message.Contains("0x00010008", StringComparison.Ordinal));
+    }
+
     private static uint Allocate(Machine machine, uint resultAddress, uint tagAddress)
     {
         machine.Cpu.SetRegister(0, resultAddress);

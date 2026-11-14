@@ -174,7 +174,8 @@ public sealed class OberonKernel
                 : ObjectSize(_memory.Read32(address));
             if (size < 8 || (size & 3) != 0 || size > _heapNext - address)
             {
-                throw new InvalidDataException("invalid Oberon heap block");
+                throw new InvalidDataException(
+                    $"invalid Oberon heap block at 0x{address:x8}: size={size} mark={mark}");
             }
 
             if (mark == -1 || mark == 0)
@@ -243,7 +244,8 @@ public sealed class OberonKernel
 
             if (offset >= size - 8 || (offset & 3) != 0)
             {
-                throw new InvalidDataException("invalid Oberon pointer offset");
+                throw new InvalidDataException(
+                    $"invalid Oberon pointer offset: object=0x{objectAddress:x8} tag=0x{tagAddress:x8} offset={offset}");
             }
 
             MarkObject(_memory.Read32(objectAddress + offset));
@@ -256,7 +258,8 @@ public sealed class OberonKernel
         var size = _memory.Read32(tagAddress);
         if (size < 8 || (size & 3) != 0)
         {
-            throw new InvalidDataException("invalid Oberon object tag");
+            throw new InvalidDataException(
+                $"invalid Oberon object tag at 0x{tagAddress:x8}: size={size}");
         }
 
         return size;
