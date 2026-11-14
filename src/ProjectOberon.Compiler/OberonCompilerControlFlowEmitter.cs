@@ -206,12 +206,12 @@ public sealed class OberonCompilerControlFlowEmitter
         OberonCompilerExpression condition,
         OberonCompilerLabel falseLabel)
     {
-        if (TryEmitIntegerConjunctionBranch(condition, falseLabel))
+        if (TryEmitConjunctionBranch(condition, falseLabel))
         {
             return;
         }
 
-        if (TryEmitIntegerDisjunctionBranch(condition, falseLabel))
+        if (TryEmitDisjunctionBranch(condition, falseLabel))
         {
             return;
         }
@@ -250,60 +250,82 @@ public sealed class OberonCompilerControlFlowEmitter
         _generator.EmitBranch(falseLabel, ConditionCode.Eq);
     }
 
-    private bool TryEmitIntegerConjunctionBranch(
+    private bool TryEmitConjunctionBranch(
         OberonCompilerExpression expression,
         OberonCompilerLabel falseLabel)
     {
         if (expression is not OberonCompilerBinaryExpression conjunction
             || conjunction.Operator != OberonCompilerTokenKind.And
-            || !IsDirectIntegerComparison(conjunction.Left)
-            || !IsDirectIntegerComparison(conjunction.Right))
+            || !IsDirectBranchCondition(conjunction.Left)
+            || !IsDirectBranchCondition(conjunction.Right))
         {
             return false;
         }
 
-        TryEmitIntegerComparisonBranch(conjunction.Left, falseLabel);
-        TryEmitIntegerComparisonBranch(conjunction.Right, falseLabel);
+        TryEmitBranchableCondition(conjunction.Left, falseLabel);
+        TryEmitBranchableCondition(conjunction.Right, falseLabel);
         return true;
     }
 
-    private bool TryEmitIntegerDisjunctionBranch(
+    private bool TryEmitDisjunctionBranch(
         OberonCompilerExpression expression,
         OberonCompilerLabel falseLabel)
     {
         if (expression is not OberonCompilerBinaryExpression disjunction
             || disjunction.Operator != OberonCompilerTokenKind.Or
-            || !IsDirectIntegerComparison(disjunction.Left)
-            || !IsDirectIntegerComparison(disjunction.Right))
+            || !IsDirectBranchCondition(disjunction.Left)
+            || !IsDirectBranchCondition(disjunction.Right))
         {
             return false;
         }
 
         var rightLabel = new OberonCompilerLabel();
         var trueLabel = new OberonCompilerLabel();
-        TryEmitIntegerComparisonBranch(disjunction.Left, rightLabel);
+        TryEmitBranchableCondition(disjunction.Left, rightLabel);
         _generator.EmitBranch(trueLabel);
         _generator.Bind(rightLabel);
-        TryEmitIntegerComparisonBranch(disjunction.Right, falseLabel);
+        TryEmitBranchableCondition(disjunction.Right, falseLabel);
         _generator.Bind(trueLabel);
         return true;
     }
 
-    private static bool IsDirectIntegerComparison(OberonCompilerExpression expression) =>
-        expression is OberonCompilerBinaryExpression comparison
-        && IsInteger(comparison.Left)
-        && IsInteger(comparison.Right)
-        && comparison.Operator is OberonCompilerTokenKind.Equal or
+    private static bool IsDirectBranchCondition(OberonCompilerExpression expression)
+    {
+        if (expression is not OberonCompilerBinaryExpression condition
+            || !IsSideEffectFreeBranchOperand(condition.Left)
+            || !IsSideEffectFreeBranchOperand(condition.Right))
+        {
+            return false;
+        }
+
+        if (condition.Operator == OberonCompilerTokenKind.In)
+        {
+            return IsInteger(condition.Left) && IsSet(condition.Right);
+        }
+
+        return condition.Operator is OberonCompilerTokenKind.Equal or
             OberonCompilerTokenKind.NotEqual or
             OberonCompilerTokenKind.Less or
             OberonCompilerTokenKind.LessOrEqual or
             OberonCompilerTokenKind.Greater or
             OberonCompilerTokenKind.GreaterOrEqual
-        && IsSideEffectFreeBranchOperand(comparison.Left)
-        && IsSideEffectFreeBranchOperand(comparison.Right);
+            && (IsInteger(condition.Left) && IsInteger(condition.Right)
+                || IsReal(condition.Left) && IsReal(condition.Right));
+    }
+
+    private bool TryEmitBranchableCondition(
+        OberonCompilerExpression expression,
+        OberonCompilerLabel falseLabel)
+    {
+        return TryEmitSetMembershipBranch(expression, falseLabel)
+            || TryEmitRealComparisonBranch(expression, falseLabel)
+            || TryEmitIntegerComparisonBranch(expression, falseLabel);
+    }
 
     private static bool IsSideEffectFreeBranchOperand(OberonCompilerExpression expression) =>
-        expression is OberonCompilerNameExpression or OberonCompilerIntegerLiteralExpression;
+        expression is OberonCompilerNameExpression
+            or OberonCompilerIntegerLiteralExpression
+            or OberonCompilerRealLiteralExpression;
 
     private void EmitCaseValueDifference(long value)
     {
