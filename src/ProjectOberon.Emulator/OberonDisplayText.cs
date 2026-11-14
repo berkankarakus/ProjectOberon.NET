@@ -6,15 +6,38 @@ public sealed partial class OberonDisplay
     {
         ArgumentNullException.ThrowIfNull(font);
         var glyph = font.GetGlyph(character);
+        var rowBytes = (glyph.Width + 7) / 8;
+        var glyphX = x + glyph.OffsetX;
+        var glyphY = y + glyph.OffsetY;
         for (var row = 0; row < glyph.Height; row++)
-        for (var column = 0; column < glyph.Width; column++)
         {
-            var rasterIndex = row * ((glyph.Width + 7) / 8) + column / 8;
-            var lit = (glyph.Raster[rasterIndex] & (1 << (column & 7))) != 0;
-            if (lit && (uint)(x + glyph.OffsetX + column) < Display.Width &&
-                (uint)(y + glyph.OffsetY + row) < Display.Height)
+            var targetY = glyphY + row;
+            if ((uint)targetY >= Display.Height)
             {
-                ApplyPixel(x + glyph.OffsetX + column, y + glyph.OffsetY + row, color, mode);
+                continue;
+            }
+
+            var left = Math.Max(0, glyphX);
+            var right = Math.Min(Display.Width, glyphX + glyph.Width);
+            for (var wordX = left & ~31; wordX < right; wordX += 32)
+            {
+                var start = Math.Max(left, wordX);
+                var end = Math.Min(right, wordX + 32);
+                var mask = 0u;
+                for (var targetX = start; targetX < end; targetX++)
+                {
+                    var column = targetX - glyphX;
+                    var rasterIndex = row * rowBytes + column / 8;
+                    if ((glyph.Raster[rasterIndex] & (1 << (column & 7))) != 0)
+                    {
+                        mask |= 1u << (targetX & 31);
+                    }
+                }
+
+                if (mask != 0)
+                {
+                    ApplyWordMask(PixelAddress(wordX, targetY), mask, color, mode);
+                }
             }
         }
 

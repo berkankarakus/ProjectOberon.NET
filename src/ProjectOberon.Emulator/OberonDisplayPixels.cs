@@ -13,6 +13,20 @@ public sealed partial class OberonDisplay
         }
     }
 
+    private void ApplyWordMask(uint address, uint mask, int color, int mode)
+    {
+        var word = _memory.Read32(address);
+        word = mode switch
+        {
+            Display.Paint => word | mask,
+            Display.Invert => word ^ mask,
+            Display.Replace when color == Display.Black => word & ~mask,
+            Display.Replace => word | mask,
+            _ => throw new ArgumentOutOfRangeException(nameof(mode))
+        };
+        _memory.Write32(address, word);
+    }
+
     private bool GetPixel(int x, int y)
     {
         var address = PixelAddress(x, y);
