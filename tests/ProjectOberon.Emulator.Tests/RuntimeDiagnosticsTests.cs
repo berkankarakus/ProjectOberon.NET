@@ -54,4 +54,19 @@ internal static class RuntimeDiagnosticsTests
         TestAssertions.True(output.Contains("FormatException: inner", StringComparison.Ordinal));
         TestAssertions.False(output.Contains("cpu: steps=", StringComparison.Ordinal));
     }
+
+    public static void FormatsStructuredJson()
+    {
+        using var machine = new Machine();
+        machine.Cpu.SetRegister(2, 0x200);
+        var output = OberonRuntimeDiagnostics.FormatJson(
+            "test-app",
+            machine,
+            new InvalidOperationException("boom"));
+
+        TestAssertions.True(output.Contains("\"application\": \"test-app\"", StringComparison.Ordinal));
+        TestAssertions.True(output.Contains("\"message\": \"boom\"", StringComparison.Ordinal));
+        TestAssertions.True(output.Contains("\"r2\": 512", StringComparison.Ordinal));
+        TestAssertions.True(output.Contains("\"lastInstruction\": 0", StringComparison.Ordinal));
+    }
 }

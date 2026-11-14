@@ -51,6 +51,7 @@ var tests = new (string Name, Action Test)[]
     ("runtime diagnostics", RuntimeDiagnosticsTests.FormatsMachineState),
     ("module load diagnostics", RuntimeDiagnosticsTests.FormatsModuleLoadCode),
     ("runtime diagnostics validation", RuntimeDiagnosticsTests.ValidatesArgumentsAndPreservesDetails),
+    ("structured runtime diagnostics", RuntimeDiagnosticsTests.FormatsStructuredJson),
     ("disassembler and breakpoint", DeviceTests.DisassemblerAndBreakpoint),
     ("display and input mapping", DeviceTests.DisplayAndInputMapping),
     ("input mapping helpers", InputMappingTests.Run),
