@@ -1,9 +1,10 @@
 # TODO
 
 The deterministic validation gate is `bash scripts/verify-dotnet.sh`. The
-external `RISC-work.img` flow remains a separate integration requirement. The
-Compiler roadmap batches 51-75 and the five follow-up batches are complete.
-The unchecked integration item below still requires a CI-owned disk artifact.
+external `RISC-work.img` flow remains a separate local integration option, and
+the repository's CI boot/input job is enabled with a URL- and SHA256-verified
+official disk archive. The Compiler roadmap batches 51-75 and the five
+follow-up batches are complete.
 
 ## Compiler
 
@@ -74,11 +75,11 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Release the child page copied into the fixed directory root after root collapse.
 - [x] Reject persistent file renames that would overwrite an existing directory entry.
 - [x] Add an optional CI boot/input job with URL and SHA256-verified disk artifact provisioning.
-- [ ] Configure the repository-owned disk artifact URL and SHA256 variables.
+- [x] Configure the repository-owned disk artifact URL and SHA256 variables.
 
 ## Integration
 
-- [ ] [P0] Configure a CI-owned compatible `RISC-work.img` artifact for boot and input tests; the official `RISC.img` was validated locally, but ROM/disk binaries remain intentionally excluded from this repository.
+- [x] [P0] Configure a CI-owned compatible `RISC-work.img` artifact for boot and input tests; the official `RISC.img` remains external and is downloaded with a SHA256 check, while ROM/disk binaries remain intentionally excluded from this repository.
 - [x] Add a filesystem consistency validator for directory/header/data-sector relationships.
 - [x] Expose immutable heap statistics for diagnostics and performance measurements.
 - [x] Restore complete CPU execution state after module initializer execution.
