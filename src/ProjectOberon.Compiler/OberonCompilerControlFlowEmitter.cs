@@ -206,6 +206,30 @@ public sealed class OberonCompilerControlFlowEmitter
         OberonCompilerExpression condition,
         OberonCompilerLabel falseLabel)
     {
+        if (TryEmitIntegerConjunctionBranch(condition, falseLabel))
+        {
+            return;
+        }
+
+        if (TryEmitIntegerDisjunctionBranch(condition, falseLabel))
+        {
+            return;
+        }
+
+        if (condition is OberonCompilerUnaryExpression unary
+            && unary.Operator == OberonCompilerTokenKind.Not)
+        {
+            if (TryEmitIntegerComparisonBranch(unary.Operand, falseLabel, branchWhenTrue: true))
+            {
+                return;
+            }
+
+            _emitExpression(unary.Operand, 0);
+            _generator.EmitImmediate(AluOperation.Sub, 0, 0, 0);
+            _generator.EmitBranch(falseLabel, ConditionCode.Eq, link: false, invert: true);
+            return;
+        }
+
         if (TryEmitSetMembershipBranch(condition, falseLabel))
         {
             return;
@@ -225,6 +249,61 @@ public sealed class OberonCompilerControlFlowEmitter
         _generator.EmitImmediate(AluOperation.Sub, 0, 0, 0);
         _generator.EmitBranch(falseLabel, ConditionCode.Eq);
     }
+
+    private bool TryEmitIntegerConjunctionBranch(
+        OberonCompilerExpression expression,
+        OberonCompilerLabel falseLabel)
+    {
+        if (expression is not OberonCompilerBinaryExpression conjunction
+            || conjunction.Operator != OberonCompilerTokenKind.And
+            || !IsDirectIntegerComparison(conjunction.Left)
+            || !IsDirectIntegerComparison(conjunction.Right))
+        {
+            return false;
+        }
+
+        TryEmitIntegerComparisonBranch(conjunction.Left, falseLabel);
+        TryEmitIntegerComparisonBranch(conjunction.Right, falseLabel);
+        return true;
+    }
+
+    private bool TryEmitIntegerDisjunctionBranch(
+        OberonCompilerExpression expression,
+        OberonCompilerLabel falseLabel)
+    {
+        if (expression is not OberonCompilerBinaryExpression disjunction
+            || disjunction.Operator != OberonCompilerTokenKind.Or
+            || !IsDirectIntegerComparison(disjunction.Left)
+            || !IsDirectIntegerComparison(disjunction.Right))
+        {
+            return false;
+        }
+
+        var rightLabel = new OberonCompilerLabel();
+        var trueLabel = new OberonCompilerLabel();
+        TryEmitIntegerComparisonBranch(disjunction.Left, rightLabel);
+        _generator.EmitBranch(trueLabel);
+        _generator.Bind(rightLabel);
+        TryEmitIntegerComparisonBranch(disjunction.Right, falseLabel);
+        _generator.Bind(trueLabel);
+        return true;
+    }
+
+    private static bool IsDirectIntegerComparison(OberonCompilerExpression expression) =>
+        expression is OberonCompilerBinaryExpression comparison
+        && IsInteger(comparison.Left)
+        && IsInteger(comparison.Right)
+        && comparison.Operator is OberonCompilerTokenKind.Equal or
+            OberonCompilerTokenKind.NotEqual or
+            OberonCompilerTokenKind.Less or
+            OberonCompilerTokenKind.LessOrEqual or
+            OberonCompilerTokenKind.Greater or
+            OberonCompilerTokenKind.GreaterOrEqual
+        && IsSideEffectFreeBranchOperand(comparison.Left)
+        && IsSideEffectFreeBranchOperand(comparison.Right);
+
+    private static bool IsSideEffectFreeBranchOperand(OberonCompilerExpression expression) =>
+        expression is OberonCompilerNameExpression or OberonCompilerIntegerLiteralExpression;
 
     private void EmitCaseValueDifference(long value)
     {
@@ -287,7 +366,8 @@ public sealed class OberonCompilerControlFlowEmitter
 
     private bool TryEmitIntegerComparisonBranch(
         OberonCompilerExpression expression,
-        OberonCompilerLabel falseLabel)
+        OberonCompilerLabel falseLabel,
+        bool branchWhenTrue = false)
     {
         if (expression is not OberonCompilerBinaryExpression comparison
             || !IsInteger(comparison.Left)
@@ -343,7 +423,7 @@ public sealed class OberonCompilerControlFlowEmitter
             falseLabel,
             condition,
             link: false,
-            invert: !invert);
+            invert: branchWhenTrue ? invert : !invert);
         return true;
     }
 

@@ -49,6 +49,9 @@ The unchecked integration item below still requires a CI-owned disk artifact.
 - [x] Fold unary REAL literals before code generation.
 - [x] Lower BOOLEAN equality and inequality without branches.
 - [x] Test BOOLEAN value conditions with an immediate zero comparison.
+- [x] Fuse side-effect-free INTEGER conjunction comparisons directly into branches.
+- [x] Fuse side-effect-free INTEGER disjunction comparisons directly into branches.
+- [x] Fuse negated INTEGER comparisons directly into branches.
 - [ ] Measure whether further comparison/branch fusion provides a meaningful gain before introducing a larger control-flow rewrite.
 
 ## Integration

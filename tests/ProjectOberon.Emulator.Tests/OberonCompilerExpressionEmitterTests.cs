@@ -24,12 +24,16 @@ internal static class OberonCompilerExpressionEmitterTests
         EmitsConstantControlFlowWithoutBranches();
         BranchesDirectlyOnIntegerComparisons();
         BranchesDirectlyOnReversedIntegerComparisons();
+        BranchesDirectlyOnIntegerConjunctions();
+        BranchesDirectlyOnIntegerDisjunctions();
         BranchesDirectlyOnRealComparisons();
         BranchesDirectlyOnSetMembership();
         EmitsSetMembership();
         EmitsSetLiteralAndOperations();
         EmitsControlFlow();
         BranchesOnBooleanValuesWithImmediateZero();
+        BranchesOnNegatedBooleanValuesWithoutMaterializingNot();
+        BranchesDirectlyOnNegatedIntegerComparisons();
         EmitsRecordFieldLoadAndStore();
         EmitsAggregateRecordCopy();
         EmitsConstantAtLastExpressionRegister();
@@ -100,7 +104,7 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
         TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNLT ")));
-        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
     }
 
     private static void BranchesOnBooleanValuesWithImmediateZero()
@@ -114,6 +118,33 @@ internal static class OberonCompilerExpressionEmitterTests
         var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
         TestAssertions.True(instructions.Contains("SUB r0, r0, 0x0000"));
         TestAssertions.False(instructions.Contains("MOV r1, 0x0000"));
+    }
+
+    private static void BranchesOnNegatedBooleanValuesWithoutMaterializingNot()
+    {
+        const string source = "MODULE Branch; VAR flag: BOOLEAN; result: INTEGER; BEGIN IF ~flag THEN result := 1; END; END Branch.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BNEQ ")));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("XOR ")));
+    }
+
+    private static void BranchesDirectlyOnNegatedIntegerComparisons()
+    {
+        const string source = "MODULE Branch; VAR value, result: INTEGER; BEGIN IF ~(value = 1) THEN result := 1; END; END Branch.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal(6, instructions.Length);
+        TestAssertions.True(instructions.Any(instruction => instruction.StartsWith("BEQ ")));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("XOR ")));
     }
 
     private static void EmitsPackedByteLoadsAndStores()
@@ -315,6 +346,34 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.True(instructions.Any(instruction => instruction == "SUB r0, r0, 0x0002"));
         TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0003"));
         TestAssertions.False(instructions.Any(instruction => instruction == "MOV r1, 0x0002"));
+    }
+
+    private static void BranchesDirectlyOnIntegerConjunctions()
+    {
+        const string source = "MODULE Compound; VAR left, right, result: INTEGER; BEGIN IF (left = 1) & (right = 2) THEN result := 1; ELSE result := 0; END; END Compound.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal(11, instructions.Length);
+        TestAssertions.Equal(2, instructions.Count(instruction => instruction.StartsWith("BNEQ ")));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("AND ")));
+    }
+
+    private static void BranchesDirectlyOnIntegerDisjunctions()
+    {
+        const string source = "MODULE Compound; VAR left, right, result: INTEGER; BEGIN IF (left = 1) OR (right = 2) THEN result := 1; ELSE result := 0; END; END Compound.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.Equal(12, instructions.Length);
+        TestAssertions.Equal(2, instructions.Count(instruction => instruction.StartsWith("BNEQ ")));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("IOR ")));
     }
 
     private static void EmitsReversedIntegerComparisonWithImmediateOperand()

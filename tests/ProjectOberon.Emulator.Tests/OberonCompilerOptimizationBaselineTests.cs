@@ -9,6 +9,10 @@ internal static class OberonCompilerOptimizationBaselineTests
         MeasuresRealConstantFixture();
         MeasuresBooleanComparisonFixture();
         MeasuresBooleanBranchFixture();
+        MeasuresNegatedBooleanBranchFixture();
+        MeasuresNegatedIntegerComparisonBranchFixture();
+        MeasuresCompoundComparisonBranchFixture();
+        MeasuresDisjunctionComparisonBranchFixture();
         MeasuresLoopFixture();
         MeasuresForLoopFixture();
         MeasuresAggregateCopyFixture();
@@ -85,6 +89,74 @@ internal static class OberonCompilerOptimizationBaselineTests
             maxSteps: 64);
 
         AssertBaseline(module, steps, codeWords: 6, rscBytes: 90, runtimeSteps: 5);
+    }
+
+    private static void MeasuresNegatedBooleanBranchFixture()
+    {
+        const string source =
+            "MODULE NegatedBooleanBranch; VAR flag: BOOLEAN; result: INTEGER; BEGIN IF ~flag THEN result := 1; END; END NegatedBooleanBranch.";
+        var module = Compile("NegatedBooleanBranch", source);
+        var flag = module.ParseResult.ModuleScope!.Objects.Single(symbol => symbol.Name == "flag");
+        var result = module.ParseResult.ModuleScope.Objects.Single(symbol => symbol.Name == "result");
+        module.Memory.Write8(module.Image.DataAddress + checked((uint)flag.Value), 0);
+        var steps = RunUntil(
+            module,
+            () => module.Memory.Read32(module.Image.DataAddress + checked((uint)result.Value)) == 1,
+            maxSteps: 64);
+
+        AssertBaseline(module, steps, codeWords: 6, rscBytes: 97, runtimeSteps: 5);
+    }
+
+    private static void MeasuresNegatedIntegerComparisonBranchFixture()
+    {
+        const string source =
+            "MODULE NegatedIntegerBranch; VAR value, result: INTEGER; BEGIN IF ~(value = 1) THEN result := 1; END; END NegatedIntegerBranch.";
+        var module = Compile("NegatedIntegerBranch", source);
+        var value = module.ParseResult.ModuleScope!.Objects.Single(symbol => symbol.Name == "value");
+        var result = module.ParseResult.ModuleScope.Objects.Single(symbol => symbol.Name == "result");
+        module.Memory.Write32(module.Image.DataAddress + checked((uint)value.Value), 0);
+        var steps = RunUntil(
+            module,
+            () => module.Memory.Read32(module.Image.DataAddress + checked((uint)result.Value)) == 1,
+            maxSteps: 64);
+
+        AssertBaseline(module, steps, codeWords: 6, rscBytes: 97, runtimeSteps: 5);
+    }
+
+    private static void MeasuresCompoundComparisonBranchFixture()
+    {
+        const string source =
+            "MODULE CompoundBranch; VAR left, right, result: INTEGER; BEGIN IF (left = 1) & (right = 2) THEN result := 1; ELSE result := 0; END; END CompoundBranch.";
+        var module = Compile("CompoundBranch", source);
+        var left = module.ParseResult.ModuleScope!.Objects.Single(symbol => symbol.Name == "left");
+        var right = module.ParseResult.ModuleScope.Objects.Single(symbol => symbol.Name == "right");
+        var result = module.ParseResult.ModuleScope.Objects.Single(symbol => symbol.Name == "result");
+        module.Memory.Write32(module.Image.DataAddress + checked((uint)left.Value), 1);
+        module.Memory.Write32(module.Image.DataAddress + checked((uint)right.Value), 2);
+        var steps = RunUntil(
+            module,
+            () => module.Memory.Read32(module.Image.DataAddress + checked((uint)result.Value)) == 1,
+            maxSteps: 128);
+
+        AssertBaseline(module, steps, codeWords: 11, rscBytes: 111, runtimeSteps: 8);
+    }
+
+    private static void MeasuresDisjunctionComparisonBranchFixture()
+    {
+        const string source =
+            "MODULE DisjunctionBranch; VAR left, right, result: INTEGER; BEGIN IF (left = 1) OR (right = 2) THEN result := 1; ELSE result := 0; END; END DisjunctionBranch.";
+        var module = Compile("DisjunctionBranch", source);
+        var left = module.ParseResult.ModuleScope!.Objects.Single(symbol => symbol.Name == "left");
+        var right = module.ParseResult.ModuleScope.Objects.Single(symbol => symbol.Name == "right");
+        var result = module.ParseResult.ModuleScope.Objects.Single(symbol => symbol.Name == "result");
+        module.Memory.Write32(module.Image.DataAddress + checked((uint)left.Value), 0);
+        module.Memory.Write32(module.Image.DataAddress + checked((uint)right.Value), 2);
+        var steps = RunUntil(
+            module,
+            () => module.Memory.Read32(module.Image.DataAddress + checked((uint)result.Value)) == 1,
+            maxSteps: 128);
+
+        AssertBaseline(module, steps, codeWords: 12, rscBytes: 118, runtimeSteps: 8);
     }
 
     private static void MeasuresLoopFixture()
