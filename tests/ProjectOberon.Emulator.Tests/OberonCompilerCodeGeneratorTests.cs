@@ -7,6 +7,7 @@ internal static class OberonCompilerCodeGeneratorTests
         EmitsRegisterImmediateAndMemoryInstructions();
         PatchesForwardBranches();
         EmitsFullWidthImmediateValues();
+        EmitsProcedureFrameInstructions();
         RejectsInvalidInstructionOperands();
     }
 
@@ -45,6 +46,22 @@ internal static class OberonCompilerCodeGeneratorTests
         TestAssertions.Equal("MOV r3, 0x12340000", Risc5Disassembler.Format(generator.Code[0]));
         TestAssertions.Equal("IOR r3, r3, 0x5678", Risc5Disassembler.Format(generator.Code[1]));
         TestAssertions.Equal("BT r15", Risc5Disassembler.Format(generator.Code[2]));
+    }
+
+    private static void EmitsProcedureFrameInstructions()
+    {
+        var generator = new OberonCompilerCodeGenerator();
+        generator.EmitProcedurePrologue(4);
+        generator.EmitProcedureReturn(4);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.True(instructions.SequenceEqual([
+            "SUB r14, r14, 0x0004",
+            "STR r15, [r14, 0]",
+            "LDR r15, [r14, 0]",
+            "ADD r14, r14, 0x0004",
+            "BT r15"
+        ]));
     }
 
     private static void RejectsInvalidInstructionOperands()
