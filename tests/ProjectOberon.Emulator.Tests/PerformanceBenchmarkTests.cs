@@ -26,6 +26,12 @@ internal static class PerformanceBenchmarkTests
                     new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
             Console.WriteLine($"benchmark output={fullPath}");
         }
+
+        var baselinePath = Environment.GetEnvironmentVariable("PROJECT_OBERON_BENCHMARK_BASELINE");
+        if (!string.IsNullOrWhiteSpace(baselinePath))
+        {
+            CompareBaseline(results, Path.GetFullPath(baselinePath));
+        }
     }
 
     private static BenchmarkResult Benchmark(string name, int iterations, Action<int> action)
@@ -95,6 +101,52 @@ internal static class PerformanceBenchmarkTests
         }
 
         return 1_000_000;
+    }
+
+    private static void CompareBaseline(
+        IReadOnlyList<BenchmarkResult> current,
+        string baselinePath)
+    {
+        if (!File.Exists(baselinePath))
+        {
+            throw new FileNotFoundException("benchmark baseline was not found", baselinePath);
+        }
+
+        var baseline = System.Text.Json.JsonSerializer.Deserialize<BenchmarkResult[]>(
+            File.ReadAllText(baselinePath)) ?? [];
+        var baselineByName = baseline.ToDictionary(result => result.Name, StringComparer.Ordinal);
+        var factor = 1.25;
+        if (double.TryParse(
+                Environment.GetEnvironmentVariable("PROJECT_OBERON_BENCHMARK_TOLERANCE"),
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var configuredFactor)
+            && double.IsFinite(configuredFactor)
+            && configuredFactor >= 1)
+        {
+            factor = configuredFactor;
+        }
+
+        foreach (var result in current)
+        {
+            if (!baselineByName.TryGetValue(result.Name, out var expected))
+            {
+                throw new InvalidOperationException($"benchmark baseline is missing '{result.Name}'");
+            }
+
+            if (result.ElapsedMilliseconds > expected.ElapsedMilliseconds * factor
+                || result.OperationsPerSecond < expected.OperationsPerSecond / factor
+                || result.AllocatedBytes > expected.AllocatedBytes * factor)
+            {
+                throw new InvalidOperationException(
+                    $"benchmark regression in '{result.Name}': "
+                    + $"current={result.ElapsedMilliseconds:F2}ms/{result.OperationsPerSecond:F0}ops/s/{result.AllocatedBytes}B, "
+                    + $"baseline={expected.ElapsedMilliseconds:F2}ms/{expected.OperationsPerSecond:F0}ops/s/{expected.AllocatedBytes}B, "
+                    + $"tolerance={factor:F2}");
+            }
+        }
+
+        Console.WriteLine($"benchmark regression check passed (tolerance={factor:F2})");
     }
 
     private sealed record BenchmarkResult(
