@@ -80,4 +80,27 @@ internal static class CpuTests
         TestAssertions.Throws<ArgumentException>(() => cpu.SetProgramCounter(2));
         TestAssertions.Throws<ArgumentOutOfRangeException>(() => cpu.SetProgramCounter(Memory.AddressMask + 1));
     }
+
+    public static void RestoresCapturedExecutionState()
+    {
+        var memory = new Memory();
+        memory.LoadRomWords(TestFixtures.RomWith(
+            TestFixtures.MovImmediate(1, 0xffff, true),
+            TestFixtures.MovImmediate(2, 2),
+            TestFixtures.Alu(AluOperation.Mul, 3, 1, 2)));
+        var cpu = new Risc5Cpu(memory);
+        cpu.Step();
+        cpu.Step();
+        cpu.Step();
+        var captured = cpu.CaptureExecutionState();
+
+        cpu.SetRegister(3, 0);
+        cpu.SetProgramCounter(0x100);
+        cpu.RestoreExecutionState(captured);
+
+        TestAssertions.Equal(0xffff_fffeu, cpu.Register(3));
+        TestAssertions.Equal(Risc5Cpu.ResetPc + 3, cpu.PcWord);
+        TestAssertions.Equal(0xffff_ffffu, cpu.High);
+        TestAssertions.Equal(3ul, cpu.Steps);
+    }
 }

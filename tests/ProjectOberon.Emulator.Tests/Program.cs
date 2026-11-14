@@ -12,6 +12,7 @@ var tests = new (string Name, Action Test)[]
     ("memory word and byte access", CpuTests.MemoryWordAndByteAccess),
     ("interrupt vector and RTI", CpuTests.InterruptVectorAndRti),
     ("CPU reset and validation", CpuTests.ResetsStateAndValidatesAddresses),
+    ("CPU execution state restore", CpuTests.RestoresCapturedExecutionState),
     ("memory loading and reset", MemoryTests.Run),
     ("MMIO devices", DeviceTests.MmioDevices),
     ("disk image read/write", DeviceTests.DiskImageReadWrite),
