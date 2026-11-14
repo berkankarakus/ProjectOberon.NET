@@ -206,6 +206,11 @@ public sealed class OberonCompilerControlFlowEmitter
         OberonCompilerExpression condition,
         OberonCompilerLabel falseLabel)
     {
+        if (TryEmitBooleanIdentityBranch(condition, falseLabel))
+        {
+            return;
+        }
+
         if (TryEmitConjunctionBranch(condition, falseLabel))
         {
             return;
@@ -291,6 +296,12 @@ public sealed class OberonCompilerControlFlowEmitter
 
     private static bool IsSideEffectFreeCondition(OberonCompilerExpression expression)
     {
+        if (expression is OberonCompilerNameExpression
+            && IsBoolean(expression))
+        {
+            return true;
+        }
+
         if (expression is OberonCompilerBinaryExpression logical
             && logical.Operator is OberonCompilerTokenKind.And or OberonCompilerTokenKind.Or)
         {
@@ -319,6 +330,58 @@ public sealed class OberonCompilerControlFlowEmitter
         return isComparison
             && (IsInteger(condition.Left) && IsInteger(condition.Right)
                 || IsReal(condition.Left) && IsReal(condition.Right));
+    }
+
+    private bool TryEmitBooleanIdentityBranch(
+        OberonCompilerExpression expression,
+        OberonCompilerLabel falseLabel)
+    {
+        if (expression is not OberonCompilerBinaryExpression binary
+            || binary.Operator is not (OberonCompilerTokenKind.And or OberonCompilerTokenKind.Or))
+        {
+            return false;
+        }
+
+        if (OberonCompilerConstantEvaluator.TryEvaluateBoolean(binary.Left, out var left)
+            && IsSideEffectFreeCondition(binary.Right))
+        {
+            return EmitBooleanIdentityBranch(binary.Operator, left, binary.Right, falseLabel);
+        }
+
+        if (OberonCompilerConstantEvaluator.TryEvaluateBoolean(binary.Right, out var right)
+            && IsSideEffectFreeCondition(binary.Left))
+        {
+            return EmitBooleanIdentityBranch(binary.Operator, right, binary.Left, falseLabel);
+        }
+
+        return false;
+    }
+
+    private bool EmitBooleanIdentityBranch(
+        OberonCompilerTokenKind operation,
+        bool constant,
+        OberonCompilerExpression other,
+        OberonCompilerLabel falseLabel)
+    {
+        if (operation == OberonCompilerTokenKind.And)
+        {
+            if (!constant)
+            {
+                _generator.EmitBranch(falseLabel);
+                return true;
+            }
+
+            EmitBranchIfFalse(other, falseLabel);
+            return true;
+        }
+
+        if (constant)
+        {
+            return true;
+        }
+
+        EmitBranchIfFalse(other, falseLabel);
+        return true;
     }
 
     private bool TryEmitBranchableCondition(
@@ -590,6 +653,9 @@ public sealed class OberonCompilerControlFlowEmitter
 
     private static bool IsSet(OberonCompilerExpression expression) =>
         OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form == OberonCompilerTypeForm.Set;
+
+    private static bool IsBoolean(OberonCompilerExpression expression) =>
+        OberonCompilerExpressionTypeResolver.Resolve(expression)?.Form == OberonCompilerTypeForm.Boolean;
 
     private static bool TryGetIntegerStep(
         OberonCompilerExpression expression,

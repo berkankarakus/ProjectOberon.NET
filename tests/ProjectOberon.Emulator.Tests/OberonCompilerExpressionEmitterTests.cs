@@ -33,6 +33,7 @@ internal static class OberonCompilerExpressionEmitterTests
         BranchesDirectlyOnIntegerConjunctions();
         BranchesDirectlyOnIntegerDisjunctions();
         BranchesNestedSideEffectFreeConditions();
+        FoldsBooleanIdentitiesInBranches();
         BranchesDirectlyOnRealComparisons();
         BranchesDirectlyOnSetMembership();
         BranchesDirectlyOnSetLiteralMembership();
@@ -456,6 +457,19 @@ internal static class OberonCompilerExpressionEmitterTests
         TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("AND ")));
         TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("IOR ")));
         TestAssertions.True(instructions.Count(instruction => instruction.StartsWith("B")) >= 3);
+    }
+
+    private static void FoldsBooleanIdentitiesInBranches()
+    {
+        const string source = "MODULE Branch; VAR flag, result: BOOLEAN; BEGIN IF (flag & TRUE) OR FALSE THEN result := TRUE; END; END Branch.";
+        var result = new OberonCompilerParser(source).ParseModule();
+        var generator = new OberonCompilerCodeGenerator();
+
+        new OberonCompilerStatementEmitter(generator).EmitStatementSequence(result.Body!);
+
+        var instructions = generator.Code.Select(Risc5Disassembler.Format).ToArray();
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("AND ")));
+        TestAssertions.False(instructions.Any(instruction => instruction.StartsWith("IOR ")));
     }
 
     private static void EmitsReversedIntegerComparisonWithImmediateOperand()
