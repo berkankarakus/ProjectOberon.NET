@@ -54,8 +54,12 @@ PROJECT_OBERON_RUN_DISK_TESTS=1 \
 ```
 
 CI has an optional `boot-integration` job. Configure repository variables
-`PROJECT_OBERON_DISK_URL` and `PROJECT_OBERON_DISK_SHA256` to enable it; the
-image is downloaded and checksum-verified at runtime and is never committed.
+`PROJECT_OBERON_DISK_URL` and `PROJECT_OBERON_DISK_SHA256` to enable it. The
+variables should point to a ZIP archive containing `RISC.img`; the archive is
+checksum-verified and extracted at runtime, and the image is never committed.
+The official Project Oberon archive is
+`https://www.projectoberon.net/zip/RISCimg.zip` with SHA-256
+`552e378c72b4624abfc5a1feaa340150301a04db9627f103819194be320f7670`.
 
 Run the CLI:
 

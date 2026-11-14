@@ -49,15 +49,18 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Download compatible disk image
+      - name: Download compatible disk image archive
         env:
           PROJECT_OBERON_DISK_URL: ${{ vars.PROJECT_OBERON_DISK_URL }}
-        run: curl --fail --location --retry 3 "$PROJECT_OBERON_DISK_URL" --output RISC-work.img
+        run: curl --fail --location --retry 3 "$PROJECT_OBERON_DISK_URL" --output RISCimg.zip
 
-      - name: Verify disk image checksum
+      - name: Verify disk image archive checksum
         env:
           PROJECT_OBERON_DISK_SHA256: ${{ vars.PROJECT_OBERON_DISK_SHA256 }}
-        run: echo "$PROJECT_OBERON_DISK_SHA256  RISC-work.img" | sha256sum --check --status
+        run: echo "$PROJECT_OBERON_DISK_SHA256  RISCimg.zip" | sha256sum --check --status
+
+      - name: Extract disk image
+        run: unzip -p RISCimg.zip RISC.img > RISC-work.img
 
       - name: Build and run boot/input integration
         env:
