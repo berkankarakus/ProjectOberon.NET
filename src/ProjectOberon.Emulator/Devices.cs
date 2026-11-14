@@ -25,9 +25,11 @@ public sealed class DeviceBus
 
     public bool Handles(uint address)
     {
-        var masked = address & MemoryMap.AddressMask;
-        return masked >= IoBase && masked < IoBase + 0x28;
+        return HandlesMasked(address & MemoryMap.AddressMask);
     }
+
+    internal static bool HandlesMasked(uint maskedAddress) =>
+        maskedAddress >= IoBase && maskedAddress < IoBase + 0x28;
 
     public uint Read(uint address)
     {

@@ -63,7 +63,7 @@ public sealed class Memory : IMemoryBus
     public byte Read8(uint address)
     {
         address &= MemoryMap.AddressMask;
-        if (_devices.Handles(address))
+        if (DeviceBus.HandlesMasked(address))
             return (byte)(_devices.Read(address & ~3u) >> (int)((address & 3u) * 8));
         if (IsRom(address))
         {
@@ -82,7 +82,7 @@ public sealed class Memory : IMemoryBus
         }
 
         address &= MemoryMap.AddressMask;
-        if (_devices.Handles(address))
+        if (DeviceBus.HandlesMasked(address))
         {
             if (CollectStatistics)
             {
@@ -124,7 +124,7 @@ public sealed class Memory : IMemoryBus
     public void Write8(uint address, byte value)
     {
         address &= MemoryMap.AddressMask;
-        if (_devices.Handles(address))
+        if (DeviceBus.HandlesMasked(address))
         {
             var aligned = address & ~3u;
             var shift = (int)((address & 3u) * 8);
@@ -146,7 +146,7 @@ public sealed class Memory : IMemoryBus
         }
 
         address &= MemoryMap.AddressMask;
-        if (_devices.Handles(address))
+        if (DeviceBus.HandlesMasked(address))
         {
             if (CollectStatistics)
             {
